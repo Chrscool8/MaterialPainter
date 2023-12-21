@@ -1,0 +1,104 @@
+﻿/*
+
+The long awaited mod is sort-of here! Transform the materials of most objects into water, lava, and glass, or make them invisible. The game wasn't designed for this. Things WILL break (visually). Have fun!
+
+[h1] Description: [/ h1]
+
+Bend the fabric of reality to your will. -When it isn't too janky.
+
+Material Painter adds a custom tool to your arsenal as an additional tab and window. You can choose a material and then click on an object to transform it into your selection.
+
+[h1] Features: [/ h1]
+
+Current Materials:
+-Water
+- Lava
+- Glass
+- Invisible
+- ...More Soon?
+
+Current Options:
+-Include Descendants: This will also paint objects down the hierarchy. For instance, if you click a path, the benches and lamp posts will be included, or if you click a track piece, its supports will likely be included. This is important because the game doesn't (currently) let you click on ANYthing, so sometimes you have to get to what you want with this. (Tip: To change supports manually, click a track piece with this on, then turn this off and turn the track piece back to normal.)
+- Target Only Supports: This attempts to only paint supports, but sometimes it misses pieces due to there being no real way to distinguish what is a support and what isn't.
+
+[h1] Future Features I'd Like to See:[/h1]
+
+This mod is technically only several days into development. There's a lot more I'd like to add or see added.
+
+- Set materials don't save and load
+- I want to be able to click anything
+- More materials would be cool
+- A better selector or perhaps a list of all objects that you can scroll through and modify
+- A show-invisibles toggle
+- Multiplayer support?
+- Figuring out how to make the bottom bar image longer so it can be with its friends
+
+[h1] Collaboration and Efforts:[/h1]
+
+This mod will be fully open source on my GitHub shortly and I welcome and await all pull-requests or drawn inspiration. I think it's important that we, as a community, own these things and they aren't held by only one person who might yank it away on a whim. In the meantime, I want to thank the community for their long-time support and teamwork. I rewrote this mod from scratch over the last few days and having Transformation Anarchy as an example of how to dive back in and use C# made it a much better on-boarding experience. Plus, I tried to structure this in a similar way to that project for familiarity's sake. I can't thank every individual, but shout-outs to you if you're in the Discord and you're cool.
+
+*/
+
+
+/*
+24/01/02
+
+The long awaited mod is sort-of here! Transform the materials of most objects into water, lava, and glass, or make them invisible. The game wasn't designed for this. Things WILL break (visually). Have fun!
+
+[h1]Description:[/h1]
+Bend the fabric of reality to your will. -When it isn't too janky.
+
+Material Painter adds a custom tool to your arsenal as an additional tab and window. You can choose a material and then click on an object to transform it into your selection. At this stage, it's more of a proof-of-concept and the beginning of a framework that can be built upon.
+
+[h1]Features:[/h1]
+Current Materials:
+- Water
+- Lava
+- Glass
+- Invisible
+- ...More Soon?
+
+Current Options:
+- Include Descendants: This will also paint objects down the hierarchy. For instance, if you click a path, the benches and lamp posts will be included, or if you click a track piece, its supports will likely be included. This is important because the game doesn't (currently) let you click on ANYthing, so sometimes you have to get to what you want with this. (Tip: To change supports manually, click a track piece with this on, then turn this off and turn the track piece back to normal.)
+- Target Only Supports: (Experimental) This attempts to only paint supports, but sometimes it misses pieces due to there being no real way to distinguish what is a support and what isn't.
+
+[h1]Updates:[/h1]
+24/01/02
+- I hugely updated the object selection code so now you can super precisely click almost anything in the game.
+
+23/12/27
+- Double load thing has been fixed, now works naturally on first load!
+
+23/12/24
+- Today's update now allows saving and loading of the materials on objects! ...But there is a light caveat at the moment. Basically the post-load re-materializer only works once the mod is loaded, and the mod is only loaded once a map is loaded, so you just have to load a map twice for the materials to apply. Basically Sandbox > Load > Gear Top Left > Load same thing, and voila. Not perfect, but functional! Enjoy!
+
+23/12/24
+- Initial Release!
+
+
+[h1]Future Features I'd Like to See:[/h1]
+This mod is technically only several days into development. There's a lot more I'd like to add or see added.
+
+- I want to be able to click anything
+- More materials would be cool
+- A better selector or perhaps a list of all objects that you can scroll through and modify
+- A show-invisibles toggle
+- Multiplayer support?
+- Figuring out how to make the bottom bar image longer so it can be with its friends
+- Some sorta safety toggle so you can't turn the whole world into waterworld in one click (unless you want to)
+
+[h1]Collaboration and Efforts:[/h1]
+
+This mod will be fully open source on my GitHub shortly and I welcome and await all pull-requests or drawn inspiration. I think it's important that we, as a community, own these things and they aren't held by only one person who might yank it away on a whim. In the meantime, I want to thank the community for their long-time support and teamwork. I rewrote this mod from scratch over the last few days and having Transform Anarchy as an example of how to dive back in and use C# made it a much better on-boarding experience. Plus, I tried to structure this in a similar way to that project for familiarity's sake. I can't thank every individual, but shout-outs to you if you're in the Discord and you're cool.
+
+[h1]You Need Support?[/h1]
+Want to report a problem or make a suggestion? You can reach me via Steam or Discord in either the official Parkitect server or personally @chrisbradel.
+
+[h1]You Want to Support Me?[/h1]
+Well, gee, thanks! These projects take a LOT of time and effort, but I don't ask for any monetary compensation for any of my work, and I never plan to. That said, if you're feeling generous, and you wanna toss me whatever you feel is reasonable, you can visit my KoFi page at https://ko-fi.com/chrisbradel so that I can afford to spend more time on fun projects like these.
+
+
+
+
+(P.S., Thank you for reading and sorry for the terrible screenshots lol it was a rush job.)
+*/

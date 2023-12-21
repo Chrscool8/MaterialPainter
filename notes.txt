@@ -1,0 +1,40 @@
+
+	private void prepareTreeMaterials(TreeEntity treeEntity, List<Renderer> renderers)
+	{
+		foreach (Renderer renderer in renderers)
+		{
+			Material[] sharedMaterials = renderer.sharedMaterials;
+			foreach (Material material in sharedMaterials)
+			{
+				if (!replacedMaterials.Contains(material))
+				{
+					addTreeReplacementMaterial(treeEntity, material);
+				}
+			}
+		}
+	}
+
+	private void addTreeReplacementMaterial(TreeEntity treeEntity, Material material)
+	{
+		Material material2 = new Material(ScriptableSingleton<AssetManager>.Instance.jumpFloodOutlineMaterial);
+		material2.SetFloat(windSwayDisabledID, 0f);
+		material2.SetFloat(windSwayStrengthID, treeEntity.WindSwayStrength);
+		material2.SetTexture(mainTexturePropertyID, material.GetTexture(mainTexturePropertyID));
+		if (material.HasProperty(cutoffID))
+		{
+			material2.SetFloat(cutoffID, material.GetFloat(cutoffID));
+		}
+		if (material.HasProperty(leafEffectStrengthID))
+		{
+			material2.SetFloat(leafEffectStrengthID, material.GetFloat(leafEffectStrengthID));
+			material2.SetFloat(leafEffectSpeedID, material.GetFloat(leafEffectSpeedID));
+			material2.SetVector(leafSizeID, material.GetVector(leafSizeID));
+			material2.SetVector(leafUVSizeAndPivotID, material.GetVector(leafUVSizeAndPivotID));
+		}
+		else
+		{
+			material2.SetFloat(leafEffectStrengthID, 0f);
+		}
+		outlineRenderer.replaceMaterial(material, material2);
+		replacedMaterials.Add(material);
+	}
