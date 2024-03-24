@@ -223,7 +223,7 @@ namespace MaterialPainter2
                     if (cm != null)
                     {
                         if (cm.get_current_brush() == (int)MaterialBrush.Invisible)
-                            MP2.controller.OnObjectClicked(obj, (int)MaterialBrush.InvisiblePreview);
+                            MP2.controller.SetMaterial(obj.transform, (int)MaterialBrush.InvisiblePreview);
                     }
                 }
             }
@@ -245,7 +245,7 @@ namespace MaterialPainter2
                     if (cm != null)
                     {
                         if (cm.get_current_brush() == (int)MaterialBrush.InvisiblePreview)
-                            MP2.controller.OnObjectClicked(obj, (int)MaterialBrush.Invisible);
+                            MP2.controller.SetMaterial(obj.transform, (int)MaterialBrush.Invisible);
                     }
                 }
             }
