@@ -6,6 +6,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Src\Utils\**" />
+    <EmbeddedResource Remove="Src\Utils\**" />
+    <None Remove="Src\Utils\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="Description.txt" />
   </ItemGroup>
 
@@ -411,10 +417,6 @@
     <Reference Include="UnityEngine.XRModule">
       <HintPath>C:\Program Files\Unity 2020.3.37f1\Editor\Data\Managed\UnityEngine\UnityEngine.XRModule.dll</HintPath>
     </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Src\Utils\" />
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">

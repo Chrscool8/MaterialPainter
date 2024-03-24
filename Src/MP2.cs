@@ -7,7 +7,7 @@ using System.IO;
 using System.Reflection;
 using UnityEngine;
 using static GameController;
-using static MaterialPainter2.TackSave;
+using static MaterialPainter2.TackSavePatch;
 
 namespace MaterialPainter2
 {
@@ -19,6 +19,7 @@ namespace MaterialPainter2
         Glass = 3,
         Invisible = 4,
         Terrain = 5,
+        InvisiblePreview = 6,
         //Texture = ?,
     }
 
@@ -38,7 +39,7 @@ namespace MaterialPainter2
 
     public class MP2 : AbstractMod, IModSettings
     {
-        public const string VERSION_NUMBER = "240102";
+        public const string VERSION_NUMBER = "240321";
 
         public override string getIdentifier() => "MaterialPainter";
 
@@ -178,12 +179,14 @@ namespace MaterialPainter2
                 new MaterialType("Water", get_sprite("icon_water"), (int)MaterialBrush.Water),
                 new MaterialType("Lava", get_sprite("icon_lava"), (int)MaterialBrush.Lava),
                 new MaterialType("Glass", get_sprite("icon_glass"), (int)MaterialBrush.Glass),
-                new MaterialType("Invisible", get_sprite("icon_invisible"), (int)MaterialBrush.Invisible),
+                new MaterialType("Invisible", get_sprite("icon_invisible"), (int)MaterialBrush.InvisiblePreview),
                 // new MaterialType("Terrain", get_sprite("icon_invisible"), (int)MaterialBrush.Terrain),
             };
 
             loadedAB.Unload(false);
             MPDebug("Loaded assetbundle!");
+
+            EventManager.Instance.OnStartPlayingPark += new EventManager.OnStartPlayingParkHandler(ReassignMaterialsAfterLoadingSavePatch);
         }
 
         public override void onDisabled()
@@ -200,6 +203,9 @@ namespace MaterialPainter2
                 MOD_ENABLED = false;
                 MPDebug(debug_string: "DISABLING MP2", always_show: true);
             }
+
+            EventManager.Instance.OnStartPlayingPark -= new EventManager.OnStartPlayingParkHandler(ReassignMaterialsAfterLoadingSavePatch);
+            // EventManager.Instance.OnGameSaved might be a good alternative for the other patch.
         }
 
         public void RegisterHotkeys()
@@ -220,18 +226,12 @@ namespace MaterialPainter2
         public void onSettingsOpened()
         {
         }
-    }
 
-    [HarmonyPatch]
-    public class ReassignMaterialsAfterLoadingSave
-    {
-        private static MethodBase TargetMethod() => AccessTools.Method(typeof(EventManager), "triggerOnStartPlayingPark");
-
-        [HarmonyPostfix]
-        public static void Postfix()
+        public void ReassignMaterialsAfterLoadingSavePatch()
         {
             GameObject[] allObjects = UnityEngine.Object.FindObjectsOfType<GameObject>();
             MP2.MPDebug($"Number of GOs: {allObjects.Length}");
+            MP2.MPDebug($"Numbers of Serials: {GameController.Instance.getSerializedObjects().Count}");
 
             string file_path = MP2.current_file_path + ".mat";
 
@@ -260,7 +260,7 @@ namespace MaterialPainter2
     }
 
     [HarmonyPatch]
-    public class TackSave
+    public class TackSavePatch
     {
         private static MethodBase TargetMethod() => AccessTools.Method(typeof(GameController), "saveGame", parameters: new Type[]
         {
@@ -299,6 +299,10 @@ namespace MaterialPainter2
             {
                 string key = obj.name + ":" + obj.transform.position.ToString();
                 int value = obj.GetComponent<ChangedMarker>().get_current_brush();
+                if (value == (int)MaterialBrush.InvisiblePreview)
+                {
+                    value = (int)MaterialBrush.Invisible;
+                }
                 myDictionary[key] = value;
             }
 
@@ -316,7 +320,7 @@ namespace MaterialPainter2
     }
 
     [HarmonyPatch]
-    public class LoadGetFileName
+    public class LoadGetFileNamePatch
     {
         private static MethodBase TargetMethod() => AccessTools.Method(typeof(Loader), "loadSavegame", parameters: new Type[] { typeof(string), typeof(GameController.GameMode), typeof(ParkSettings), typeof(bool), typeof(bool), typeof(bool), typeof(OnParkLoadedHandler), typeof(SerializationContext.Context) });
 
