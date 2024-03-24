@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using UnityEngine;
+using UnityEngine.Video;
 using static GameController;
 using static MaterialPainter2.TackSavePatch;
 
@@ -20,6 +21,9 @@ namespace MaterialPainter2
         Invisible = 4,
         Terrain = 5,
         InvisiblePreview = 6,
+        Video_1 = 7,
+        Video_2 = 8,
+        Video_3 = 9,
         //Texture = ?,
     }
 
@@ -146,7 +150,11 @@ namespace MaterialPainter2
             for (int i = 0; i < objects.Length; i++)
             {
                 var obj = objects[i];
-                if (obj != null && obj.GetType().ToString() == "UnityEngine.Texture2D")
+                if (obj == null)
+                {
+                    MPDebug($"Tried to load null asset.");
+                }
+                else if (obj.GetType().ToString() == "UnityEngine.Texture2D")
                 {
                     Texture2D texture = obj as Texture2D;
                     Sprite sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
@@ -157,9 +165,17 @@ namespace MaterialPainter2
 
                     sprites.Add(sprite.name, sprite);
                 }
+                /*else if (obj.GetType().ToString() == "UnityEngine.Video.VideoClip")
+                {
+                    VideoClip clip = obj as VideoClip;
+
+                    MPDebug('"' + obj.name + "\"");
+
+                    videos.Add(obj.name, clip);
+                }*/
                 else
                 {
-                    MPDebug("null?" + obj.GetType().ToString());
+                    MPDebug($"Asset Not Loaded. Name: '{obj.name}', Type: {obj.GetType().ToString()}");
                 }
             }
 
@@ -180,7 +196,9 @@ namespace MaterialPainter2
                 new MaterialType("Lava", get_sprite("icon_lava"), (int)MaterialBrush.Lava),
                 new MaterialType("Glass", get_sprite("icon_glass"), (int)MaterialBrush.Glass),
                 new MaterialType("Invisible", get_sprite("icon_invisible"), (int)MaterialBrush.InvisiblePreview),
-                // new MaterialType("Terrain", get_sprite("icon_invisible"), (int)MaterialBrush.Terrain),
+                new MaterialType("Video 1", get_sprite("icon_video1"), (int)MaterialBrush.Video_1),
+                new MaterialType("Video 2", get_sprite("icon_video2"), (int)MaterialBrush.Video_2),
+                new MaterialType("Video 3", get_sprite("icon_video3"), (int)MaterialBrush.Video_3),
             };
 
             loadedAB.Unload(false);
@@ -252,7 +270,7 @@ namespace MaterialPainter2
                 if (myDictionary.ContainsKey(key))
                 {
                     MP2.selected_brush = myDictionary[key];
-                    MP2.controller.OnObjectClicked(obj);
+                    MP2.controller.SetMaterial(obj.transform);
                 }
             }
             MP2.selected_brush = 0;

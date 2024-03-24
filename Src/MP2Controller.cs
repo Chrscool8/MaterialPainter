@@ -1,11 +1,15 @@
 ﻿using HarmonyLib;
+using Ionic.Zip;
+using Moona;
 using Parkitect.Mods.AssetPacks;
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
+using UnityEngine.Video;
 
 namespace MaterialPainter2
 {
@@ -251,77 +255,103 @@ namespace MaterialPainter2
             return outgoing;
         }
 
-        public void OnObjectClicked(GameObject gameObject, int brush_type = -1)
+        public void SetMaterial(Transform transform, int brush_type = -1)
         {
             int selected_brush = MP2.selected_brush;
             if (brush_type != -1)
                 selected_brush = brush_type;
 
-            MP2.ResetCountdown();
+            MP2.MPDebug("Painting " + gameObject.name + " with Brush " + selected_brush);
 
-            //MP2.MPDebug("Painting " + gameObject.name + " with Brush " + selected_brush);
-
-            List<Transform> family = new List<Transform>();
-            family.Add(gameObject.transform);
-
-            if (IncludeDescendants)
-                family.AddRange(GetDescendantsRecursive(gameObject.transform));
-
-            if (TargetSupports)
-                family = FindOnlySupports(family);
-
-            HashSet<Transform> uniqueSet = new HashSet<Transform>(family);
-            family = new List<Transform>(uniqueSet);
-            family.Reverse();
-
-            foreach (Transform child in family)
+            if (selected_brush == (int)MaterialBrush.None)
             {
-                //MP2.MPDebug($"- Painting {child.name} ({child.gameObject.GetComponent<MonoBehaviour>().GetType().GetTypeInfo().ToString()}) with Brush " + selected_brush + "; " + child.GetInstanceID());
-                //MP2.MPDebug("-- Buildable: " + isBuildable.ToString());
-
-                //if (OnlyBuildables && !isBuildable)
-                //    continue;
-
-                if (selected_brush == (int)MaterialBrush.None)
+                if (transform.GetComponent<ChangedMarker>() != null)
                 {
-                    if (child.GetComponent<ChangedMarker>() != null)
-                    {
-                        RevertMaterial(child.gameObject);
-                    }
+                    RevertMaterial(transform.gameObject);
                 }
-                else
+            }
+            else
+            {
+                if (transform.GetComponent<ChangedMarker>() == null)
                 {
-                    if (child.GetComponent<ChangedMarker>() == null)
-                    {
-                        BackupMaterial(child.gameObject);
-                    }
-                    ChangedMarker cm = child.GetComponent<ChangedMarker>();
+                    BackupMaterial(transform.gameObject);
+                }
 
-                    if (cm == null)
-                        continue;
+                ChangedMarker cm = transform.GetComponent<ChangedMarker>();
 
-                    cm.set_current_brush(selected_brush);
+                if (cm == null)
+                {
+                    MP2.MPDebug("CM NULL??");
+                    return;
+                }
 
-                    // Set Material
+                cm.set_current_brush(selected_brush);
 
-                    Renderer renderer = child.GetComponent<Renderer>();
-                    if (renderer == null)
-                        continue;
+                // Set Material
 
-                    WaterBody waterBody = new WaterBody();
+                Renderer renderer = transform.GetComponent<Renderer>();
+                if (renderer == null)
+                {
+                    MP2.MPDebug("RENDERER NULL??");
+                    return;
+                }
 
-                    Color c = new Color(1, 1, 1, 1);
-                    if (gameObject.GetComponent<CustomColors>() != null)
-                        c = gameObject.GetComponent<CustomColors>().getColors()[0];
+                WaterBody waterBody = new WaterBody();
 
-                    switch (selected_brush)
-                    {
-                        case (int)MaterialBrush.Water:
+                Color c = new Color(1, 1, 1, 1);
+                if (gameObject.GetComponent<CustomColors>() != null)
+                    c = gameObject.GetComponent<CustomColors>().getColors()[0];
+
+                switch (selected_brush)
+                {
+                    case (int)MaterialBrush.Water:
+                        {
+                            MP2.MPDebug("Water");
+                            renderer.enabled = true;
+
+                            waterBody.bodyType = WaterBody.BodyType.WATER;
+
+                            Material[] shares = renderer.materials;
+
+                            for (var i = 0; i < shares.Count(); i++)
                             {
-                                MP2.MPDebug("Water");
-                                renderer.enabled = true;
+                                Material material_old = shares[i];
+                                if (material_old != null)
+                                {
+                                    Material material_new = new Material(waterBody.getMaterial());
+                                    //material_new.SetTexture("_MainTex", material_old.GetTexture("_MainTex"));
+                                    material_new.enableInstancing = true;
+                                    shares[i] = material_new;
+                                }
+                            }
 
-                                waterBody.bodyType = WaterBody.BodyType.WATER;
+                            renderer.materials = shares;
+
+                            c.a = 0.392156869f;
+
+                            MaterialPropertyBlock materialPropertyBlock = new MaterialPropertyBlock();
+                            renderer.GetPropertyBlock(materialPropertyBlock);
+                            materialPropertyBlock.SetColor(Shader.PropertyToID("_Color"), c);
+                            float H;
+                            float S;
+                            float V;
+                            Color.RGBToHSV(c, out H, out S, out V);
+                            c = Color.HSVToRGB(H, S, V / 2f);
+                            c.a = 0.9019608f;
+                            materialPropertyBlock.SetColor(Shader.PropertyToID("_Color2"), c);
+                            materialPropertyBlock.SetColor(Shader.PropertyToID("_ShoreColor"), Color.HSVToRGB(H, S / 3f, V));
+                            renderer.SetPropertyBlock(materialPropertyBlock);
+                        }
+                        break;
+
+                    case (int)MaterialBrush.Lava:
+                        {
+                            MP2.MPDebug("Lava");
+                            renderer.enabled = true;
+
+                            if (renderer != null)
+                            {
+                                waterBody.bodyType = WaterBody.BodyType.LAVA;
 
                                 Material[] shares = renderer.materials;
 
@@ -331,7 +361,6 @@ namespace MaterialPainter2
                                     if (material_old != null)
                                     {
                                         Material material_new = new Material(waterBody.getMaterial());
-                                        //material_new.SetTexture("_MainTex", material_old.GetTexture("_MainTex"));
                                         material_new.enableInstancing = true;
                                         shares[i] = material_new;
                                     }
@@ -354,177 +383,172 @@ namespace MaterialPainter2
                                 materialPropertyBlock.SetColor(Shader.PropertyToID("_ShoreColor"), Color.HSVToRGB(H, S / 3f, V));
                                 renderer.SetPropertyBlock(materialPropertyBlock);
                             }
-                            break;
+                        }
+                        break;
 
-                        case (int)MaterialBrush.Lava:
+                    case (int)MaterialBrush.Glass:
+                        {
+                            MaterialDecorator materialDecorator = new MaterialDecorator();
+                            Material snag = new Material(ScriptableSingleton<AssetManager>.Instance.seeThroughMaterial);
+
+                            if (snag == null)
                             {
-                                MP2.MPDebug("Lava");
-                                renderer.enabled = true;
+                                MP2.MPDebug("No CustomColorsTransparent in Material list?");
+                                return;
+                            }
 
-                                if (renderer != null)
+                            Material[] shares = renderer.materials;
+
+                            for (var i = 0; i < shares.Count(); i++)
+                            {
+                                Material material_old = shares[i];
+                                if (material_old != null)
                                 {
-                                    waterBody.bodyType = WaterBody.BodyType.LAVA;
-
-                                    Material[] shares = renderer.materials;
-
-                                    for (var i = 0; i < shares.Count(); i++)
-                                    {
-                                        Material material_old = shares[i];
-                                        if (material_old != null)
-                                        {
-                                            Material material_new = new Material(waterBody.getMaterial());
-                                            material_new.enableInstancing = true;
-                                            shares[i] = material_new;
-                                        }
-                                    }
-
-                                    renderer.materials = shares;
-
-                                    c.a = 0.392156869f;
-
-                                    MaterialPropertyBlock materialPropertyBlock = new MaterialPropertyBlock();
-                                    renderer.GetPropertyBlock(materialPropertyBlock);
-                                    materialPropertyBlock.SetColor(Shader.PropertyToID("_Color"), c);
-                                    float H;
-                                    float S;
-                                    float V;
-                                    Color.RGBToHSV(c, out H, out S, out V);
-                                    c = Color.HSVToRGB(H, S, V / 2f);
-                                    c.a = 0.9019608f;
-                                    materialPropertyBlock.SetColor(Shader.PropertyToID("_Color2"), c);
-                                    materialPropertyBlock.SetColor(Shader.PropertyToID("_ShoreColor"), Color.HSVToRGB(H, S / 3f, V));
-                                    renderer.SetPropertyBlock(materialPropertyBlock);
+                                    Material material_new = snag;
+                                    material_new.enableInstancing = true;
+                                    shares[i] = material_new;
                                 }
                             }
-                            break;
 
-                        case (int)MaterialBrush.Glass:
+                            renderer.materials = shares;
+                        }
+                        break;
+
+                    case (int)MaterialBrush.Terrain:
+                        {
+                            MaterialDecorator materialDecorator = new MaterialDecorator();
+                            Material snag = new Material(ScriptableSingleton<AssetManager>.Instance.terrainMaterial);
+                            //Material snag = ScriptableSingleton<AssetManager>.Instance.decoVisibilityHighlightOverlayMaterial;
+
+                            if (snag == null)
                             {
-                                MaterialDecorator materialDecorator = new MaterialDecorator();
-                                Material snag = new Material(ScriptableSingleton<AssetManager>.Instance.seeThroughMaterial);
-
-                                if (snag == null)
-                                {
-                                    MP2.MPDebug("No CustomColorsTransparent in Material list?");
-                                    return;
-                                }
-
-                                Material[] shares = renderer.materials;
-
-                                for (var i = 0; i < shares.Count(); i++)
-                                {
-                                    Material material_old = shares[i];
-                                    if (material_old != null)
-                                    {
-                                        Material material_new = snag;
-                                        material_new.enableInstancing = true;
-                                        shares[i] = material_new;
-                                    }
-                                }
-
-                                renderer.materials = shares;
+                                MP2.MPDebug("No terrainMaterial in Material list?");
+                                return;
                             }
-                            break;
 
-                        case (int)MaterialBrush.Terrain:
+                            Material[] shares = renderer.materials;
+
+                            for (var i = 0; i < shares.Count(); i++)
                             {
-                                MaterialDecorator materialDecorator = new MaterialDecorator();
-                                Material snag = new Material(ScriptableSingleton<AssetManager>.Instance.terrainMaterial);
-                                //Material snag = ScriptableSingleton<AssetManager>.Instance.decoVisibilityHighlightOverlayMaterial;
-
-                                if (snag == null)
+                                Material material_old = shares[i];
+                                if (material_old != null)
                                 {
-                                    MP2.MPDebug("No terrainMaterial in Material list?");
-                                    return;
+                                    Material material_new = snag;
+                                    material_new.enableInstancing = true;
+                                    shares[i] = material_new;
                                 }
-
-                                Material[] shares = renderer.materials;
-
-                                for (var i = 0; i < shares.Count(); i++)
-                                {
-                                    Material material_old = shares[i];
-                                    if (material_old != null)
-                                    {
-                                        Material material_new = snag;
-                                        material_new.enableInstancing = true;
-                                        shares[i] = material_new;
-                                    }
-                                }
-
-                                renderer.materials = shares;
                             }
-                            break;
 
-                        case (int)MaterialBrush.Invisible:
+                            renderer.materials = shares;
+                        }
+                        break;
+
+                    case (int)MaterialBrush.Invisible:
+                        {
+                            MP2.MPDebug("Invisible");
+
+                            MaterialDecorator materialDecorator = new MaterialDecorator();
+                            Material snag = new Material(ScriptableSingleton<AssetManager>.Instance.multiplayerBuildPreviewGhostMaterial);
+
+                            if (snag == null)
                             {
-                                MP2.MPDebug("Invisible");
-
-                                MaterialDecorator materialDecorator = new MaterialDecorator();
-                                Material snag = new Material(ScriptableSingleton<AssetManager>.Instance.multiplayerBuildPreviewGhostMaterial);
-
-                                if (snag == null)
-                                {
-                                    MP2.MPDebug("No CustomColorsTransparent in Material list?");
-                                    return;
-                                }
-
-                                Material[] shares = renderer.materials;
-
-                                for (var i = 0; i < shares.Count(); i++)
-                                {
-                                    Material material_old = shares[i];
-                                    if (material_old != null)
-                                    {
-                                        Material material_new = snag;
-                                        material_new.enableInstancing = true;
-                                        shares[i] = material_new;
-                                    }
-                                }
-
-                                renderer.materials = shares;
-
-                                renderer.enabled = false;
+                                MP2.MPDebug("No CustomColorsTransparent in Material list?");
+                                return;
                             }
-                            break;
 
-                        case (int)MaterialBrush.InvisiblePreview:
+                            Material[] shares = renderer.materials;
+
+                            for (var i = 0; i < shares.Count(); i++)
                             {
-                                MP2.MPDebug("Invisible Preview");
-                                renderer.enabled = true;
-
-                                MaterialDecorator materialDecorator = new MaterialDecorator();
-                                Material snag = new Material(ScriptableSingleton<AssetManager>.Instance.multiplayerBuildPreviewGhostMaterial);
-
-                                if (snag == null)
+                                Material material_old = shares[i];
+                                if (material_old != null)
                                 {
-                                    MP2.MPDebug("No CustomColorsTransparent in Material list?");
-                                    return;
+                                    Material material_new = snag;
+                                    material_new.enableInstancing = true;
+                                    shares[i] = material_new;
                                 }
-
-                                Material[] shares = renderer.materials;
-
-                                for (var i = 0; i < shares.Count(); i++)
-                                {
-                                    Material material_old = shares[i];
-                                    if (material_old != null)
-                                    {
-                                        Material material_new = snag;
-                                        material_new.enableInstancing = true;
-                                        shares[i] = material_new;
-                                    }
-                                }
-
-                                renderer.materials = shares;
                             }
-                            break;
-                    }
 
-                    ShockwaveController.Instance.addShockwave(child.position, .5f, true);
-                    UnityEngine.Object.Instantiate<GameObject>(ScriptableSingleton<AssetManager>.Instance.employeeLevelUpParticlesGO).transform.position = child.position;
-                    UnityEngine.Object.Instantiate<GameObject>(ScriptableSingleton<AssetManager>.Instance.plopParticlesGO).transform.position = child.position;
+                            renderer.materials = shares;
+
+                            renderer.enabled = false;
+                        }
+                        break;
+
+                    case (int)MaterialBrush.InvisiblePreview:
+                        {
+                            MP2.MPDebug("Invisible Preview");
+                            renderer.enabled = true;
+
+                            MaterialDecorator materialDecorator = new MaterialDecorator();
+                            Material snag = new Material(ScriptableSingleton<AssetManager>.Instance.multiplayerBuildPreviewGhostMaterial);
+
+                            if (snag == null)
+                            {
+                                MP2.MPDebug("No CustomColorsTransparent in Material list?");
+                                return;
+                            }
+
+                            Material[] shares = renderer.materials;
+
+                            for (var i = 0; i < shares.Count(); i++)
+                            {
+                                Material material_old = shares[i];
+                                if (material_old != null)
+                                {
+                                    Material material_new = snag;
+                                    material_new.enableInstancing = true;
+                                    shares[i] = material_new;
+                                }
+                            }
+
+                            renderer.materials = shares;
+                        }
+                        break;
+
+                    case (int)MaterialBrush.Video_1:
+                        {
+                            MP2.MPDebug("Video_1");
+                            renderer.enabled = true;
+
+                            var url = GameController.modsPath + "MaterialPainter2/Res/Videos/videosign-default-1.mp4";
+
+                            if (File.Exists(url))
+                            {
+                                VideoPlayer video_player = transform.gameObject.AddComponent<VideoPlayer>();
+                                video_player.url = url;
+
+                                //videoplayer.audioOutputMode = VideoAudioOutputMode.Direct;
+                                //videoplayer.SetTargetAudioSource(0, audioSource);
+
+                                video_player.isLooping = true;
+                                video_player.Play();
+
+                                video_player.targetMaterialRenderer = renderer;
+                                video_player.renderMode = VideoRenderMode.MaterialOverride;
+                            }
+                            else
+                            {
+                                MP2.MPDebug($"Couldn't load {url}.");
+                            }
+                        }
+                        break;
                 }
+
+                ShockwaveController.Instance.addShockwave(transform.position, .5f, true);
+                UnityEngine.Object.Instantiate<GameObject>(ScriptableSingleton<AssetManager>.Instance.employeeLevelUpParticlesGO).transform.position = transform.position;
+                UnityEngine.Object.Instantiate<GameObject>(ScriptableSingleton<AssetManager>.Instance.plopParticlesGO).transform.position = transform.position;
             }
-            return;
+        }
+
+        public void OnObjectClicked(GameObject gameObject)
+        {
+            MP2.ResetCountdown();
+
+            //MP2.MPDebug($"- Painting {child.name} ({child.gameObject.GetComponent<MonoBehaviour>().GetType().GetTypeInfo().ToString()}) with Brush " + selected_brush + "; " + child.GetInstanceID());
+            //MP2.MPDebug("-- Buildable: " + isBuildable.ToString());
+
+            this.SetMaterial(gameObject.transform);
         }
     }
 }
