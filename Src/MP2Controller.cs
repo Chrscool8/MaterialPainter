@@ -251,11 +251,15 @@ namespace MaterialPainter2
             return outgoing;
         }
 
-        public void OnObjectClicked(GameObject gameObject)
+        public void OnObjectClicked(GameObject gameObject, int brush_type = -1)
         {
+            int selected_brush = MP2.selected_brush;
+            if (brush_type != -1)
+                selected_brush = brush_type;
+
             MP2.ResetCountdown();
 
-            //MP2.MPDebug("Painting " + gameObject.name + " with Brush " + MP2.selected_brush);
+            //MP2.MPDebug("Painting " + gameObject.name + " with Brush " + selected_brush);
 
             List<Transform> family = new List<Transform>();
             family.Add(gameObject.transform);
@@ -272,13 +276,13 @@ namespace MaterialPainter2
 
             foreach (Transform child in family)
             {
-                //MP2.MPDebug($"- Painting {child.name} ({child.gameObject.GetComponent<MonoBehaviour>().GetType().GetTypeInfo().ToString()}) with Brush " + MP2.selected_brush + "; " + child.GetInstanceID());
+                //MP2.MPDebug($"- Painting {child.name} ({child.gameObject.GetComponent<MonoBehaviour>().GetType().GetTypeInfo().ToString()}) with Brush " + selected_brush + "; " + child.GetInstanceID());
                 //MP2.MPDebug("-- Buildable: " + isBuildable.ToString());
 
                 //if (OnlyBuildables && !isBuildable)
                 //    continue;
 
-                if (MP2.selected_brush == (int)MaterialBrush.None)
+                if (selected_brush == (int)MaterialBrush.None)
                 {
                     if (child.GetComponent<ChangedMarker>() != null)
                     {
@@ -296,7 +300,7 @@ namespace MaterialPainter2
                     if (cm == null)
                         continue;
 
-                    cm.set_current_brush(MP2.selected_brush);
+                    cm.set_current_brush(selected_brush);
 
                     // Set Material
 
@@ -310,7 +314,7 @@ namespace MaterialPainter2
                     if (gameObject.GetComponent<CustomColors>() != null)
                         c = gameObject.GetComponent<CustomColors>().getColors()[0];
 
-                    switch (MP2.selected_brush)
+                    switch (selected_brush)
                     {
                         case (int)MaterialBrush.Water:
                             {
@@ -454,7 +458,63 @@ namespace MaterialPainter2
                         case (int)MaterialBrush.Invisible:
                             {
                                 MP2.MPDebug("Invisible");
+
+                                MaterialDecorator materialDecorator = new MaterialDecorator();
+                                Material snag = new Material(ScriptableSingleton<AssetManager>.Instance.multiplayerBuildPreviewGhostMaterial);
+
+                                if (snag == null)
+                                {
+                                    MP2.MPDebug("No CustomColorsTransparent in Material list?");
+                                    return;
+                                }
+
+                                Material[] shares = renderer.materials;
+
+                                for (var i = 0; i < shares.Count(); i++)
+                                {
+                                    Material material_old = shares[i];
+                                    if (material_old != null)
+                                    {
+                                        Material material_new = snag;
+                                        material_new.enableInstancing = true;
+                                        shares[i] = material_new;
+                                    }
+                                }
+
+                                renderer.materials = shares;
+
                                 renderer.enabled = false;
+                            }
+                            break;
+
+                        case (int)MaterialBrush.InvisiblePreview:
+                            {
+                                MP2.MPDebug("Invisible Preview");
+                                renderer.enabled = true;
+
+                                MaterialDecorator materialDecorator = new MaterialDecorator();
+                                Material snag = new Material(ScriptableSingleton<AssetManager>.Instance.multiplayerBuildPreviewGhostMaterial);
+
+                                if (snag == null)
+                                {
+                                    MP2.MPDebug("No CustomColorsTransparent in Material list?");
+                                    return;
+                                }
+
+                                Material[] shares = renderer.materials;
+
+                                for (var i = 0; i < shares.Count(); i++)
+                                {
+                                    Material material_old = shares[i];
+                                    if (material_old != null)
+                                    {
+                                        Material material_new = snag;
+                                        material_new.enableInstancing = true;
+                                        shares[i] = material_new;
+                                    }
+                                }
+
+                                renderer.materials = shares;
                             }
                             break;
                     }

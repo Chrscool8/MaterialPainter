@@ -1,4 +1,5 @@
-﻿using Parkitect.UI;
+﻿using Moona;
+using Parkitect.UI;
 using UnityEngine;
 
 namespace MaterialPainter2
@@ -51,7 +52,7 @@ namespace MaterialPainter2
                     {
                         if (Input.GetMouseButtonDown(0) && MP2.IsCoolDownReady())
                         {
-                            MP2.selected_brush = i;
+                            MP2.selected_brush = entry.id;
                             MP2.ResetCountdown();
                             MP2.controller.ActivatePipe();
                         }
@@ -67,7 +68,7 @@ namespace MaterialPainter2
                     }
                 }
 
-                if (MP2.selected_brush == i)
+                if (MP2.selected_brush == entry.id)
                     GUI.DrawTexture(new Rect(xx, screen_height - yy, cell_width, cell_height), MP2.get_sprite("icon_selection").texture, ScaleMode.ScaleToFit);
             }
 
@@ -210,12 +211,44 @@ namespace MaterialPainter2
         {
             base.OnEnable();
             Instance = this;
+            MP2.MPDebug("On");
+
+            GameObject[] allObjects = UnityEngine.Object.FindObjectsOfType<GameObject>();
+
+            foreach (GameObject obj in allObjects)
+            {
+                if (obj != null)
+                {
+                    ChangedMarker cm = obj.GetComponent<ChangedMarker>();
+                    if (cm != null)
+                    {
+                        if (cm.get_current_brush() == (int)MaterialBrush.Invisible)
+                            MP2.controller.OnObjectClicked(obj, (int)MaterialBrush.InvisiblePreview);
+                    }
+                }
+            }
         }
 
         protected override void OnDisable()
         {
             base.OnDisable();
             Instance = null;
+            MP2.MPDebug("Off");
+
+            GameObject[] allObjects = UnityEngine.Object.FindObjectsOfType<GameObject>();
+
+            foreach (GameObject obj in allObjects)
+            {
+                if (obj != null)
+                {
+                    ChangedMarker cm = obj.GetComponent<ChangedMarker>();
+                    if (cm != null)
+                    {
+                        if (cm.get_current_brush() == (int)MaterialBrush.InvisiblePreview)
+                            MP2.controller.OnObjectClicked(obj, (int)MaterialBrush.Invisible);
+                    }
+                }
+            }
         }
 
         private bool PointInRectangle(Vector2 point, Rect rectangle)
