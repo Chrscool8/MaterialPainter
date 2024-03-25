@@ -1,5 +1,6 @@
 ﻿using Moona;
 using Parkitect.UI;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace MaterialPainter2
@@ -19,6 +20,8 @@ namespace MaterialPainter2
             float cell_height = cell_size * scale;
             float cell_width_space = 10 * scale;
             float cell_height_space = 10 * scale;
+
+            int cells_per_row = 5;
 
             float left_offset = 15;
             float top_offset = 40 * scale;
@@ -41,8 +44,8 @@ namespace MaterialPainter2
                     continue;
                 }
 
-                var xx = left_offset + (transform.parent.parent.position.x) + (cell_width + cell_width_space + 1) * i;
-                var yy = -top_offset + (transform.parent.parent.position.y);
+                int xx = (int)Mathf.RoundToInt(left_offset + (transform.parent.parent.position.x) + (cell_width + cell_width_space + 1) * (i % cells_per_row));
+                int yy = (int)Mathf.RoundToInt(-top_offset + transform.parent.parent.position.y - ((i / cells_per_row) * cell_height * 1.5f));
 
                 GUI.DrawTexture(new Rect(xx, screen_height - yy, cell_width, cell_height), entry.preview.texture, ScaleMode.ScaleToFit);
 
@@ -126,6 +129,7 @@ namespace MaterialPainter2
             }*/
 
             //////
+
             Texture tex = MP2.get_sprite("checkbox_uncheck").texture;
             if (MP2.controller.TargetSupports)
                 tex = MP2.get_sprite("checkbox_check").texture;
@@ -235,7 +239,7 @@ namespace MaterialPainter2
             Instance = null;
             MP2.MPDebug("Off");
 
-            GameObject[] allObjects = UnityEngine.Object.FindObjectsOfType<GameObject>();
+            GameObject[] allObjects = FindObjectsOfType<GameObject>();
 
             foreach (GameObject obj in allObjects)
             {

@@ -17,6 +17,7 @@ namespace MaterialPainter2
     {
         private Material[] materials = null;
         private MaterialPropertyBlock material_property_block = null;
+        private VideoPlayer video_player = null;
         private bool _was_enabled = true;
         private int current_brush = -1;
 
@@ -43,6 +44,12 @@ namespace MaterialPainter2
 
         public int get_current_brush()
         { return current_brush; }
+
+        public void set_video_player(VideoPlayer video_player)
+        { this.video_player = video_player; }
+
+        public VideoPlayer get_video_player()
+        { return video_player; }
     }
 
     public class MP2Controller : MonoBehaviour
@@ -181,43 +188,66 @@ namespace MaterialPainter2
                 Debug.Log(m.Name);
         }
 
-        private void BackupMaterial(GameObject gameObject)
+        private void BackupMaterial(GameObject game_object)
         {
             MP2.MPDebug("BACKUP!");
 
-            ChunkedMesh chunkedMeshes = gameObject.GetComponent<ChunkedMesh>();
+            ChunkedMesh chunkedMeshes = game_object.GetComponent<ChunkedMesh>();
             if (chunkedMeshes != null)
                 chunkedMeshes.enabled = false;
 
-            Renderer renderer = gameObject.GetComponent<Renderer>();
+            Renderer renderer = game_object.GetComponent<Renderer>();
+            VideoPlayer video_player = game_object.GetComponent<VideoPlayer>();
 
-            if (renderer != null)
+            if (renderer != null || video_player != null)
             {
-                ChangedMarker changed_marker = gameObject.AddComponent<ChangedMarker>();
-                changed_marker.set_materials(renderer.materials);
-                MaterialPropertyBlock old_block = new MaterialPropertyBlock();
-                renderer.GetPropertyBlock(old_block);
-                changed_marker.set_material_property_block(old_block);
-                changed_marker.set_enabled(renderer.enabled);
+                ChangedMarker changed_marker = game_object.AddComponent<ChangedMarker>();
+
+                if (renderer != null)
+                {
+                    changed_marker.set_materials(renderer.materials);
+                    MaterialPropertyBlock old_block = new MaterialPropertyBlock();
+                    renderer.GetPropertyBlock(old_block);
+                    changed_marker.set_material_property_block(old_block);
+                    changed_marker.set_enabled(renderer.enabled);
+                }
+                else
+                    MP2.MPDebug("No Renderer For: " + game_object.name);
+
+                if (video_player != null)
+                {
+                    changed_marker.set_video_player(video_player);
+                }
             }
-            else
-                MP2.MPDebug("No Renderer For: " + gameObject.name);
         }
 
-        private void RevertMaterial(GameObject gameObject)
+        private void RevertMaterial(GameObject game_object)
         {
             MP2.MPDebug("REVERT!");
 
-            Renderer renderer = gameObject.GetComponent<Renderer>();
+            ChangedMarker changed_marker = game_object.GetComponent<ChangedMarker>();
+            if (changed_marker == null)
+            {
+                MP2.MPDebug($"Can't revert {game_object}.");
+                return;
+            }
 
-            ChangedMarker changed_marker = gameObject.GetComponent<ChangedMarker>();
+            Renderer renderer = game_object.GetComponent<Renderer>();
+
             renderer.materials = changed_marker.get_materials();
             renderer.SetPropertyBlock(changed_marker.get_material_property_block());
             renderer.enabled = (changed_marker.was_enabled());
 
-            Destroy(changed_marker);
+            VideoPlayer video_player = changed_marker.get_video_player();
+            if (video_player != null)
+            {
+                //game_object.AddComponent<VideoPlayer>(video_player);
+                DestroyImmediate(video_player);
+            }
 
-            ChunkedMesh chunkedMeshes = gameObject.GetComponent<ChunkedMesh>();
+            DestroyImmediate(changed_marker);
+
+            ChunkedMesh chunkedMeshes = game_object.GetComponent<ChunkedMesh>();
             if (chunkedMeshes != null)
                 chunkedMeshes.enabled = true;
         }
@@ -255,29 +285,30 @@ namespace MaterialPainter2
             return outgoing;
         }
 
-        public void SetMaterial(Transform transform, int brush_type = -1)
+        public void SetMaterial(Transform tf, int brush_type = -1)
         {
             int selected_brush = MP2.selected_brush;
             if (brush_type != -1)
                 selected_brush = brush_type;
 
-            MP2.MPDebug("Painting " + gameObject.name + " with Brush " + selected_brush);
+            MP2.MPDebug($"Painting {tf.gameObject.name} with Brush {selected_brush} ({brush_type})");
 
-            if (selected_brush == (int)MaterialBrush.None)
+            //if (selected_brush == (int)MaterialBrush.None)
+            //{
+            if (tf.gameObject.GetComponent<ChangedMarker>() != null)
             {
-                if (transform.GetComponent<ChangedMarker>() != null)
-                {
-                    RevertMaterial(transform.gameObject);
-                }
+                RevertMaterial(tf.gameObject);
             }
-            else
+            //}
+            //else
+            if (selected_brush != (int)MaterialBrush.None)
             {
-                if (transform.GetComponent<ChangedMarker>() == null)
+                if (tf.GetComponent<ChangedMarker>() == null)
                 {
-                    BackupMaterial(transform.gameObject);
+                    BackupMaterial(tf.gameObject);
                 }
 
-                ChangedMarker cm = transform.GetComponent<ChangedMarker>();
+                ChangedMarker cm = tf.GetComponent<ChangedMarker>();
 
                 if (cm == null)
                 {
@@ -289,7 +320,7 @@ namespace MaterialPainter2
 
                 // Set Material
 
-                Renderer renderer = transform.GetComponent<Renderer>();
+                Renderer renderer = tf.GetComponent<Renderer>();
                 if (renderer == null)
                 {
                     MP2.MPDebug("RENDERER NULL??");
@@ -299,8 +330,8 @@ namespace MaterialPainter2
                 WaterBody waterBody = new WaterBody();
 
                 Color c = new Color(1, 1, 1, 1);
-                if (gameObject.GetComponent<CustomColors>() != null)
-                    c = gameObject.GetComponent<CustomColors>().getColors()[0];
+                if (tf.gameObject.GetComponent<CustomColors>() != null)
+                    c = tf.gameObject.GetComponent<CustomColors>().getColors()[0];
 
                 switch (selected_brush)
                 {
@@ -507,15 +538,45 @@ namespace MaterialPainter2
                         break;
 
                     case (int)MaterialBrush.Video_1:
+                    case (int)MaterialBrush.Video_2:
+                    case (int)MaterialBrush.Video_3:
                         {
-                            MP2.MPDebug("Video_1");
+                            string number = "1";
+
+                            if (selected_brush == (int)MaterialBrush.Video_2)
+                                number = "2";
+                            if (selected_brush == (int)MaterialBrush.Video_3)
+                                number = "3";
+
+                            MP2.MPDebug($"Video_{number}");
                             renderer.enabled = true;
 
-                            var url = GameController.modsPath + "MaterialPainter2/Res/Videos/videosign-default-1.mp4";
+                            var custom_video = GameController.modsPath + $"MaterialPainter2/Custom/video-{number}.mp4";
+                            var default_video = GameController.modsPath + $"MaterialPainter2/Res/Videos/video-default-{number}.mp4";
 
-                            if (File.Exists(url))
+                            string url = null;
+
+                            if (File.Exists(custom_video))
+                                url = custom_video;
+                            else if (File.Exists(default_video))
+                                url = default_video;
+
+                            if (url != null)
                             {
-                                VideoPlayer video_player = transform.gameObject.AddComponent<VideoPlayer>();
+                                VideoPlayer video_player = null;
+                                /*if (MP2.cached_videos.ContainsKey(url))
+                                {
+                                    video_player = MP2.cached_videos[url];
+                                    tf.gameObject.AddComponent<VideoPlayer>(video_player);
+                                }
+                                else
+                                {
+                                    video_player = tf.gameObject.AddComponent<VideoPlayer>();
+                                    MP2.cached_videos.Add(url, video_player);
+                                }*/
+
+                                video_player = tf.gameObject.AddComponent<VideoPlayer>();
+
                                 video_player.url = url;
 
                                 //videoplayer.audioOutputMode = VideoAudioOutputMode.Direct;
@@ -535,20 +596,20 @@ namespace MaterialPainter2
                         break;
                 }
 
-                ShockwaveController.Instance.addShockwave(transform.position, .5f, true);
-                UnityEngine.Object.Instantiate<GameObject>(ScriptableSingleton<AssetManager>.Instance.employeeLevelUpParticlesGO).transform.position = transform.position;
-                UnityEngine.Object.Instantiate<GameObject>(ScriptableSingleton<AssetManager>.Instance.plopParticlesGO).transform.position = transform.position;
+                ShockwaveController.Instance.addShockwave(tf.position, .5f, true);
+                Instantiate(ScriptableSingleton<AssetManager>.Instance.employeeLevelUpParticlesGO).transform.position = tf.position;
+                Instantiate(ScriptableSingleton<AssetManager>.Instance.plopParticlesGO).transform.position = tf.position;
             }
         }
 
-        public void OnObjectClicked(GameObject gameObject)
+        public void OnObjectClicked(GameObject game_object)
         {
             MP2.ResetCountdown();
 
             //MP2.MPDebug($"- Painting {child.name} ({child.gameObject.GetComponent<MonoBehaviour>().GetType().GetTypeInfo().ToString()}) with Brush " + selected_brush + "; " + child.GetInstanceID());
             //MP2.MPDebug("-- Buildable: " + isBuildable.ToString());
 
-            this.SetMaterial(gameObject.transform);
+            this.SetMaterial(game_object.transform);
         }
     }
 }
