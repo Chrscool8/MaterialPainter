@@ -1,7 +1,9 @@
 ﻿using HarmonyLib;
+using MaterialPainter2;
 using ModIO;
 using Newtonsoft.Json;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -43,7 +45,7 @@ namespace MaterialPainter2
 
     public class MP2 : AbstractMod, IModSettings
     {
-        public const string VERSION_NUMBER = "240321";
+        public const string VERSION_NUMBER = "240324";
 
         public override string getIdentifier() => "MaterialPainter";
 
@@ -75,6 +77,8 @@ namespace MaterialPainter2
         private static float lastExecutionTime = -1;
         public static string current_file_path = "";
         public static bool MOD_ENABLED = false;
+
+        public static Dictionary<string, VideoPlayer> cached_videos;
 
         public static bool IsCoolDownReady()
         {
@@ -127,6 +131,7 @@ namespace MaterialPainter2
             }
 
             sprites = new Dictionary<string, Sprite>();
+            cached_videos = new Dictionary<string, VideoPlayer>();
         }
 
         public override void onEnabled()
@@ -204,13 +209,13 @@ namespace MaterialPainter2
             loadedAB.Unload(false);
             MPDebug("Loaded assetbundle!");
 
-            EventManager.Instance.OnStartPlayingPark += new EventManager.OnStartPlayingParkHandler(ReassignMaterialsAfterLoadingSavePatch);
+            EventManager.Instance.OnStartPlayingPark += new EventManager.OnStartPlayingParkHandler(PrepReassignMaterialsAfterLoadingSave);
         }
 
         public override void onDisabled()
         {
             //_keys.UnregisterAll();
-            UnityEngine.Object.Destroy(go);
+            UnityEngine.Object.DestroyImmediate(go);
             _modPath = "";
             sprites.Clear();
             material_brushes.Clear();
@@ -222,7 +227,7 @@ namespace MaterialPainter2
                 MPDebug(debug_string: "DISABLING MP2", always_show: true);
             }
 
-            EventManager.Instance.OnStartPlayingPark -= new EventManager.OnStartPlayingParkHandler(ReassignMaterialsAfterLoadingSavePatch);
+            EventManager.Instance.OnStartPlayingPark -= new EventManager.OnStartPlayingParkHandler(PrepReassignMaterialsAfterLoadingSave);
             // EventManager.Instance.OnGameSaved might be a good alternative for the other patch.
         }
 
@@ -245,15 +250,23 @@ namespace MaterialPainter2
         {
         }
 
-        public void ReassignMaterialsAfterLoadingSavePatch()
+        public void PrepReassignMaterialsAfterLoadingSave()
+        {
+            CoroutineManager.DelayAction(3f, () =>
+            {
+                ReassignMaterialsAfterLoadingSave();
+            });
+        }
+
+        public void ReassignMaterialsAfterLoadingSave()
         {
             GameObject[] allObjects = UnityEngine.Object.FindObjectsOfType<GameObject>();
-            MP2.MPDebug($"Number of GOs: {allObjects.Length}");
-            MP2.MPDebug($"Numbers of Serials: {GameController.Instance.getSerializedObjects().Count}");
+            MPDebug($"Number of GOs: {allObjects.Length}");
+            MPDebug($"Numbers of Serials: {GameController.Instance.getSerializedObjects().Count}");
 
             string file_path = MP2.current_file_path + ".mat";
 
-            MP2.MPDebug(file_path);
+            MPDebug(file_path);
             Dictionary<string, int> myDictionary = new Dictionary<string, int>();
             if (file_path != "" && File.Exists(file_path))
             {
@@ -269,8 +282,8 @@ namespace MaterialPainter2
                 string key = obj.name + ":" + obj.transform.position.ToString();
                 if (myDictionary.ContainsKey(key))
                 {
-                    MP2.selected_brush = myDictionary[key];
-                    MP2.controller.SetMaterial(obj.transform);
+                    int previous_brush = myDictionary[key];
+                    MP2.controller.SetMaterial(obj.transform, previous_brush);
                 }
             }
             MP2.selected_brush = 0;
@@ -345,8 +358,37 @@ namespace MaterialPainter2
         [HarmonyPrefix]
         public static void Prefix(string filePath, GameController.GameMode gameMode, ParkSettings settings, bool rememberFilePath, bool newPark, bool showNewParkUI = true, GameController.OnParkLoadedHandler onParkLoadedHandler = null, SerializationContext.Context context = (SerializationContext.Context)0)
         {
-            MaterialPainter2.MP2.MPDebug(filePath);
+            MP2.MPDebug(filePath);
             MP2.current_file_path = filePath;
+        }
+    }
+
+    public class CoroutineManager : MonoBehaviour
+    {
+        private static CoroutineManager instance;
+
+        private static CoroutineManager Instance
+        {
+            get
+            {
+                if (instance == null)
+                {
+                    GameObject obj = new GameObject("CoroutineManager");
+                    instance = obj.AddComponent<CoroutineManager>();
+                }
+                return instance;
+            }
+        }
+
+        public static void DelayAction(float delay, System.Action action)
+        {
+            Instance.StartCoroutine(DelayCoroutine(delay, action));
+        }
+
+        private static IEnumerator DelayCoroutine(float delay, System.Action action)
+        {
+            yield return new WaitForSeconds(delay);
+            action?.Invoke();
         }
     }
 }

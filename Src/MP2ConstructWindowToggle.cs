@@ -52,7 +52,7 @@ namespace MaterialPainter2
             MP2.MPDebug(rt.rect.ToString());
 
             //Features setup
-            GameObject.Destroy(mpButtonGo.GetComponent<UIMenuWindowButton>());
+            GameObject.DestroyImmediate(mpButtonGo.GetComponent<UIMenuWindowButton>());
             var mpWindowButton = mpButtonGo.AddComponent<MP2WindowButton>();
             //mpWindowButton.hotkeyIdentifier = MaterialPainter2.MPActiveHotkey.Identifier;
             var toggle = mpButtonGo.GetComponent<Toggle>();
@@ -65,7 +65,7 @@ namespace MaterialPainter2
 
         public void OnDisable()
         {
-            GameObject.Destroy(mpButtonGo);
+            GameObject.DestroyImmediate(mpButtonGo);
         }
     }
 }
