@@ -35,7 +35,6 @@ namespace MaterialPainter2
             mpButtonGo.name = "Material Painter";
 
             MP2.MPDebug(painterButton.transform.parent.ToString());
-            //MP2.MPDebug("------------" + mpButtonGo.transform.parent.parent.parent.transform.GetType().ToString());
             (mpButtonGo.transform.parent.parent.parent.transform as RectTransform).sizeDelta += new Vector2(80, 0);
             (mpButtonGo.transform.parent.parent.parent.transform as RectTransform).Translate(50f, 0, 0);
 

@@ -102,7 +102,7 @@ namespace MaterialPainter2
                 }
 
                 Utility.ObjectBelowMouseInfo objectBelowMouse = Utility.getObjectBelowMouse<SerializedMonoBehaviour>();
-                if (objectBelowMouse.hitObject != null)
+                /*if (objectBelowMouse.hitObject != null)
                 {
                     GameObject game_object = objectBelowMouse.hitObject.gameObject;
                     if (game_object != null)
@@ -110,10 +110,10 @@ namespace MaterialPainter2
                         MP2.MPDebug("1!" + game_object.ToString() + ": " + game_object.name);
                         //OnObjectClicked(game_object, true); // objectBelowMouse.hitObject as BuildableObject);
                     }
-                }
+                }*/
 
                 //////////////////////////////////////////
-                MP2.MPDebug("2!");
+                //MP2.MPDebug("2!");
 
                 List<GameObject> things = new List<GameObject>();
 
@@ -148,10 +148,10 @@ namespace MaterialPainter2
                     }
                 }
 
-                MP2.MPDebug($"{things.Count}");
+                //MP2.MPDebug($"{things.Count}");
 
                 //////////////////////////////////////////
-                MP2.MPDebug("3!");
+                //MP2.MPDebug("3!");
 
                 MouseCollider.HitInfo[] array2 = MouseCollisions.Instance.raycastAll(ray, float.MaxValue);
 
@@ -160,7 +160,7 @@ namespace MaterialPainter2
                 for (int i = 0; i < sortedList.Count; i++)
                 {
                     MouseCollider.HitInfo raycastHit = sortedList[i];
-                    MP2.MPDebug($"{raycastHit.hitObject.name} - {raycastHit.hitDistance}");
+                    //MP2.MPDebug($"{raycastHit.hitObject.name} - {raycastHit.hitDistance}");
                     if (i == 0)
                         OnObjectClicked(raycastHit.hitObject);
                 }
@@ -551,8 +551,9 @@ namespace MaterialPainter2
                             MP2.MPDebug($"Video_{number}");
                             renderer.enabled = true;
 
-                            var custom_video = GameController.modsPath + $"MaterialPainter2/Custom/video-{number}.mp4";
-                            var default_video = GameController.modsPath + $"MaterialPainter2/Res/Videos/video-default-{number}.mp4";
+                            var custom_video = MP2._local_mods_directory + $"MaterialPainter2/Custom/video-{number}.mp4";
+                            var default_video = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + $"/Res/Videos/video-default-{number}.mp4";
+                            MP2.MPDebug($"{custom_video}, {default_video}");
 
                             string url = null;
 
@@ -560,6 +561,10 @@ namespace MaterialPainter2
                                 url = custom_video;
                             else if (File.Exists(default_video))
                                 url = default_video;
+                            else
+                                MP2.MPDebug("Couldn't find any videos");
+
+                            MP2.MPDebug("Loading video: " + url);
 
                             if (url != null)
                             {

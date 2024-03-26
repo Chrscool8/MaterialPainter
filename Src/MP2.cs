@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Video;
 using static GameController;
@@ -45,7 +46,7 @@ namespace MaterialPainter2
 
     public class MP2 : AbstractMod, IModSettings
     {
-        public const string VERSION_NUMBER = "240324";
+        public const string VERSION_NUMBER = "240325";
 
         public override string getIdentifier() => "MaterialPainter";
 
@@ -60,7 +61,6 @@ namespace MaterialPainter2
         public override bool isRequiredByAllPlayersInMultiplayerMode() => false;
 
         public GameObject go { get; private set; }
-        public static string _modPath = "";
         public static MP2 Instance;
         private Harmony _harmony;
 
@@ -71,6 +71,8 @@ namespace MaterialPainter2
         public static MP2WindowButton window_button { get; set; }
         public ConstructWindowToggle construct_window_toggle { get; set; }
         private static Dictionary<string, Sprite> sprites { get; set; }
+        private static Dictionary<string, VideoClip> videos { get; set; }
+
         public static int selected_brush { get; set; }
         private static bool debug_mode = false;
         public static float cooldownDuration = .01f;
@@ -79,6 +81,9 @@ namespace MaterialPainter2
         public static bool MOD_ENABLED = false;
 
         public static Dictionary<string, VideoPlayer> cached_videos;
+
+        public static string _local_mods_directory = "";
+        public static string _material_painter_directory = "";
 
         public static bool IsCoolDownReady()
         {
@@ -96,8 +101,8 @@ namespace MaterialPainter2
             {
                 Debug.LogWarning("Material Painter: " + debug_string);
 
-                if (_modPath != "")
-                    File.AppendAllText(_modPath + "/MaterialPainterLog.txt", "Material Painter: " + debug_string + "\n");
+                if (_local_mods_directory != "")
+                    File.AppendAllText(_local_mods_directory + "/MaterialPainterLog.txt", "Material Painter: " + debug_string + "\n");
             }
         }
 
@@ -114,9 +119,37 @@ namespace MaterialPainter2
             }
         }
 
+        public static VideoClip get_video(string name)
+        {
+            if (videos.ContainsKey(name))
+            {
+                MPDebug("Loading asset video: '" + name + "'");
+                return videos[name];
+            }
+            else
+            {
+                MPDebug("Couldn't load video: '" + name + "'");
+                return null;
+            }
+        }
+
         public MP2()
         {
-            if (File.Exists(GameController.modsPath + "/mp_debug"))
+            _local_mods_directory = NormalizePath(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Parkitect/Mods/");
+            Directory.CreateDirectory(_local_mods_directory + "MaterialPainter2/Custom/");
+
+            for (int i = 1; i <= 3; i++)
+            {
+                var default_video = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + $"/Res/Videos/video-default-{i}.mp4";
+                var custom_video = MP2._local_mods_directory + $"MaterialPainter2/Custom/video-{i}.mp4";
+
+                if (!File.Exists(custom_video) && File.Exists(default_video))
+                {
+                    File.Copy(default_video, custom_video, false);
+                }
+            }
+
+            if (File.Exists(_local_mods_directory + "/mp_debug"))
             {
                 debug_mode = true;
                 MPDebug("Found debug flag file.");
@@ -131,6 +164,7 @@ namespace MaterialPainter2
             }
 
             sprites = new Dictionary<string, Sprite>();
+            videos = new Dictionary<string, VideoClip>();
             cached_videos = new Dictionary<string, VideoPlayer>();
         }
 
@@ -148,8 +182,8 @@ namespace MaterialPainter2
 
             RegisterHotkeys();
 
-            _modPath = ModManager.Instance.getMod(getIdentifier()).path;
-            var loadedAB = AssetBundle.LoadFromFile(_modPath + "/res/materialpainter.assets");
+            _material_painter_directory = ModManager.Instance.getMod(getIdentifier()).path;
+            var loadedAB = AssetBundle.LoadFromFile(_material_painter_directory + "/res/materialpainter.assets");
 
             UnityEngine.Object[] objects = loadedAB.LoadAllAssets();
             for (int i = 0; i < objects.Length; i++)
@@ -166,27 +200,22 @@ namespace MaterialPainter2
                     sprite.name = obj.name;
                     //sprite.texture.filterMode = FilterMode.Point;
 
-                    MPDebug('"' + sprite.name + "\"");
+                    MPDebug($"AB Load: ({sprite.GetType()}) {sprite.name}");
 
                     sprites.Add(sprite.name, sprite);
                 }
-                /*else if (obj.GetType().ToString() == "UnityEngine.Video.VideoClip")
+                else if (obj.GetType().ToString() == "UnityEngine.Video.VideoClip")
                 {
                     VideoClip clip = obj as VideoClip;
 
-                    MPDebug('"' + obj.name + "\"");
+                    MPDebug($"AB Load: ({clip.GetType()}) {clip.name}");
 
                     videos.Add(obj.name, clip);
-                }*/
+                }
                 else
                 {
-                    MPDebug($"Asset Not Loaded. Name: '{obj.name}', Type: {obj.GetType().ToString()}");
+                    MPDebug($"Asset Not Loaded. Name: '{obj.name}', Type: {obj.GetType()}");
                 }
-            }
-
-            foreach (KeyValuePair<string, Sprite> kvp in sprites)
-            {
-                MPDebug("Key: " + kvp.Key + ", Value: " + kvp.Value.rect.ToString());
             }
 
             go = new GameObject();
@@ -212,12 +241,18 @@ namespace MaterialPainter2
             EventManager.Instance.OnStartPlayingPark += new EventManager.OnStartPlayingParkHandler(PrepReassignMaterialsAfterLoadingSave);
         }
 
+        private string NormalizePath(string path)
+        {
+            // You may need a more complex normalization depending on your specific requirements
+            return path.Replace("\\", "/").ToLowerInvariant();
+        }
+
         public override void onDisabled()
         {
             //_keys.UnregisterAll();
             UnityEngine.Object.DestroyImmediate(go);
-            _modPath = "";
             sprites.Clear();
+            videos.Clear();
             material_brushes.Clear();
 
             if (MOD_ENABLED)
