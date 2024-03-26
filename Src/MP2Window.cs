@@ -129,7 +129,7 @@ namespace MaterialPainter2
             }*/
 
             //////
-
+            /*
             Texture tex = MP2.get_sprite("checkbox_uncheck").texture;
             if (MP2.controller.TargetSupports)
                 tex = MP2.get_sprite("checkbox_check").texture;
@@ -208,7 +208,7 @@ namespace MaterialPainter2
                         if (!MP2.controller.IncludeDescendants) { MP2.controller.TargetSupports = false; }
                     }
                 }
-            }
+            }*/
         }
 
         protected override void OnEnable()
@@ -217,7 +217,7 @@ namespace MaterialPainter2
             Instance = this;
             MP2.MPDebug("On");
 
-            GameObject[] allObjects = UnityEngine.Object.FindObjectsOfType<GameObject>();
+            GameObject[] allObjects = FindObjectsOfType<GameObject>();
 
             foreach (GameObject obj in allObjects)
             {
