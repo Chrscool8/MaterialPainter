@@ -46,7 +46,7 @@ namespace MaterialPainter2
 
     public class MP2 : AbstractMod, IModSettings
     {
-        public const string VERSION_NUMBER = "240325";
+        public const string VERSION_NUMBER = "240326";
 
         public override string getIdentifier() => "MaterialPainter";
 
@@ -135,7 +135,7 @@ namespace MaterialPainter2
 
         public MP2()
         {
-            _local_mods_directory = NormalizePath(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Parkitect/Mods/");
+            _local_mods_directory = GameController.modsPath; //NormalizePath(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Parkitect/Mods/");
             Directory.CreateDirectory(_local_mods_directory + "MaterialPainter2/Custom/");
 
             for (int i = 1; i <= 3; i++)
@@ -179,6 +179,9 @@ namespace MaterialPainter2
                 MOD_ENABLED = true;
                 MPDebug(debug_string: "ENABLING MP2", always_show: true);
             }
+
+            MPDebug("Modspath: " + GameController.modsPath, always_show: true);
+            MPDebug("ModspathRel: " + GameController.modsPathRelative, always_show: true);
 
             RegisterHotkeys();
 
