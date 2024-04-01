@@ -85,6 +85,9 @@ namespace MaterialPainter2
         public static string _local_mods_directory = "";
         public static string _material_painter_directory = "";
 
+        public static bool _setting_drag_select = false;
+        public static bool _setting_target_supports = false;
+
         public static bool IsCoolDownReady()
         {
             return (Time.time - lastExecutionTime >= cooldownDuration || lastExecutionTime == -1);

@@ -45,7 +45,7 @@ namespace MaterialPainter2
                 }
 
                 int xx = (int)Mathf.RoundToInt(left_offset + (transform.parent.parent.position.x) + (cell_width + cell_width_space + 1) * (i % cells_per_row));
-                int yy = (int)Mathf.RoundToInt(-top_offset + transform.parent.parent.position.y - ((i / cells_per_row) * cell_height * 1.5f));
+                int yy = (int)Mathf.RoundToInt(-top_offset + transform.parent.parent.position.y - ((i / cells_per_row) * cell_height * 1.25f));
 
                 GUI.DrawTexture(new Rect(xx, screen_height - yy, cell_width, cell_height), entry.preview.texture, ScaleMode.ScaleToFit);
 
@@ -86,12 +86,12 @@ namespace MaterialPainter2
                 GUI.color = Color.white;
             }
 
-            return;
-
             //////
-            /*
+
+            top_offset += 55;
+
             Texture tex = MP2.get_sprite("checkbox_uncheck").texture;
-            if (MP2.controller.OnlyBuildables)
+            if (MP2._setting_drag_select)
                 tex = MP2.get_sprite("checkbox_check").texture;
 
             float check_size = 26 * scale;
@@ -113,7 +113,7 @@ namespace MaterialPainter2
             guiStyle.fontSize = ((int)(16 * scale));
 
             GUI.color = Color.black;
-            GUI.Label(check_rect_text, "Only Buildables", guiStyle);
+            GUI.Label(check_rect_text, "Drag Select", guiStyle);
             GUI.color = Color.white;
 
             if (MP2.IsCoolDownReady())
@@ -122,34 +122,36 @@ namespace MaterialPainter2
                 {
                     if (PointInRectangle(new Vector2(Input.mousePosition.x, screen_height - Input.mousePosition.y), check_rect))
                     {
-                        MP2.controller.OnlyBuildables = !MP2.controller.OnlyBuildables;
+                        MP2._setting_drag_select = !MP2._setting_drag_select;
                         MP2.ResetCountdown();
                     }
                 }
-            }*/
+            }
 
             //////
-            /*
-            Texture tex = MP2.get_sprite("checkbox_uncheck").texture;
-            if (MP2.controller.TargetSupports)
+
+            //top_offset += 55;
+
+            tex = MP2.get_sprite("checkbox_uncheck").texture;
+            if (MP2._setting_target_supports)
                 tex = MP2.get_sprite("checkbox_check").texture;
 
-            float check_size = 26 * scale;
+            check_size = 26 * scale;
 
-            Rect check_rect = new Rect(
-                (transform.parent.parent.position.x) + left_offset,
-                screen_height - (transform.parent.parent.position.y) + top_offset + cell_height_space + cell_height + check_size + cell_height_space,
-                check_size,
-                check_size);
+            check_rect = new Rect(
+               (transform.parent.parent.position.x) + left_offset,
+               screen_height - (transform.parent.parent.position.y) + top_offset + cell_height_space + cell_height + check_size + cell_height_space,
+               check_size,
+               check_size);
 
             GUI.DrawTexture(check_rect, tex, ScaleMode.ScaleToFit);
 
-            Rect check_rect_text = new Rect((transform.parent.parent.position.x) + left_offset + check_size + cell_width_space,
-                screen_height - (transform.parent.parent.position.y) + top_offset + cell_height_space + cell_height + 4 * scale + check_size + cell_height_space,
-                200 * scale,
-                30 * scale);
+            check_rect_text = new Rect((transform.parent.parent.position.x) + left_offset + check_size + cell_width_space,
+               screen_height - (transform.parent.parent.position.y) + top_offset + cell_height_space + cell_height + 4 * scale + check_size + cell_height_space,
+               200 * scale,
+               30 * scale);
 
-            GUIStyle guiStyle = new GUIStyle(GUI.skin.label);
+            guiStyle = new GUIStyle(GUI.skin.label);
             guiStyle.fontSize = ((int)(16 * scale));
 
             GUI.color = Color.black;
@@ -162,16 +164,15 @@ namespace MaterialPainter2
                 {
                     if (PointInRectangle(new Vector2(Input.mousePosition.x, screen_height - Input.mousePosition.y), check_rect))
                     {
-                        MP2.controller.TargetSupports = !MP2.controller.TargetSupports;
+                        MP2._setting_target_supports = !MP2._setting_target_supports;
                         MP2.ResetCountdown();
-
-                        if (MP2.controller.TargetSupports) { MP2.controller.IncludeDescendants = true; }
                     }
                 }
             }
+            return;
 
             //////
-
+            /*
             tex = MP2.get_sprite("checkbox_uncheck").texture;
             if (MP2.controller.IncludeDescendants)
                 tex = MP2.get_sprite("checkbox_check").texture;
