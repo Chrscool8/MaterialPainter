@@ -8,7 +8,7 @@ namespace MaterialPainter2
     public class MP2WindowButton : UIMenuButton, IPointerClickHandler
     {
         public static MP2WindowButton Instance { get; private set; }
-        public MP2Window window { get; private set; }
+        public static MP2Window Window { get; private set; }
 
         private Toggle toggle;
 
@@ -18,7 +18,6 @@ namespace MaterialPainter2
 
             Instance = this;
 
-            //Graphical adjustments
             var tooltip = gameObject.GetComponent<UITooltip>();
             tooltip.text = gameObject.name;
 
@@ -34,12 +33,12 @@ namespace MaterialPainter2
 
         public void SetButtonEnabled(bool state)
         {
-            DebugConsole.print("SetButtonEnabled = " + state);
+            MP2.MPDebug("SetButtonEnabled = " + state);
         }
 
         public void SetWindowOpened(bool state)
         {
-            DebugConsole.print("SetWindowOpened = " + state);
+            MP2.MPDebug("SetWindowOpened = " + state);
             toggle.isOn = state;
         }
 
@@ -53,7 +52,7 @@ namespace MaterialPainter2
                 MP2.MPDebug("uiWindowFrameGO is null, what?");
 
             this.windowInstance = UIWindowsController.Instance.spawnWindow(prefab, null);
-            this.windowInstance.OnClose += this.onWindowClose;
+            this.windowInstance.OnClose += this.OnWindowClose;
         }
 
         protected override void onDeselected()
@@ -74,7 +73,7 @@ namespace MaterialPainter2
             var rect = WindowPrefab.AddComponent<RectTransform>();
             rect.sizeDelta = new Vector2(195, 88 + 40);
             WindowPrefab.AddComponent<CanvasRenderer>();
-            window = WindowPrefab.AddComponent<MP2Window>();
+            Window = WindowPrefab.AddComponent<MP2Window>();
 
             var windowSettings = WindowPrefab.AddComponent<UIWindowSettings>();
             windowSettings.closable = true;
@@ -88,21 +87,17 @@ namespace MaterialPainter2
 
             MP2.controller.ActivatePipe();
 
-            return window;
+            return Window;
         }
 
-        private void onWindowClose(UIWindowFrame window)
+        private void OnWindowClose(UIWindowFrame window)
         {
-            base.setSelected(false);
+            setSelected(false);
             MP2.controller.DeactivatePipe();
         }
 
         public void OnPointerClick(PointerEventData eventData)
         {
-            if (eventData.button == PointerEventData.InputButton.Right)
-            {
-                //MaterialPainter.ToggleRAActive();
-            }
         }
 
         private UIWindowFrame windowInstance;

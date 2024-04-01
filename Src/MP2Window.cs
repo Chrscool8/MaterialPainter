@@ -1,6 +1,4 @@
-﻿using Moona;
-using Parkitect.UI;
-using Unity.Mathematics;
+﻿using Parkitect.UI;
 using UnityEngine;
 
 namespace MaterialPainter2
@@ -9,6 +7,7 @@ namespace MaterialPainter2
     {
         public static MP2Window Instance { get; private set; }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Fugeddabouddit.")]
         private void OnGUI()
         {
             if (OptionsMenu.instance != null)
@@ -31,8 +30,10 @@ namespace MaterialPainter2
 
             Rect tooltip = new Rect();
             string tt_string = "";
-            GUIStyle tooltip_guiStyle = new GUIStyle(GUI.skin.label);
-            tooltip_guiStyle.fontSize = ((int)(16 * scale));
+            GUIStyle tooltip_guiStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = (int)(16 * scale)
+            };
 
             for (var i = 0; i < MP2.material_brushes.Count; i++)
             {
@@ -44,8 +45,8 @@ namespace MaterialPainter2
                     continue;
                 }
 
-                int xx = (int)Mathf.RoundToInt(left_offset + (transform.parent.parent.position.x) + (cell_width + cell_width_space + 1) * (i % cells_per_row));
-                int yy = (int)Mathf.RoundToInt(-top_offset + transform.parent.parent.position.y - ((i / cells_per_row) * cell_height * 1.25f));
+                int xx = Mathf.RoundToInt(left_offset + (transform.parent.parent.position.x) + (cell_width + cell_width_space + 1) * (i % cells_per_row));
+                int yy = Mathf.RoundToInt(-top_offset + transform.parent.parent.position.y - ((i / cells_per_row) * cell_height * 1.25f));
 
                 GUI.DrawTexture(new Rect(xx, screen_height - yy, cell_width, cell_height), entry.preview.texture, ScaleMode.ScaleToFit);
 
@@ -109,22 +110,21 @@ namespace MaterialPainter2
                 200 * scale,
                 30 * scale);
 
-            GUIStyle guiStyle = new GUIStyle(GUI.skin.label);
-            guiStyle.fontSize = ((int)(16 * scale));
+            GUIStyle guiStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = (int)(16 * scale)
+            };
 
             GUI.color = Color.black;
             GUI.Label(check_rect_text, "Drag Select", guiStyle);
             GUI.color = Color.white;
 
-            if (MP2.IsCoolDownReady())
+            if (MP2.IsCoolDownReady() && Input.GetMouseButtonUp(0))
             {
-                if (Input.GetMouseButtonUp(0))
+                if (PointInRectangle(new Vector2(Input.mousePosition.x, screen_height - Input.mousePosition.y), check_rect))
                 {
-                    if (PointInRectangle(new Vector2(Input.mousePosition.x, screen_height - Input.mousePosition.y), check_rect))
-                    {
-                        MP2._setting_drag_select = !MP2._setting_drag_select;
-                        MP2.ResetCountdown();
-                    }
+                    MP2._setting_drag_select = !MP2._setting_drag_select;
+                    MP2.ResetCountdown();
                 }
             }
 
@@ -151,24 +151,24 @@ namespace MaterialPainter2
                200 * scale,
                30 * scale);
 
-            guiStyle = new GUIStyle(GUI.skin.label);
-            guiStyle.fontSize = ((int)(16 * scale));
+            guiStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = ((int)(16 * scale))
+            };
 
             GUI.color = Color.black;
             GUI.Label(check_rect_text, "Target Only Supports", guiStyle);
             GUI.color = Color.white;
 
-            if (MP2.IsCoolDownReady())
+            if (MP2.IsCoolDownReady() && Input.GetMouseButtonUp(0))
             {
-                if (Input.GetMouseButtonUp(0))
+                if (PointInRectangle(new Vector2(Input.mousePosition.x, screen_height - Input.mousePosition.y), check_rect))
                 {
-                    if (PointInRectangle(new Vector2(Input.mousePosition.x, screen_height - Input.mousePosition.y), check_rect))
-                    {
-                        MP2._setting_target_supports = !MP2._setting_target_supports;
-                        MP2.ResetCountdown();
-                    }
+                    MP2._setting_target_supports = !MP2._setting_target_supports;
+                    MP2.ResetCountdown();
                 }
             }
+
             return;
 
             //////
@@ -227,7 +227,7 @@ namespace MaterialPainter2
                     ChangedMarker cm = obj.GetComponent<ChangedMarker>();
                     if (cm != null)
                     {
-                        if (cm.get_current_brush() == (int)MaterialBrush.Invisible)
+                        if (cm.GetCurrentBrush() == (int)MaterialBrush.Invisible)
                             MP2.controller.SetMaterial(obj.transform, (int)MaterialBrush.InvisiblePreview);
                     }
                 }
@@ -249,7 +249,7 @@ namespace MaterialPainter2
                     ChangedMarker cm = obj.GetComponent<ChangedMarker>();
                     if (cm != null)
                     {
-                        if (cm.get_current_brush() == (int)MaterialBrush.InvisiblePreview)
+                        if (cm.GetCurrentBrush() == (int)MaterialBrush.InvisiblePreview)
                             MP2.controller.SetMaterial(obj.transform, (int)MaterialBrush.Invisible);
                     }
                 }
