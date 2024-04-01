@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
+using UnityEngine.Recorder;
 using UnityEngine.Video;
 
 namespace MaterialPainter2
@@ -55,16 +56,11 @@ namespace MaterialPainter2
     public class MP2Controller : MonoBehaviour
     {
         private IMouseTool brush_tool;
-        public bool IncludeDescendants;
-        public bool OnlyBuildables;
-        public bool TargetSupports;
 
         public MP2Controller()
         {
             MP2.selected_brush = (int)MaterialBrush.None;
             brush_tool = new MP2BrushTool();
-            IncludeDescendants = false;
-            OnlyBuildables = true;
         }
 
         public void ActivatePipe()
@@ -89,7 +85,7 @@ namespace MaterialPainter2
 
         private void Update()
         {
-            if (Input.GetMouseButtonDown(0) && MP2.IsCoolDownReady())
+            if ((!MP2._setting_drag_select && Input.GetMouseButtonDown(0) && MP2.IsCoolDownReady()) || (MP2._setting_drag_select && Input.GetMouseButton(0)))
             {
                 if (!GameController.Instance.isActiveMouseTool(brush_tool))
                 {
@@ -124,7 +120,7 @@ namespace MaterialPainter2
                 Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
                 List<BoundingVolume> bvs = Traverse.Create(Collisions.Instance).Field("dynamicBoundingVolumes").GetValue() as List<BoundingVolume>;
-                MP2.MPDebug($">> {bvs.Count}");
+                //MP2.MPDebug($">> {bvs.Count}");
 
                 List<BoundingVolume>.Enumerator enumerator = bvs.GetEnumerator();
                 while (enumerator.MoveNext())
@@ -293,14 +289,22 @@ namespace MaterialPainter2
 
             MP2.MPDebug($"Painting {tf.gameObject.name} with Brush {selected_brush} ({brush_type})");
 
-            //if (selected_brush == (int)MaterialBrush.None)
-            //{
+            ChangedMarker cm1 = tf.GetComponent<ChangedMarker>();
+            if (cm1 != null)
+            {
+                int current_brush = cm1.get_current_brush();
+                if (current_brush == selected_brush)
+                {
+                    MP2.MPDebug("Same Brush");
+                    return;
+                }
+            }
+
             if (tf.gameObject.GetComponent<ChangedMarker>() != null)
             {
                 RevertMaterial(tf.gameObject);
             }
-            //}
-            //else
+
             if (selected_brush != (int)MaterialBrush.None)
             {
                 if (tf.GetComponent<ChangedMarker>() == null)
@@ -611,10 +615,13 @@ namespace MaterialPainter2
         {
             MP2.ResetCountdown();
 
-            //MP2.MPDebug($"- Painting {child.name} ({child.gameObject.GetComponent<MonoBehaviour>().GetType().GetTypeInfo().ToString()}) with Brush " + selected_brush + "; " + child.GetInstanceID());
-            //MP2.MPDebug("-- Buildable: " + isBuildable.ToString());
-
-            this.SetMaterial(game_object.transform);
+            if (game_object != null)
+            {
+                if (!MP2._setting_target_supports || (MP2._setting_target_supports && game_object.name.ToLower().Contains("support")))
+                {
+                    this.SetMaterial(game_object.transform);
+                }
+            }
         }
     }
 }
