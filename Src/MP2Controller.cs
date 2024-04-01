@@ -1,6 +1,4 @@
 ﻿using HarmonyLib;
-using Ionic.Zip;
-using Moona;
 using Parkitect.Mods.AssetPacks;
 
 using System;
@@ -9,7 +7,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
-using UnityEngine.Recorder;
 using UnityEngine.Video;
 
 namespace MaterialPainter2
@@ -22,40 +19,40 @@ namespace MaterialPainter2
         private bool _was_enabled = true;
         private int current_brush = -1;
 
-        public Material[] get_materials()
+        public Material[] GetMaterials()
         { return materials; }
 
-        public void set_materials(Material[] materials)
+        public void SetMaterials(Material[] materials)
         { this.materials = materials; }
 
-        public MaterialPropertyBlock get_material_property_block()
+        public MaterialPropertyBlock GetMaterialPropertyBlock()
         { return material_property_block; }
 
-        public void set_material_property_block(MaterialPropertyBlock material_property_block)
+        public void SetMaterialPropertyBlock(MaterialPropertyBlock material_property_block)
         { this.material_property_block = material_property_block; }
 
-        public bool was_enabled()
+        public bool WasEnabled()
         { return _was_enabled; }
 
-        public void set_enabled(bool _was_enabled)
+        public void SetEnabled(bool _was_enabled)
         { this._was_enabled = _was_enabled; }
 
-        public void set_current_brush(int brush)
+        public void SetCurrentBrush(int brush)
         { current_brush = brush; }
 
-        public int get_current_brush()
+        public int GetCurrentBrush()
         { return current_brush; }
 
-        public void set_video_player(VideoPlayer video_player)
+        public void SetVideoPlayer(VideoPlayer video_player)
         { this.video_player = video_player; }
 
-        public VideoPlayer get_video_player()
+        public VideoPlayer GetVideoPlayer()
         { return video_player; }
     }
 
     public class MP2Controller : MonoBehaviour
     {
-        private IMouseTool brush_tool;
+        private static IMouseTool brush_tool = null;
 
         public MP2Controller()
         {
@@ -83,6 +80,7 @@ namespace MaterialPainter2
             }
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Don't worry 'bout it.")]
         private void Update()
         {
             if ((!MP2._setting_drag_select && Input.GetMouseButtonDown(0) && MP2.IsCoolDownReady()) || (MP2._setting_drag_select && Input.GetMouseButton(0)))
@@ -180,7 +178,7 @@ namespace MaterialPainter2
                 Debug.Log($"Variable: {field.Name}, Value: {value}");
             }
 
-            foreach (System.Reflection.MemberInfo m in componentType.GetMembers())
+            foreach (MemberInfo m in componentType.GetMembers())
                 Debug.Log(m.Name);
         }
 
@@ -188,9 +186,9 @@ namespace MaterialPainter2
         {
             MP2.MPDebug("BACKUP!");
 
-            ChunkedMesh chunkedMeshes = game_object.GetComponent<ChunkedMesh>();
-            if (chunkedMeshes != null)
-                chunkedMeshes.enabled = false;
+            ChunkedMesh chunked_meshes = game_object.GetComponent<ChunkedMesh>();
+            if (chunked_meshes != null)
+                chunked_meshes.enabled = false;
 
             Renderer renderer = game_object.GetComponent<Renderer>();
             VideoPlayer video_player = game_object.GetComponent<VideoPlayer>();
@@ -201,18 +199,18 @@ namespace MaterialPainter2
 
                 if (renderer != null)
                 {
-                    changed_marker.set_materials(renderer.materials);
+                    changed_marker.SetMaterials(renderer.materials);
                     MaterialPropertyBlock old_block = new MaterialPropertyBlock();
                     renderer.GetPropertyBlock(old_block);
-                    changed_marker.set_material_property_block(old_block);
-                    changed_marker.set_enabled(renderer.enabled);
+                    changed_marker.SetMaterialPropertyBlock(old_block);
+                    changed_marker.SetEnabled(renderer.enabled);
                 }
                 else
                     MP2.MPDebug("No Renderer For: " + game_object.name);
 
                 if (video_player != null)
                 {
-                    changed_marker.set_video_player(video_player);
+                    changed_marker.SetVideoPlayer(video_player);
                 }
             }
         }
@@ -230,11 +228,11 @@ namespace MaterialPainter2
 
             Renderer renderer = game_object.GetComponent<Renderer>();
 
-            renderer.materials = changed_marker.get_materials();
-            renderer.SetPropertyBlock(changed_marker.get_material_property_block());
-            renderer.enabled = (changed_marker.was_enabled());
+            renderer.materials = changed_marker.GetMaterials();
+            renderer.SetPropertyBlock(changed_marker.GetMaterialPropertyBlock());
+            renderer.enabled = (changed_marker.WasEnabled());
 
-            VideoPlayer video_player = changed_marker.get_video_player();
+            VideoPlayer video_player = changed_marker.GetVideoPlayer();
             if (video_player != null)
             {
                 //game_object.AddComponent<VideoPlayer>(video_player);
@@ -292,7 +290,7 @@ namespace MaterialPainter2
             ChangedMarker cm1 = tf.GetComponent<ChangedMarker>();
             if (cm1 != null)
             {
-                int current_brush = cm1.get_current_brush();
+                int current_brush = cm1.GetCurrentBrush();
                 if (current_brush == selected_brush)
                 {
                     MP2.MPDebug("Same Brush");
@@ -320,7 +318,7 @@ namespace MaterialPainter2
                     return;
                 }
 
-                cm.set_current_brush(selected_brush);
+                cm.SetCurrentBrush(selected_brush);
 
                 // Set Material
 

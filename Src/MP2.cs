@@ -1,13 +1,10 @@
 ﻿using HarmonyLib;
-using MaterialPainter2;
-using ModIO;
 using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.Video;
 using static GameController;
@@ -46,7 +43,7 @@ namespace MaterialPainter2
 
     public class MP2 : AbstractMod, IModSettings
     {
-        public const string VERSION_NUMBER = "240326";
+        public const string VERSION_NUMBER = "240331";
 
         public override string getIdentifier() => "MaterialPainter";
 
@@ -144,7 +141,7 @@ namespace MaterialPainter2
             for (int i = 1; i <= 3; i++)
             {
                 var default_video = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + $"/Res/Videos/video-default-{i}.mp4";
-                var custom_video = MP2._local_mods_directory + $"MaterialPainter2/Custom/video-{i}.mp4";
+                var custom_video = _local_mods_directory + $"MaterialPainter2/Custom/video-{i}.mp4";
 
                 if (!File.Exists(custom_video) && File.Exists(default_video))
                 {
@@ -305,7 +302,7 @@ namespace MaterialPainter2
             MPDebug($"Number of GOs: {allObjects.Length}");
             MPDebug($"Numbers of Serials: {GameController.Instance.getSerializedObjects().Count}");
 
-            string file_path = MP2.current_file_path + ".mat";
+            string file_path = current_file_path + ".mat";
 
             MPDebug(file_path);
             Dictionary<string, int> myDictionary = new Dictionary<string, int>();
@@ -324,10 +321,10 @@ namespace MaterialPainter2
                 if (myDictionary.ContainsKey(key))
                 {
                     int previous_brush = myDictionary[key];
-                    MP2.controller.SetMaterial(obj.transform, previous_brush);
+                    controller.SetMaterial(obj.transform, previous_brush);
                 }
             }
-            MP2.selected_brush = 0;
+            selected_brush = 0;
         }
     }
 
@@ -370,7 +367,7 @@ namespace MaterialPainter2
             foreach (GameObject obj in objectsWithChangedMarker)
             {
                 string key = obj.name + ":" + obj.transform.position.ToString();
-                int value = obj.GetComponent<ChangedMarker>().get_current_brush();
+                int value = obj.GetComponent<ChangedMarker>().GetCurrentBrush();
                 if (value == (int)MaterialBrush.InvisiblePreview)
                 {
                     value = (int)MaterialBrush.Invisible;
@@ -421,7 +418,7 @@ namespace MaterialPainter2
             }
         }
 
-        public static void DelayAction(float delay, System.Action action)
+        public static void DelayAction(float delay, Action action)
         {
             Instance.StartCoroutine(DelayCoroutine(delay, action));
         }
