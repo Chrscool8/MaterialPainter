@@ -1,14 +1,15 @@
 ﻿using HarmonyLib;
+using MiniJSON;
 using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.Video;
 using static GameController;
-using static MaterialPainter2.TackSavePatch;
 
 namespace MaterialPainter2
 {
@@ -43,13 +44,13 @@ namespace MaterialPainter2
 
     public class MP2 : AbstractMod, IModSettings
     {
-        public const string VERSION_NUMBER = "240331";
+        public const string VERSION_NUMBER = "240401";
 
         public override string getIdentifier() => "MaterialPainter";
 
         public override string getName() => "Material Painter";
 
-        public override string getDescription() => @"The long awaited mod is sort-of here! Transform the materials of most objects into water, lava, and glass, or make them invisible. The game wasn't designed for this. Things WILL break (visually). Have fun!";
+        public override string getDescription() => @"The long awaited mod is here! Transform the materials of most objects into water, lava, and glass, make them invisible, or more! Heavily a work in progress. Have fun!";
 
         public override string getVersionNumber() => VERSION_NUMBER;
 
@@ -102,7 +103,7 @@ namespace MaterialPainter2
                 Debug.LogWarning("Material Painter: " + debug_string);
 
                 if (_local_mods_directory != "")
-                    File.AppendAllText(_local_mods_directory + "/MaterialPainterLog.txt", "Material Painter: " + debug_string + "\n");
+                    System.IO.File.AppendAllText(_local_mods_directory + "/MaterialPainterLog.txt", "Material Painter: " + debug_string + "\n");
             }
         }
 
@@ -242,6 +243,7 @@ namespace MaterialPainter2
             MPDebug("Loaded assetbundle!");
 
             EventManager.Instance.OnStartPlayingPark += new EventManager.OnStartPlayingParkHandler(PrepReassignMaterialsAfterLoadingSave);
+            //EventManager.Instance.OnGameSaved += new EventManager.OnGameSavedHandler(PostSaveHooked);
         }
 
         private string NormalizePath(string path)
@@ -266,7 +268,7 @@ namespace MaterialPainter2
             }
 
             EventManager.Instance.OnStartPlayingPark -= new EventManager.OnStartPlayingParkHandler(PrepReassignMaterialsAfterLoadingSave);
-            // EventManager.Instance.OnGameSaved might be a good alternative for the other patch.
+            //EventManager.Instance.OnGameSaved -= new EventManager.OnGameSavedHandler(PostSaveHooked);
         }
 
         public void RegisterHotkeys()
@@ -288,6 +290,11 @@ namespace MaterialPainter2
         {
         }
 
+        public void PostSaveHooked()
+        {
+            MP2.MPDebug($"Post Save! {GameController.filename}");
+        }
+
         public void PrepReassignMaterialsAfterLoadingSave()
         {
             CoroutineManager.DelayAction(3f, () =>
@@ -296,39 +303,187 @@ namespace MaterialPainter2
             });
         }
 
+        private List<string> LoadGZippedTextFile(string filePath)
+        {
+            List<string> lines = new List<string>();
+
+            using (FileStream fs = File.OpenRead(filePath))
+            using (GZipStream gzStream = new GZipStream(fs, CompressionMode.Decompress))
+            using (StreamReader reader = new StreamReader(gzStream))
+            {
+                // Read lines from the decompressed stream and add them to the list
+                string line;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    lines.Add(line);
+                }
+            }
+
+            return lines;
+        }
+
+        [System.Serializable]
+        public class UserData
+        {
+            public string name;
+            public string value;
+        }
+
         public void ReassignMaterialsAfterLoadingSave()
         {
             GameObject[] allObjects = UnityEngine.Object.FindObjectsOfType<GameObject>();
             MPDebug($"Number of GOs: {allObjects.Length}");
             MPDebug($"Numbers of Serials: {GameController.Instance.getSerializedObjects().Count}");
 
-            string file_path = current_file_path + ".mat";
+            if (current_file_path == null || current_file_path == "")
+            {
+                MP2.MPDebug("Bad current_file_path");
+                return;
+            }
 
-            MPDebug(file_path);
-            Dictionary<string, int> myDictionary = new Dictionary<string, int>();
-            if (file_path != "" && File.Exists(file_path))
+            if (File.Exists(current_file_path + ".mat"))
             {
-                string json = File.ReadAllText(file_path);
-                StringIntDictionary serializedDictionary = JsonConvert.DeserializeObject<StringIntDictionary>(json);
-                foreach (var pair in serializedDictionary.pairs)
+                MP2.MPDebug("Legacy Load");
+
+                string file_path = current_file_path + ".mat";
+
+                MPDebug(file_path);
+                Dictionary<string, int> myDictionary = new Dictionary<string, int>();
+                if (file_path != "" && File.Exists(file_path))
                 {
-                    myDictionary[pair.key] = pair.value;
+                    string json = File.ReadAllText(file_path);
+                    StringIntDictionary serializedDictionary = JsonConvert.DeserializeObject<StringIntDictionary>(json);
+                    foreach (var pair in serializedDictionary.pairs)
+                    {
+                        myDictionary[pair.key] = pair.value;
+                    }
+                }
+                foreach (var obj in allObjects)
+                {
+                    string key = obj.name + ":" + obj.transform.position.ToString();
+                    if (myDictionary.ContainsKey(key))
+                    {
+                        int previous_brush = myDictionary[key];
+                        controller.SetMaterial(obj.transform, (int)MaterialBrush.None);
+                        controller.SetMaterial(obj.transform, previous_brush);
+                    }
+                }
+                selected_brush = 0;
+            }
+            else
+            {
+                MPDebug("Modern Load");
+
+                string file_path = current_file_path;
+                MPDebug(file_path);
+
+                bool compressed = !System.IO.Path.GetExtension(current_file_path).Equals(".txt");
+
+                if (!compressed)
+                {
+                    MPDebug("Uncompressed is not yet supported.");
+                    return;
+                }
+
+                List<string> file_lines = LoadGZippedTextFile(file_path);
+                foreach (string line in file_lines)
+                {
+                    Dictionary<string, object> dictionary = (Dictionary<string, object>)Json.Deserialize(line);
+                    Dictionary<string, int> myDictionary = new Dictionary<string, int>();
+
+                    if (dictionary != null && dictionary.ContainsKey("MaterialPainter2"))
+                    {
+                        string inner_json = (string)dictionary["MaterialPainter2"];
+
+                        StringIntDictionary serializedDictionary = JsonConvert.DeserializeObject<StringIntDictionary>(inner_json);
+                        foreach (var pair in serializedDictionary.pairs)
+                        {
+                            myDictionary[pair.key] = pair.value;
+                        }
+
+                        foreach (var obj in allObjects)
+                        {
+                            string key = obj.name + ":" + obj.transform.position.ToString();
+                            if (myDictionary.ContainsKey(key))
+                            {
+                                int previous_brush = myDictionary[key];
+                                controller.SetMaterial(obj.transform, previous_brush);
+                            }
+                        }
+                        selected_brush = 0;
+                    }
                 }
             }
-            foreach (var obj in allObjects)
-            {
-                string key = obj.name + ":" + obj.transform.position.ToString();
-                if (myDictionary.ContainsKey(key))
-                {
-                    int previous_brush = myDictionary[key];
-                    controller.SetMaterial(obj.transform, previous_brush);
-                }
-            }
-            selected_brush = 0;
         }
     }
 
+    [System.Serializable]
+    public struct StringIntPair
+    {
+        public string key;
+        public int value;
+    }
+
+    [System.Serializable]
+    public class StringIntDictionary
+    {
+        public List<StringIntPair> pairs = new List<StringIntPair>();
+    }
+
     [HarmonyPatch]
+    public class SaveInjectorPatch
+    {
+        private static MethodBase TargetMethod() => AccessTools.Method(typeof(GameController), "storeSavegameData", parameters: new Type[]
+        {
+         typeof( List<Dictionary<string, object>>) ,typeof( string ),typeof( bool ), typeof(bool )
+       });
+
+        [HarmonyPrefix]
+        public static bool storeSavegameData(List<Dictionary<string, object>> data, string filePath, bool compress, bool isTemporaryFile)
+        {
+            MP2.MPDebug("Injection Point");
+            MP2.MPDebug($"{filePath}");
+
+            GameObject[] allObjects = UnityEngine.Object.FindObjectsOfType<GameObject>();
+            List<GameObject> objectsWithChangedMarker = new List<GameObject>();
+            foreach (GameObject obj in allObjects)
+            {
+                if (obj.GetComponent<ChangedMarker>() != null)
+                    objectsWithChangedMarker.Add(obj);
+            }
+
+            Dictionary<string, int> myDictionary = new Dictionary<string, int>();
+
+            foreach (GameObject obj in objectsWithChangedMarker)
+            {
+                MP2.MPDebug($"{obj.GetInstanceID()}");
+                string key = obj.name + ":" + obj.transform.position.ToString();
+                int value = obj.GetComponent<ChangedMarker>().GetCurrentBrush();
+                if (value == (int)MaterialBrush.InvisiblePreview)
+                {
+                    value = (int)MaterialBrush.Invisible;
+                }
+                myDictionary[key] = value;
+            }
+
+            StringIntDictionary serializableDictionary = new StringIntDictionary();
+            foreach (var kvp in myDictionary)
+            {
+                serializableDictionary.pairs.Add(new StringIntPair { key = kvp.Key, value = kvp.Value });
+            }
+
+            string json = JsonConvert.SerializeObject(serializableDictionary);
+
+            Dictionary<string, object> dictionary = new Dictionary<string, object>();
+            dictionary.Add("MaterialPainter2", json);
+
+            data.Add(dictionary);
+
+            return true;
+        }
+    }
+
+    /*[HarmonyPatch]
     public class TackSavePatch
     {
         private static MethodBase TargetMethod() => AccessTools.Method(typeof(GameController), "saveGame", parameters: new Type[]
@@ -373,20 +528,20 @@ namespace MaterialPainter2
                     value = (int)MaterialBrush.Invisible;
                 }
                 myDictionary[key] = value;
-            }
+}
 
-            StringIntDictionary serializableDictionary = new StringIntDictionary();
-            foreach (var kvp in myDictionary)
-            {
-                serializableDictionary.pairs.Add(new StringIntPair { key = kvp.Key, value = kvp.Value });
-            }
+                StringIntDictionary serializableDictionary = new StringIntDictionary();
+                foreach (var kvp in myDictionary)
+                {
+                    serializableDictionary.pairs.Add(new StringIntPair { key = kvp.Key, value = kvp.Value });
+                }
 
-            string json = JsonConvert.SerializeObject(serializableDictionary);
-            File.WriteAllText(filePath + ".mat", json);
+                string json = JsonConvert.SerializeObject(serializableDictionary);
+                File.WriteAllText(filePath + ".mat", json);
 
-            return true;
+                return true;
         }
-    }
+    }*/
 
     [HarmonyPatch]
     public class LoadGetFileNamePatch
