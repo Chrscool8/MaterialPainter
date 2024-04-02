@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 using MiniJSON;
 using Newtonsoft.Json;
+using Parkitect.UI;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -8,6 +9,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Reflection;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.Video;
 using static GameController;
 
@@ -44,7 +46,7 @@ namespace MaterialPainter2
 
     public class MP2 : AbstractMod, IModSettings
     {
-        public const string VERSION_NUMBER = "240401";
+        public const string VERSION_NUMBER = "240402";
 
         public override string getIdentifier() => "MaterialPainter";
 
@@ -435,8 +437,8 @@ namespace MaterialPainter2
     {
         private static MethodBase TargetMethod() => AccessTools.Method(typeof(GameController), "storeSavegameData", parameters: new Type[]
         {
-         typeof( List<Dictionary<string, object>>) ,typeof( string ),typeof( bool ), typeof(bool )
-       });
+            typeof(List<Dictionary<string, object>>), typeof(string), typeof(bool), typeof(bool)
+        });
 
         [HarmonyPrefix]
         public static bool storeSavegameData(List<Dictionary<string, object>> data, string filePath, bool compress, bool isTemporaryFile)
@@ -474,8 +476,10 @@ namespace MaterialPainter2
 
             string json = JsonConvert.SerializeObject(serializableDictionary);
 
-            Dictionary<string, object> dictionary = new Dictionary<string, object>();
-            dictionary.Add("MaterialPainter2", json);
+            Dictionary<string, object> dictionary = new Dictionary<string, object>
+            {
+                { "MaterialPainter2", json }
+            };
 
             data.Add(dictionary);
 
@@ -578,7 +582,7 @@ namespace MaterialPainter2
             Instance.StartCoroutine(DelayCoroutine(delay, action));
         }
 
-        private static IEnumerator DelayCoroutine(float delay, System.Action action)
+        private static IEnumerator DelayCoroutine(float delay, Action action)
         {
             yield return new WaitForSeconds(delay);
             action?.Invoke();
