@@ -1,5 +1,11 @@
 ﻿using Parkitect.UI;
+using System.Collections.Generic;
 using UnityEngine;
+using static UTJ.FrameCapturer.DataPath;
+using UnityEngine.UIElements;
+using UnityEngine.UI;
+using Button = UnityEngine.UI.Button;
+using System;
 
 namespace MaterialPainter2
 {
@@ -25,8 +31,8 @@ namespace MaterialPainter2
             float left_offset = 15;
             float top_offset = 40 * scale;
 
-            var screen_width = Screen.currentResolution.width;
-            var screen_height = Screen.currentResolution.height;
+            var screen_width = Screen.width;
+            var screen_height = Screen.height;
 
             Rect tooltip = new Rect();
             string tt_string = "";
@@ -47,6 +53,13 @@ namespace MaterialPainter2
 
                 int xx = Mathf.RoundToInt(left_offset + (transform.parent.parent.position.x) + (cell_width + cell_width_space + 1) * (i % cells_per_row));
                 int yy = Mathf.RoundToInt(-top_offset + transform.parent.parent.position.y - ((i / cells_per_row) * cell_height * 1.25f));
+
+                float num = Screen.dpi;
+                if (Mathf.Approximately(num, 0f))
+                {
+                    num = 72f;
+                }
+                MP2.MPDebug($"{Screen.dpi}, {DPIHelper.scaleDPI(num / 72f)}");
 
                 GUI.DrawTexture(new Rect(xx, screen_height - yy, cell_width, cell_height), entry.preview.texture, ScaleMode.ScaleToFit);
 
@@ -212,6 +225,10 @@ namespace MaterialPainter2
             }*/
         }
 
+        private void OnGUI_()
+        {
+        }
+
         protected override void OnEnable()
         {
             base.OnEnable();
@@ -232,6 +249,36 @@ namespace MaterialPainter2
                     }
                 }
             }
+
+            /*Canvas canvas = gameObject.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            CanvasScaler cs = gameObject.AddComponent<CanvasScaler>();
+            cs.scaleFactor = 1f;
+            canvas.GetComponent<RectTransform>().sizeDelta = new Vector2(400, 300);*/
+
+            UI_Button button = gameObject.AddComponent<UI_Button>();
+
+            /*GameObject textGO = new GameObject("Text");
+            textGO.transform.SetParent(gameObject.transform);
+            Text textComponent = textGO.AddComponent<Text>();
+            textComponent.text = "Hello, World!";
+            textComponent.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            textComponent.fontSize = 24;
+            RectTransform textRect = textGO.GetComponent<RectTransform>();
+            textRect.anchorMin = new Vector2(0.5f, 0.5f);
+            textRect.anchorMax = new Vector2(0.5f, 0.5f);
+            textRect.pivot = new Vector2(0.5f, 0.5f);
+            textRect.anchoredPosition = Vector2.zero;
+
+            GameObject button = new GameObject("Button");
+            button.transform.SetParent(gameObject.transform);
+            Button buttcomp = button.AddComponent<Button>();
+            RectTransform butt_rect = button.GetComponent<RectTransform>();
+            butt_rect.sizeDelta = new Vector2(100, 100);
+            butt_rect.anchorMin = new Vector2(0.5f, 0.5f);
+            butt_rect.anchorMax = new Vector2(0.5f, 0.5f);
+            butt_rect.pivot = new Vector2(0.5f, 0.5f);
+            butt_rect.anchoredPosition = Vector2.zero;*/
         }
 
         protected override void OnDisable()

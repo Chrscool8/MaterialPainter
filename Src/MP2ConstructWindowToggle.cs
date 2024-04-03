@@ -8,7 +8,6 @@ namespace MaterialPainter2
 {
     public class ConstructWindowToggle : MonoBehaviour
     {
-        private GameObject menuCanvasRoot;
         private GameObject mp2_button;
 
         public ConstructWindowToggle()
