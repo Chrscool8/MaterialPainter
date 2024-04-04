@@ -71,7 +71,7 @@ namespace MaterialPainter2
             WindowPrefab.SetActive(false);
 
             var rect = WindowPrefab.AddComponent<RectTransform>();
-            rect.sizeDelta = new Vector2(195, 88 + 40);
+            rect.sizeDelta = new Vector2(400, 300);
 
             //WindowPrefab.AddComponent<CanvasRenderer>();
             Window = WindowPrefab.AddComponent<MP2Window>();
