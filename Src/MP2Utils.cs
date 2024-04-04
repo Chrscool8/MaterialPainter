@@ -33,5 +33,11 @@ namespace MaterialPainter2
                 PrintHierarchy(child.gameObject, depth + 1, listComponents);
             }
         }
+
+        public static bool PointInRectangle(Vector2 point, Rect rectangle)
+        {
+            return point.x >= rectangle.x && point.x <= rectangle.x + rectangle.width &&
+                   point.y >= rectangle.y && point.y <= rectangle.y + rectangle.height;
+        }
     }
 }

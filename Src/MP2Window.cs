@@ -6,6 +6,7 @@ using UnityEngine.UIElements;
 using UnityEngine.UI;
 using Button = UnityEngine.UI.Button;
 using System;
+using System.Linq;
 
 namespace MaterialPainter2
 {
@@ -13,13 +14,42 @@ namespace MaterialPainter2
     {
         public static MP2Window Instance { get; private set; }
 
+        public static List<UI_Button> buttons_elements;
+        public static List<UI_Button> buttons_videos;
+        public static List<UI_Button> buttons_images;
+
+        private UI_Grid_Buttons grid_elements;
+
         [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Fugeddabouddit.")]
         private void OnGUI()
         {
             if (OptionsMenu.instance != null)
                 return;
 
-            float scale = Settings.Instance.uiScale;
+            float num = Screen.dpi;
+            if (Mathf.Approximately(num, 0f))
+            {
+                num = 72f;
+            }
+            float dpi_scale = DPIHelper.scaleDPI(num / 72f);
+
+            float left_offset = 5 * dpi_scale;
+            float top_offset = -24.0f * dpi_scale;
+
+            grid_elements.set_size(400, 300);
+            grid_elements.set_position(left_offset + transform.parent.parent.position.x, top_offset + transform.parent.parent.position.y);
+            grid_elements.draw_grid(dpi_scale);
+        }
+
+        private void trash()
+        {
+            float num = Screen.dpi;
+            float dpi_scale = Screen.dpi;
+
+            float left_offset = 15 * dpi_scale;
+            float top_offset = 40 * dpi_scale;
+
+            float scale = 1;
             float cell_size = 40;
             float cell_width = cell_size * scale;
             float cell_height = cell_size * scale;
@@ -27,9 +57,6 @@ namespace MaterialPainter2
             float cell_height_space = 10 * scale;
 
             int cells_per_row = 5;
-
-            float left_offset = 15;
-            float top_offset = 40 * scale;
 
             var screen_width = Screen.width;
             var screen_height = Screen.height;
@@ -54,12 +81,12 @@ namespace MaterialPainter2
                 int xx = Mathf.RoundToInt(left_offset + (transform.parent.parent.position.x) + (cell_width + cell_width_space + 1) * (i % cells_per_row));
                 int yy = Mathf.RoundToInt(-top_offset + transform.parent.parent.position.y - ((i / cells_per_row) * cell_height * 1.25f));
 
-                float num = Screen.dpi;
+                //float num = Screen.dpi;
                 if (Mathf.Approximately(num, 0f))
                 {
                     num = 72f;
                 }
-                MP2.MPDebug($"{Screen.dpi}, {DPIHelper.scaleDPI(num / 72f)}");
+                MP2.MPDebug($"DPI: {Screen.dpi}, {DPIHelper.scaleDPI(num / 72f)}");
 
                 GUI.DrawTexture(new Rect(xx, screen_height - yy, cell_width, cell_height), entry.preview.texture, ScaleMode.ScaleToFit);
 
@@ -134,7 +161,7 @@ namespace MaterialPainter2
 
             if (MP2.IsCoolDownReady() && Input.GetMouseButtonUp(0))
             {
-                if (PointInRectangle(new Vector2(Input.mousePosition.x, screen_height - Input.mousePosition.y), check_rect))
+                if (Utils.PointInRectangle(new Vector2(Input.mousePosition.x, screen_height - Input.mousePosition.y), check_rect))
                 {
                     MP2._setting_drag_select = !MP2._setting_drag_select;
                     MP2.ResetCountdown();
@@ -175,7 +202,7 @@ namespace MaterialPainter2
 
             if (MP2.IsCoolDownReady() && Input.GetMouseButtonUp(0))
             {
-                if (PointInRectangle(new Vector2(Input.mousePosition.x, screen_height - Input.mousePosition.y), check_rect))
+                if (Utils.PointInRectangle(new Vector2(Input.mousePosition.x, screen_height - Input.mousePosition.y), check_rect))
                 {
                     MP2._setting_target_supports = !MP2._setting_target_supports;
                     MP2.ResetCountdown();
@@ -225,10 +252,6 @@ namespace MaterialPainter2
             }*/
         }
 
-        private void OnGUI_()
-        {
-        }
-
         protected override void OnEnable()
         {
             base.OnEnable();
@@ -250,13 +273,25 @@ namespace MaterialPainter2
                 }
             }
 
+            buttons_elements = new List<UI_Button>();
+            UI_Button button_water = new UI_Button(parent: gameObject, button_image_sprite: "icon_water", button_image_sprite_highlight: "icon_highlight", onMouseClick: () => { MP2.MPDebug("Click Water"); });
+            buttons_elements.Add(button_water);
+            UI_Button button_lava = new UI_Button(parent: gameObject, button_image_sprite: "icon_lava", button_image_sprite_highlight: "icon_highlight", onMouseClick: () => { MP2.MPDebug("Click Lava"); });
+            buttons_elements.Add(button_lava);
+
+            buttons_videos = new List<UI_Button>();
+            buttons_images = new List<UI_Button>();
+
+            grid_elements = new UI_Grid_Buttons();
+            grid_elements.add_buttons(buttons_elements);
+
             /*Canvas canvas = gameObject.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             CanvasScaler cs = gameObject.AddComponent<CanvasScaler>();
             cs.scaleFactor = 1f;
             canvas.GetComponent<RectTransform>().sizeDelta = new Vector2(400, 300);*/
 
-            UI_Button button = gameObject.AddComponent<UI_Button>();
+            //UI_Button button = gameObject.AddComponent<UI_Button>();
 
             /*GameObject textGO = new GameObject("Text");
             textGO.transform.SetParent(gameObject.transform);
@@ -301,12 +336,26 @@ namespace MaterialPainter2
                     }
                 }
             }
-        }
 
-        private bool PointInRectangle(Vector2 point, Rect rectangle)
-        {
-            return point.x >= rectangle.x && point.x <= rectangle.x + rectangle.width &&
-                   point.y >= rectangle.y && point.y <= rectangle.y + rectangle.height;
+            List<UI_Button> buttons = new List<UI_Button>();
+            buttons.AddRange(buttons_elements);
+            buttons.AddRange(buttons_videos);
+            buttons.AddRange(buttons_images);
+
+            foreach (UI_Button button in buttons)
+            {
+                if (button != null)
+                {
+                    //destroy nicely
+                }
+            }
+
+            buttons = null;
+            buttons_elements = null;
+            buttons_videos = null;
+            buttons_images = null;
+
+            grid_elements = null;
         }
     }
 }
