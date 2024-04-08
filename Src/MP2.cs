@@ -1,7 +1,6 @@
 ﻿using HarmonyLib;
 using MiniJSON;
 using Newtonsoft.Json;
-using Parkitect.UI;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -9,7 +8,6 @@ using System.IO;
 using System.IO.Compression;
 using System.Reflection;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.Video;
 using static GameController;
 
@@ -46,7 +44,7 @@ namespace MaterialPainter2
 
     public class MP2 : AbstractMod, IModSettings
     {
-        public const string VERSION_NUMBER = "240402";
+        public const string VERSION_NUMBER = "240407";
 
         public override string getIdentifier() => "MaterialPainter";
 
@@ -105,7 +103,7 @@ namespace MaterialPainter2
                 Debug.LogWarning("Material Painter: " + debug_string);
 
                 if (_local_mods_directory != "")
-                    System.IO.File.AppendAllText(_local_mods_directory + "/MaterialPainterLog.txt", "Material Painter: " + debug_string + "\n");
+                    File.AppendAllText(_local_mods_directory + "/MaterialPainterLog.txt", "Material Painter: " + debug_string + "\n");
             }
         }
 
@@ -313,7 +311,6 @@ namespace MaterialPainter2
             using (GZipStream gzStream = new GZipStream(fs, CompressionMode.Decompress))
             using (StreamReader reader = new StreamReader(gzStream))
             {
-                // Read lines from the decompressed stream and add them to the list
                 string line;
                 while ((line = reader.ReadLine()) != null)
                 {
@@ -324,7 +321,7 @@ namespace MaterialPainter2
             return lines;
         }
 
-        [System.Serializable]
+        [Serializable]
         public class UserData
         {
             public string name;
@@ -419,14 +416,14 @@ namespace MaterialPainter2
         }
     }
 
-    [System.Serializable]
+    [Serializable]
     public struct StringIntPair
     {
         public string key;
         public int value;
     }
 
-    [System.Serializable]
+    [Serializable]
     public class StringIntDictionary
     {
         public List<StringIntPair> pairs = new List<StringIntPair>();
@@ -487,69 +484,10 @@ namespace MaterialPainter2
         }
     }
 
-    /*[HarmonyPatch]
-    public class TackSavePatch
-    {
-        private static MethodBase TargetMethod() => AccessTools.Method(typeof(GameController), "saveGame", parameters: new Type[]
-        {
-           typeof( string ),typeof( bool ), typeof(bool ),typeof( SerializationContext.Context ),typeof( bool ),typeof( OnSaveCompleted )
-        });
-
-        [System.Serializable]
-        public struct StringIntPair
-        {
-            public string key;
-            public int value;
-        }
-
-        [System.Serializable]
-        public class StringIntDictionary
-        {
-            public List<StringIntPair> pairs = new List<StringIntPair>();
-        }
-
-        [HarmonyPrefix]
-        public static bool Prefix(string filePath, bool async = true, bool rememberAsCurrentlyLoadedSavegame = true, SerializationContext.Context context = (SerializationContext.Context)0, bool isTemporaryFile = false, OnSaveCompleted onSaveCompleted = null)
-        {
-            MP2.MPDebug("Prefix");
-
-            GameObject[] allObjects = UnityEngine.Object.FindObjectsOfType<GameObject>();
-            List<GameObject> objectsWithChangedMarker = new List<GameObject>();
-            foreach (GameObject obj in allObjects)
-            {
-                if (obj.GetComponent<ChangedMarker>() != null)
-                    objectsWithChangedMarker.Add(obj);
-            }
-
-            Dictionary<string, int> myDictionary = new Dictionary<string, int>();
-
-            foreach (GameObject obj in objectsWithChangedMarker)
-            {
-                string key = obj.name + ":" + obj.transform.position.ToString();
-                int value = obj.GetComponent<ChangedMarker>().GetCurrentBrush();
-                if (value == (int)MaterialBrush.InvisiblePreview)
-                {
-                    value = (int)MaterialBrush.Invisible;
-                }
-                myDictionary[key] = value;
-}
-
-                StringIntDictionary serializableDictionary = new StringIntDictionary();
-                foreach (var kvp in myDictionary)
-                {
-                    serializableDictionary.pairs.Add(new StringIntPair { key = kvp.Key, value = kvp.Value });
-                }
-
-                string json = JsonConvert.SerializeObject(serializableDictionary);
-                File.WriteAllText(filePath + ".mat", json);
-
-                return true;
-        }
-    }*/
-
     [HarmonyPatch]
     public class LoadGetFileNamePatch
     {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Sall Good")]
         private static MethodBase TargetMethod() => AccessTools.Method(typeof(Loader), "loadSavegame", parameters: new Type[] { typeof(string), typeof(GameController.GameMode), typeof(ParkSettings), typeof(bool), typeof(bool), typeof(bool), typeof(OnParkLoadedHandler), typeof(SerializationContext.Context) });
 
         [HarmonyPrefix]

@@ -1,5 +1,4 @@
 ﻿using Parkitect.UI;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -34,13 +33,13 @@ namespace MaterialPainter2
 
             GameObject line_break1 = GameObject.Find("linebreak");
             line_break1.SetActive(false);
-            GameObject line_break2 = GameObject.Instantiate(line_break1);
-            line_break2.transform.SetParent(content, false);
+            //GameObject line_break2 = GameObject.Instantiate(line_break1);
+            //line_break2.transform.SetParent(content, false);
 
             float line_break_width = line_break1.GetComponent<RectTransform>().sizeDelta.x;
 
             line_break1.SetActive(true);
-            line_break2.SetActive(true);
+            //line_break2.SetActive(true);
 
             var painterButton = GameObject.Find("Painter");
             painterButton.SetActive(false);
@@ -57,7 +56,7 @@ namespace MaterialPainter2
 
             //Utils.PrintHierarchy(GameObject.Find("MenuCanvas"), 1, listComponents: true);
 
-            line_break2.GetComponent<RectTransform>().anchoredPosition += button_width * 2.25f;
+            //line_break2.GetComponent<RectTransform>().anchoredPosition += button_width * 2.25f;
             mp2_button.GetComponent<RectTransform>().anchoredPosition += button_width * 2.25f;
 
             RectTransform vrt = viewport.GetComponent<RectTransform>();

@@ -184,7 +184,7 @@ namespace MaterialPainter2
 
         private void BackupMaterial(GameObject game_object)
         {
-            MP2.MPDebug("BACKUP!");
+            //MP2.MPDebug("BACKUP!");
 
             ChunkedMesh chunked_meshes = game_object.GetComponent<ChunkedMesh>();
             if (chunked_meshes != null)
@@ -217,7 +217,7 @@ namespace MaterialPainter2
 
         private void RevertMaterial(GameObject game_object)
         {
-            MP2.MPDebug("REVERT!");
+            //MP2.MPDebug("REVERT!");
 
             ChangedMarker changed_marker = game_object.GetComponent<ChangedMarker>();
             if (changed_marker == null)
@@ -617,7 +617,7 @@ namespace MaterialPainter2
             {
                 if (!MP2._setting_target_supports || (MP2._setting_target_supports && game_object.name.ToLower().Contains("support")))
                 {
-                    this.SetMaterial(game_object.transform);
+                    SetMaterial(game_object.transform);
                 }
             }
         }

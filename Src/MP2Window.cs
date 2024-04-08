@@ -1,12 +1,7 @@
-﻿using Parkitect.UI;
+﻿using DG.Tweening;
+using Parkitect.UI;
 using System.Collections.Generic;
 using UnityEngine;
-using static UTJ.FrameCapturer.DataPath;
-using UnityEngine.UIElements;
-using UnityEngine.UI;
-using Button = UnityEngine.UI.Button;
-using System;
-using System.Linq;
 
 namespace MaterialPainter2
 {
@@ -17,8 +12,15 @@ namespace MaterialPainter2
         public static List<UI_Button> buttons_elements;
         public static List<UI_Button> buttons_videos;
         public static List<UI_Button> buttons_images;
+        public static List<UI_Button> buttons_all;
 
         private UI_Grid_Buttons grid_elements;
+        private UI_Grid_Buttons grid_videos;
+        private UI_Grid_Buttons grid_settings;
+        private UI_Tab_Bar tab_bar_types;
+
+        private UI_CheckBox checkbox_multiselect;
+        private UI_CheckBox checkbox_targetsupports;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Fugeddabouddit.")]
         private void OnGUI()
@@ -31,14 +33,60 @@ namespace MaterialPainter2
             {
                 num = 72f;
             }
-            float dpi_scale = DPIHelper.scaleDPI(num / 72f);
+            float dpi_scale = DPIHelper.scaleDPI(num / 72f) / 1.3f * Settings.Instance.uiScale;
 
-            float left_offset = 5 * dpi_scale;
-            float top_offset = -24.0f * dpi_scale;
+            float left_offset = 7f * dpi_scale;
+            float top_offset = 34.0f * dpi_scale;
 
-            grid_elements.set_size(400, 300);
-            grid_elements.set_position(left_offset + transform.parent.parent.position.x, top_offset + transform.parent.parent.position.y);
-            grid_elements.draw_grid(dpi_scale);
+            float tab_height = 43f;
+
+            ToolTipper tt = GetComponent<ToolTipper>();
+            tt.tooltip = "";
+
+            tab_bar_types.SetWidth(260);
+            tab_bar_types.tab_size = new Vector2(tab_height, tab_height);
+            tab_bar_types.SetPosition(left_offset + transform.parent.parent.position.x, transform.parent.parent.position.y - (top_offset));
+            tab_bar_types.DrawTabs(dpi_scale);
+
+            grid_elements.SetSize(260, 155);
+            grid_elements.SetPosition(left_offset + transform.parent.parent.position.x, transform.parent.parent.position.y - (tab_height) * dpi_scale - (top_offset) + 2);
+            grid_elements.DrawGrid(dpi_scale);
+
+            grid_videos.SetSize(260, 155);
+            grid_videos.SetPosition(left_offset + transform.parent.parent.position.x, transform.parent.parent.position.y - (tab_height) * dpi_scale - (top_offset) + 2);
+            grid_videos.DrawGrid(dpi_scale);
+
+            grid_settings.SetSize(260, 155);
+            grid_settings.SetPosition(left_offset + transform.parent.parent.position.x, transform.parent.parent.position.y - (tab_height) * dpi_scale - (top_offset) + 2);
+            grid_settings.DrawGrid(dpi_scale);
+
+            float checkbox_size = 24f * dpi_scale;
+            checkbox_multiselect.SetTileSize(checkbox_size, checkbox_size);
+            checkbox_multiselect.SetPosition(left_offset + transform.parent.parent.position.x + 16 * dpi_scale, transform.parent.parent.position.y - (tab_height * dpi_scale) - (top_offset) + 2 - 16 * dpi_scale);
+            checkbox_multiselect.DrawSprite(dpi_scale);
+
+            checkbox_targetsupports.SetTileSize(checkbox_size, checkbox_size);
+            checkbox_targetsupports.SetPosition(left_offset + transform.parent.parent.position.x + 16 * dpi_scale, transform.parent.parent.position.y - (tab_height * dpi_scale) - (top_offset) + 2 - (checkbox_size * 1.5f) - 16 * dpi_scale);
+            checkbox_targetsupports.DrawSprite(dpi_scale);
+
+            if (tt.tooltip != "")
+            {
+                GUIStyle tooltip_guiStyle = new GUIStyle(GUI.skin.label)
+                {
+                    fontSize = 14,
+                    alignment = TextAnchor.MiddleCenter
+                };
+                Vector2 size_ = tooltip_guiStyle.CalcSize(new GUIContent(tt.tooltip));
+
+                Rect tooltip_rect = new Rect(Input.mousePosition.x + 35, Screen.height - Input.mousePosition.y, (size_.x + 20), size_.y);
+
+                GUI.color = new Color(92, 105, 110, .9f);
+                GUI.Box(tooltip_rect, GUIContent.none);
+
+                GUI.color = new Color(153, 168, 166);
+                GUI.Label(tooltip_rect, tt.tooltip, tooltip_guiStyle);
+                GUI.color = Color.white;
+            }
         }
 
         private void trash()
@@ -147,8 +195,7 @@ namespace MaterialPainter2
 
             Rect check_rect_text = new Rect((transform.parent.parent.position.x) + left_offset + check_size + cell_width_space,
                 screen_height - (transform.parent.parent.position.y) + top_offset + cell_height_space + cell_height + 4 * scale,
-                200 * scale,
-                30 * scale);
+                200 * scale, 30 * scale);
 
             GUIStyle guiStyle = new GUIStyle(GUI.skin.label)
             {
@@ -193,7 +240,7 @@ namespace MaterialPainter2
 
             guiStyle = new GUIStyle(GUI.skin.label)
             {
-                fontSize = ((int)(16 * scale))
+                fontSize = (int)(16 * scale)
             };
 
             GUI.color = Color.black;
@@ -252,6 +299,15 @@ namespace MaterialPainter2
             }*/
         }
 
+        public void SetWindowTitle(string title)
+        {
+            UIWindowSettings ws = GetComponent<UIWindowSettings>();
+            if (ws != null)
+            {
+                ws.title = "Material Painter - " + title;
+            }
+        }
+
         protected override void OnEnable()
         {
             base.OnEnable();
@@ -273,47 +329,78 @@ namespace MaterialPainter2
                 }
             }
 
-            buttons_elements = new List<UI_Button>();
-            UI_Button button_water = new UI_Button(parent: gameObject, button_image_sprite: "icon_water", button_image_sprite_highlight: "icon_highlight", onMouseClick: () => { MP2.MPDebug("Click Water"); });
-            buttons_elements.Add(button_water);
-            UI_Button button_lava = new UI_Button(parent: gameObject, button_image_sprite: "icon_lava", button_image_sprite_highlight: "icon_highlight", onMouseClick: () => { MP2.MPDebug("Click Lava"); });
-            buttons_elements.Add(button_lava);
+            //
 
-            buttons_videos = new List<UI_Button>();
-            buttons_images = new List<UI_Button>();
+            ToolTipper tt = gameObject.AddComponent<ToolTipper>();
+
+            buttons_elements = new List<UI_Button>();
+            UI_Button button_none = new UI_Button(parent: gameObject, button_image_sprite: "icon_none", button_image_sprite_highlight: "icon_highlight", onMouseClick: () => { MP2.selected_brush = (int)MaterialBrush.None; }, tooltip_text: "None");
+            buttons_elements.Add(button_none);
+            UI_Button button_water = new UI_Button(parent: gameObject, button_image_sprite: "icon_water", button_image_sprite_highlight: "icon_highlight", onMouseClick: () => { MP2.selected_brush = (int)MaterialBrush.Water; }, tooltip_text: "Water");
+            buttons_elements.Add(button_water);
+            UI_Button button_lava = new UI_Button(parent: gameObject, button_image_sprite: "icon_lava", button_image_sprite_highlight: "icon_highlight", onMouseClick: () => { MP2.selected_brush = (int)MaterialBrush.Lava; }, tooltip_text: "Lava");
+            buttons_elements.Add(button_lava);
+            UI_Button button_glass = new UI_Button(parent: gameObject, button_image_sprite: "icon_glass", button_image_sprite_highlight: "icon_highlight", onMouseClick: () => { MP2.selected_brush = (int)MaterialBrush.Glass; }, tooltip_text: "Glass");
+            buttons_elements.Add(button_glass);
+            UI_Button button_invisible = new UI_Button(parent: gameObject, button_image_sprite: "icon_invisible", button_image_sprite_highlight: "icon_highlight", onMouseClick: () => { MP2.selected_brush = (int)MaterialBrush.InvisiblePreview; }, tooltip_text: "Invisible");
+            buttons_elements.Add(button_invisible);
 
             grid_elements = new UI_Grid_Buttons();
-            grid_elements.add_buttons(buttons_elements);
+            grid_elements.AddButtons(buttons_elements);
 
-            /*Canvas canvas = gameObject.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            CanvasScaler cs = gameObject.AddComponent<CanvasScaler>();
-            cs.scaleFactor = 1f;
-            canvas.GetComponent<RectTransform>().sizeDelta = new Vector2(400, 300);*/
+            //
 
-            //UI_Button button = gameObject.AddComponent<UI_Button>();
+            buttons_images = new List<UI_Button>();
 
-            /*GameObject textGO = new GameObject("Text");
-            textGO.transform.SetParent(gameObject.transform);
-            Text textComponent = textGO.AddComponent<Text>();
-            textComponent.text = "Hello, World!";
-            textComponent.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-            textComponent.fontSize = 24;
-            RectTransform textRect = textGO.GetComponent<RectTransform>();
-            textRect.anchorMin = new Vector2(0.5f, 0.5f);
-            textRect.anchorMax = new Vector2(0.5f, 0.5f);
-            textRect.pivot = new Vector2(0.5f, 0.5f);
-            textRect.anchoredPosition = Vector2.zero;
+            //
 
-            GameObject button = new GameObject("Button");
-            button.transform.SetParent(gameObject.transform);
-            Button buttcomp = button.AddComponent<Button>();
-            RectTransform butt_rect = button.GetComponent<RectTransform>();
-            butt_rect.sizeDelta = new Vector2(100, 100);
-            butt_rect.anchorMin = new Vector2(0.5f, 0.5f);
-            butt_rect.anchorMax = new Vector2(0.5f, 0.5f);
-            butt_rect.pivot = new Vector2(0.5f, 0.5f);
-            butt_rect.anchoredPosition = Vector2.zero;*/
+            buttons_videos = new List<UI_Button>();
+            UI_Button video1 = new UI_Button(parent: gameObject, button_image_sprite: "icon_video1", button_image_sprite_highlight: "icon_highlight", onMouseClick: () => { MP2.selected_brush = (int)MaterialBrush.Video_1; }, tooltip_text: "Video 1");
+            buttons_videos.Add(video1);
+            UI_Button video2 = new UI_Button(parent: gameObject, button_image_sprite: "icon_video2", button_image_sprite_highlight: "icon_highlight", onMouseClick: () => { MP2.selected_brush = (int)MaterialBrush.Video_2; }, tooltip_text: "Video 2");
+            buttons_videos.Add(video2);
+            UI_Button video3 = new UI_Button(parent: gameObject, button_image_sprite: "icon_video3", button_image_sprite_highlight: "icon_highlight", onMouseClick: () => { MP2.selected_brush = (int)MaterialBrush.Video_3; }, tooltip_text: "Video 3");
+            buttons_videos.Add(video3);
+
+            grid_videos = new UI_Grid_Buttons();
+            grid_videos.AddButtons(buttons_videos);
+
+            //
+
+            grid_settings = new UI_Grid_Buttons();
+
+            //
+
+            buttons_all = new List<UI_Button>();
+            buttons_all.AddRange(buttons_elements);
+            buttons_all.AddRange(buttons_videos);
+
+            foreach (UI_Button button in buttons_all)
+            {
+                button.SetButtonFamily(buttons_all);
+            }
+
+            button_none.Select();
+
+            //
+
+            checkbox_multiselect = new UI_CheckBox(parent: gameObject, text: "Multi-Select", onMouseClick: () => { MP2._setting_drag_select = !MP2._setting_drag_select; }, check_state: MP2._setting_drag_select, tooltip_text: "Clicking and dragging will continuously paint objects the brush crosses over.");
+            checkbox_targetsupports = new UI_CheckBox(parent: gameObject, text: "Target Supports", onMouseClick: () => { MP2._setting_target_supports = !MP2._setting_target_supports; }, check_state: MP2._setting_target_supports, tooltip_text: "Selectively paints support structures. Note, not all supports are currently recognized due to how the game was programmed.");
+
+            //
+
+            tab_bar_types = new UI_Tab_Bar(gameObject);
+            UI_Tab tab0 = tab_bar_types.AddTab(icon_sprite: "icon_elements", object_to_control_: grid_elements, tab_name: "Elements");
+            tab_bar_types.AddTab(icon_sprite: "icon_camera", object_to_control_: grid_settings, tab_name: "Images");
+            tab_bar_types.AddTab(icon_sprite: "icon_videocamera", object_to_control_: grid_videos, tab_name: "Videos");
+            tab_bar_types.AddTab(icon_sprite: "icon_toolbox", object_to_control_: new List<UI_Item> { grid_settings, checkbox_multiselect, checkbox_targetsupports }, tab_name: "Settings");
+
+            foreach (UI_Tab ui_tab in tab_bar_types.tabs)
+            {
+                ui_tab.mp2window = this;
+            }
+
+            tab0.Select();
         }
 
         protected override void OnDisable()
@@ -354,8 +441,24 @@ namespace MaterialPainter2
             buttons_elements = null;
             buttons_videos = null;
             buttons_images = null;
+            buttons_all = null;
 
             grid_elements = null;
+            grid_settings = null;
+
+            tab_bar_types = null;
+
+            checkbox_multiselect = null;
+            checkbox_targetsupports = null;
+
+            ToolTipper tt = GetComponent<ToolTipper>();
+            if (tt != null)
+                Destroy(tt);
         }
+    }
+
+    public class ToolTipper : MonoBehaviour
+    {
+        public string tooltip = "";
     }
 }

@@ -51,16 +51,16 @@ namespace MaterialPainter2
             if (ScriptableSingleton<UIAssetManager>.Instance.uiWindowFrameGO == null)
                 MP2.MPDebug("uiWindowFrameGO is null, what?");
 
-            this.windowInstance = UIWindowsController.Instance.spawnWindow(prefab, null);
-            this.windowInstance.OnClose += this.OnWindowClose;
+            windowInstance = UIWindowsController.Instance.spawnWindow(prefab, null);
+            windowInstance.OnClose += this.OnWindowClose;
         }
 
         protected override void onDeselected()
         {
-            if (this.windowInstance != null)
+            if (windowInstance != null)
             {
                 this.windowInstance.close();
-                this.windowInstance = null;
+                windowInstance = null;
             }
         }
 
@@ -71,7 +71,7 @@ namespace MaterialPainter2
             WindowPrefab.SetActive(false);
 
             var rect = WindowPrefab.AddComponent<RectTransform>();
-            rect.sizeDelta = new Vector2(400, 300);
+            rect.sizeDelta = new Vector2(200, 150);
 
             //WindowPrefab.AddComponent<CanvasRenderer>();
             Window = WindowPrefab.AddComponent<MP2Window>();
