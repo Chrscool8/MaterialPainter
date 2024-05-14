@@ -80,9 +80,15 @@ namespace MaterialPainter2
             }
         }
 
+        private void FixedUpdate()
+        {
+            MP2.MPDebug("Fixed Update");
+        }
+
         [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Don't worry 'bout it.")]
         private void Update()
         {
+            MP2.MPDebug("Update");
             if ((!MP2._setting_drag_select && Input.GetMouseButtonDown(0) && MP2.IsCoolDownReady()) || (MP2._setting_drag_select && Input.GetMouseButton(0)))
             {
                 if (!GameController.Instance.isActiveMouseTool(brush_tool))
@@ -553,7 +559,7 @@ namespace MaterialPainter2
                             MP2.MPDebug($"Video_{number}");
                             renderer.enabled = true;
 
-                            var custom_video = MP2._local_mods_directory + $"MaterialPainter2/Custom/video-{number}.mp4";
+                            var custom_video = MP2._local_mods_directory + $"MaterialPainter2/Custom/Videos/video-{number}.mp4";
                             var default_video = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + $"/Res/Videos/video-default-{number}.mp4";
                             MP2.MPDebug($"{custom_video}, {default_video}");
 
