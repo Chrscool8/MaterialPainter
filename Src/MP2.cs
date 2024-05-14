@@ -65,6 +65,8 @@ namespace MaterialPainter2
         //private KeybindManager _keys;
         public static List<MaterialType> material_brushes { get; set; }
 
+        public static List<MaterialType> material_brushes_image { get; set; }
+
         public static MP2Controller controller { get; set; }
         public static MP2WindowButton window_button { get; set; }
         public ConstructWindowToggle construct_window_toggle { get; set; }
@@ -138,11 +140,13 @@ namespace MaterialPainter2
         {
             _local_mods_directory = GameController.modsPath; //NormalizePath(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Parkitect/Mods/");
             Directory.CreateDirectory(_local_mods_directory + "MaterialPainter2/Custom/");
+            Directory.CreateDirectory(_local_mods_directory + "MaterialPainter2/Custom/Videos/");
+            Directory.CreateDirectory(_local_mods_directory + "MaterialPainter2/Custom/Images/");
 
             for (int i = 1; i <= 3; i++)
             {
                 var default_video = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + $"/Res/Videos/video-default-{i}.mp4";
-                var custom_video = _local_mods_directory + $"MaterialPainter2/Custom/video-{i}.mp4";
+                var custom_video = _local_mods_directory + $"MaterialPainter2/Custom/Videos/video-{i}.mp4";
 
                 if (!File.Exists(custom_video) && File.Exists(default_video))
                 {
@@ -244,6 +248,11 @@ namespace MaterialPainter2
 
             EventManager.Instance.OnStartPlayingPark += new EventManager.OnStartPlayingParkHandler(PrepReassignMaterialsAfterLoadingSave);
             //EventManager.Instance.OnGameSaved += new EventManager.OnGameSavedHandler(PostSaveHooked);
+        }
+
+        public void RefreshBrushesImages()
+        {
+            material_brushes_image.Clear();
         }
 
         private string NormalizePath(string path)
