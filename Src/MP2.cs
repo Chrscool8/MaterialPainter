@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.Video;
@@ -44,7 +45,7 @@ namespace MaterialPainter2
 
     public class MP2 : AbstractMod, IModSettings
     {
-        public const string VERSION_NUMBER = "240407";
+        public const string VERSION_NUMBER = "240514";
 
         public override string getIdentifier() => "MaterialPainter";
 
@@ -310,6 +311,11 @@ namespace MaterialPainter2
             {
                 ReassignMaterialsAfterLoadingSave();
             });
+
+            CoroutineManager.DelayAction(2.5f, () =>
+            {
+                ConvertLegacySpellsToMP();
+            });
         }
 
         private List<string> LoadGZippedTextFile(string filePath)
@@ -339,8 +345,8 @@ namespace MaterialPainter2
 
         public void ReassignMaterialsAfterLoadingSave()
         {
-            GameObject[] allObjects = UnityEngine.Object.FindObjectsOfType<GameObject>();
-            MPDebug($"Number of GOs: {allObjects.Length}");
+            List<GameObject> allObjects = Utils.GetAllObjectsInScene();
+            MPDebug($"Number of GOs: {allObjects.Count}");
             MPDebug($"Numbers of Serials: {GameController.Instance.getSerializedObjects().Count}");
 
             if (current_file_path == null || current_file_path == "")
@@ -419,6 +425,69 @@ namespace MaterialPainter2
                             }
                         }
                         selected_brush = 0;
+                    }
+                }
+            }
+        }
+
+        public void ConvertLegacySpellsToMP()
+        {
+            MPDebug("Converting Legacy Spells to MP");
+
+            List<GameObject> allObjects = Utils.GetAllObjectsInScene();
+            MPDebug($"Number of GOs: {allObjects.Count}");
+
+            MPDebug($"Numbers of Serials: {GameController.Instance.getSerializedObjects().Count}");
+
+            foreach (GameObject _obj in allObjects)
+            {
+                GameObject obj = _obj;
+
+                if (obj != null)
+                {
+                    CustomColors cc = obj.GetComponent<CustomColors>();
+
+                    if (cc != null)
+                    {
+                        if (cc.getColors().Length > 0)
+                        {
+                            int brush = -1;
+                            Color c = cc.getColors()[0];
+                            if (Utils.ColorCloseToEqual(c, new Color(11.151f, 17.15f, 12.18f), .2f))
+                            {
+                                MPDebug("INVISIBLE SPELL LOCATED");
+                                brush = (int)MaterialBrush.Invisible;
+                            }
+                            else if (Utils.ColorCloseToEqual(c, new Color(5.15f, 15.15f, 18.2f), .2f))
+                            {
+                                MPDebug("WATER SPELL LOCATED");
+                                brush = (int)MaterialBrush.Water;
+                            }
+                            else if (Utils.ColorCloseToEqual(c, new Color(11.15f, 2.57f, 1.2f), .2f))
+                            {
+                                MPDebug("LAVA SPELL LOCATED");
+                                brush = (int)MaterialBrush.Lava;
+                            }
+                            else if (Utils.ColorCloseToEqual(c, new Color(55.27f, 55.28f, 55.29f), .2f))
+                            {
+                                MPDebug("GLASS SPELL LOCATED");
+                                brush = (int)MaterialBrush.Glass;
+                            }
+                            else if (c[0] > 1.0 || c[1] > 1.0 || c[2] > 1.0)
+                            {
+                                MPDebug($">1 - {obj.name} {c[0]} {c[1]} {c[2]} ");
+                            }
+
+                            if (brush != -1)
+                            {
+                                cc.setColor(new Color(1.0f, 1.0f, 1.0f, c.a), 0);
+
+                                foreach (Renderer renderer in obj.GetComponentsInChildren<Renderer>())
+                                {
+                                    controller.SetMaterial(renderer.gameObject.transform, brush);
+                                }
+                            }
+                        }
                     }
                 }
             }

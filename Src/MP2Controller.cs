@@ -234,9 +234,12 @@ namespace MaterialPainter2
 
             Renderer renderer = game_object.GetComponent<Renderer>();
 
-            renderer.materials = changed_marker.GetMaterials();
-            renderer.SetPropertyBlock(changed_marker.GetMaterialPropertyBlock());
-            renderer.enabled = (changed_marker.WasEnabled());
+            if (renderer)
+            {
+                renderer.materials = changed_marker.GetMaterials();
+                renderer.SetPropertyBlock(changed_marker.GetMaterialPropertyBlock());
+                renderer.enabled = (changed_marker.WasEnabled());
+            }
 
             VideoPlayer video_player = changed_marker.GetVideoPlayer();
             if (video_player != null)
@@ -293,7 +296,7 @@ namespace MaterialPainter2
 
             MP2.MPDebug($"Painting {tf.gameObject.name} with Brush {selected_brush} ({brush_type})");
 
-            ChangedMarker cm1 = tf.GetComponent<ChangedMarker>();
+            ChangedMarker cm1 = tf.gameObject.GetComponent<ChangedMarker>();
             if (cm1 != null)
             {
                 int current_brush = cm1.GetCurrentBrush();
@@ -311,12 +314,12 @@ namespace MaterialPainter2
 
             if (selected_brush != (int)MaterialBrush.None)
             {
-                if (tf.GetComponent<ChangedMarker>() == null)
+                if (tf.gameObject.GetComponent<ChangedMarker>() == null)
                 {
                     BackupMaterial(tf.gameObject);
                 }
 
-                ChangedMarker cm = tf.GetComponent<ChangedMarker>();
+                ChangedMarker cm = tf.gameObject.GetComponent<ChangedMarker>();
 
                 if (cm == null)
                 {
