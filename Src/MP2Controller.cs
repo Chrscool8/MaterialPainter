@@ -67,6 +67,7 @@ namespace MaterialPainter2
             if (!GameController.Instance.isActiveMouseTool(brush_tool))
             {
                 GameController.Instance.enableMouseTool(brush_tool);
+                MP2.pipe_active = true;
             }
         }
 
@@ -77,18 +78,24 @@ namespace MaterialPainter2
             if (GameController.Instance.isActiveMouseTool(brush_tool))
             {
                 GameController.Instance.removeMouseTool(brush_tool);
+                MP2.pipe_active = false;
             }
         }
 
-        private void FixedUpdate()
+        /*private void FixedUpdate()
         {
             MP2.MPDebug("Fixed Update");
-        }
+        }*/
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Don't worry 'bout it.")]
         private void Update()
         {
-            MP2.MPDebug("Update");
+            if (MP2.pipe_active)
+            {
+                //brush_tool.tick();
+            }
+
+            //MP2.MPDebug("Update");
             if ((!MP2._setting_drag_select && Input.GetMouseButtonDown(0) && MP2.IsCoolDownReady()) || (MP2._setting_drag_select && Input.GetMouseButton(0)))
             {
                 if (!GameController.Instance.isActiveMouseTool(brush_tool))
@@ -338,18 +345,20 @@ namespace MaterialPainter2
                     return;
                 }
 
-                WaterBody waterBody = new WaterBody();
-
-                Color c = new Color(1, 1, 1, 1);
-                if (tf.gameObject.GetComponent<CustomColors>() != null)
-                    c = tf.gameObject.GetComponent<CustomColors>().getColors()[0];
-
                 switch (selected_brush)
                 {
                     case (int)MaterialBrush.Water:
                         {
                             MP2.MPDebug("Water");
                             renderer.enabled = true;
+
+                            WaterBody waterBody = new WaterBody();
+
+                            Color c = WaterBody.defaultWaterColor;
+                            if (tf.gameObject.GetComponent<CustomColors>() != null)
+                                c = tf.gameObject.GetComponent<CustomColors>().getColors()[0];
+
+                            waterBody.color = c;
 
                             waterBody.bodyType = WaterBody.BodyType.WATER;
 
@@ -393,6 +402,13 @@ namespace MaterialPainter2
 
                             if (renderer != null)
                             {
+                                WaterBody waterBody = new WaterBody();
+
+                                Color c = new Color(1, 1, 1, 1);
+                                if (tf.gameObject.GetComponent<CustomColors>() != null)
+                                    c = tf.gameObject.GetComponent<CustomColors>().getColors()[0];
+
+                                waterBody.color = c;
                                 waterBody.bodyType = WaterBody.BodyType.LAVA;
 
                                 Material[] shares = renderer.materials;
@@ -615,6 +631,7 @@ namespace MaterialPainter2
                 ShockwaveController.Instance.addShockwave(tf.position, .5f, true);
                 Instantiate(ScriptableSingleton<AssetManager>.Instance.employeeLevelUpParticlesGO).transform.position = tf.position;
                 Instantiate(ScriptableSingleton<AssetManager>.Instance.plopParticlesGO).transform.position = tf.position;
+                ScriptableSingleton<SoundAssetManager>.Instance.recolorObject.play2D();
             }
         }
 

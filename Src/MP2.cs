@@ -9,7 +9,9 @@ using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
+using UnityEngine.Networking.Types;
 using UnityEngine.Video;
+using static ColorPickerTool;
 using static GameController;
 
 namespace MaterialPainter2
@@ -45,7 +47,7 @@ namespace MaterialPainter2
 
     public class MP2 : AbstractMod, IModSettings
     {
-        public const string VERSION_NUMBER = "240514";
+        public const string VERSION_NUMBER = "240515";
 
         public override string getIdentifier() => "MaterialPainter";
 
@@ -88,6 +90,7 @@ namespace MaterialPainter2
 
         public static bool _setting_drag_select = false;
         public static bool _setting_target_supports = false;
+        public static bool pipe_active = false;
 
         public static bool IsCoolDownReady()
         {
@@ -505,6 +508,44 @@ namespace MaterialPainter2
     public class StringIntDictionary
     {
         public List<StringIntPair> pairs = new List<StringIntPair>();
+    }
+
+    [HarmonyPatch]
+    public class CustomColorApplicationPatch
+    {
+        private static MethodBase TargetMethod() => AccessTools.Method(typeof(CustomColorsUtility), "apply", parameters: new Type[] {
+    typeof(Color[]), typeof(Renderer),typeof(bool), typeof(bool), typeof(int)});
+
+        [HarmonyPrefix]
+        private static bool apply(Color[] colors, Renderer renderer, bool forceApplyToAllMaterials, bool applyToParticleSystems = false, int slotIndexOffset = 0)
+        {
+            ChangedMarker cm = renderer.gameObject.GetComponent<ChangedMarker>();
+            if (cm != null)
+            {
+                if (cm.GetCurrentBrush() == (int)MaterialBrush.Water || cm.GetCurrentBrush() == (int)MaterialBrush.Lava)
+                {
+                    //MP2.MPDebug("APPLY!");
+
+                    Color c = colors[0];
+                    c.a = 0.392156869f;
+
+                    MaterialPropertyBlock materialPropertyBlock = new MaterialPropertyBlock();
+                    renderer.GetPropertyBlock(materialPropertyBlock);
+                    materialPropertyBlock.SetColor(Shader.PropertyToID("_Color"), c);
+                    float H;
+                    float S;
+                    float V;
+                    Color.RGBToHSV(c, out H, out S, out V);
+                    c = Color.HSVToRGB(H, S, V / 2f);
+                    c.a = 0.9019608f;
+                    materialPropertyBlock.SetColor(Shader.PropertyToID("_Color2"), c);
+                    materialPropertyBlock.SetColor(Shader.PropertyToID("_ShoreColor"), Color.HSVToRGB(H, S / 3f, V));
+                    renderer.SetPropertyBlock(materialPropertyBlock);
+                }
+            }
+
+            return true;
+        }
     }
 
     [HarmonyPatch]
