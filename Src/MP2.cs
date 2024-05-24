@@ -4,14 +4,12 @@ using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Reflection;
 using UnityEngine;
-using UnityEngine.Networking.Types;
 using UnityEngine.Video;
-using static ColorPickerTool;
 using static GameController;
 
 namespace MaterialPainter2
@@ -25,9 +23,8 @@ namespace MaterialPainter2
         Invisible = 4,
         Terrain = 5,
         InvisiblePreview = 6,
-        Video_1 = 7,
-        Video_2 = 8,
-        Video_3 = 9,
+        Video = 7,
+        Image = 8,
         //Texture = ?,
     }
 
@@ -36,12 +33,15 @@ namespace MaterialPainter2
         public string name { get; set; }
         public Sprite preview { get; set; }
         public int id { get; set; }
+        public string id_string { get; set; }
 
-        public MaterialType(string name, Sprite preview, int id)
+
+        public MaterialType(string name, Sprite preview, int id, string id_string = "")
         {
             this.name = name;
             this.preview = preview;
             this.id = id;
+            this.id_string = id_string;
         }
     }
 
@@ -67,8 +67,8 @@ namespace MaterialPainter2
 
         //private KeybindManager _keys;
         public static List<MaterialType> material_brushes { get; set; }
-
-        public static List<MaterialType> material_brushes_image { get; set; }
+        public static List<MaterialType> material_brushes_images { get; set; } = new List<MaterialType>();
+        public static Dictionary<string, MaterialType> material_brushes_videos { get; set; } = new Dictionary<string, MaterialType>();
 
         public static MP2Controller controller { get; set; }
         public static MP2WindowButton window_button { get; set; }
@@ -77,6 +77,8 @@ namespace MaterialPainter2
         private static Dictionary<string, VideoClip> videos { get; set; }
 
         public static int selected_brush { get; set; }
+        public static string selected_brush_custom { get; set; }
+
         private static bool debug_mode = false;
         public static float cooldownDuration = .01f;
         private static float lastExecutionTime = -1;
@@ -106,7 +108,7 @@ namespace MaterialPainter2
         {
             if (debug_mode || always_show)
             {
-                Debug.LogWarning("Material Painter: " + debug_string);
+                UnityEngine.Debug.LogWarning("Material Painter: " + debug_string);
 
                 if (_local_mods_directory != "")
                     File.AppendAllText(_local_mods_directory + "/MaterialPainterLog.txt", "Material Painter: " + debug_string + "\n");
@@ -242,9 +244,8 @@ namespace MaterialPainter2
                 new MaterialType("Lava", get_sprite("icon_lava"), (int)MaterialBrush.Lava),
                 new MaterialType("Glass", get_sprite("icon_glass"), (int)MaterialBrush.Glass),
                 new MaterialType("Invisible", get_sprite("icon_invisible"), (int)MaterialBrush.InvisiblePreview),
-                new MaterialType("Video 1", get_sprite("icon_video1"), (int)MaterialBrush.Video_1),
-                new MaterialType("Video 2", get_sprite("icon_video2"), (int)MaterialBrush.Video_2),
-                new MaterialType("Video 3", get_sprite("icon_video3"), (int)MaterialBrush.Video_3),
+                new MaterialType("Video", get_sprite("icon_video1"), (int)MaterialBrush.Video),
+                new MaterialType("Image", get_sprite("icon_video2"), (int)MaterialBrush.Image),
             };
 
             loadedAB.Unload(false);
@@ -252,11 +253,115 @@ namespace MaterialPainter2
 
             EventManager.Instance.OnStartPlayingPark += new EventManager.OnStartPlayingParkHandler(PrepReassignMaterialsAfterLoadingSave);
             //EventManager.Instance.OnGameSaved += new EventManager.OnGameSavedHandler(PostSaveHooked);
+
+            RefreshBrushesVideos();
+
+
+            if (!File.Exists(_local_mods_directory + $"MaterialPainter2/ffmpeg.exe"))
+            {
+                if (FileDownloader.Instance != null)
+                {
+                    string ffmpegDownloadUrl = "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffmpeg-6.1-win-64.zip";
+                    var savePath = _local_mods_directory + $"MaterialPainter2/file.zip";
+
+                    CoroutineManager.Instance.StartCoroutine(FileDownloader.Instance.DownloadFile(ffmpegDownloadUrl, savePath, true));
+                }
+                else
+                {
+                    MP2.MPDebug("FileDownloader instance is not available.");
+                }
+            }
         }
 
-        public void RefreshBrushesImages()
+        public void RefreshBrushesVideos()
         {
-            material_brushes_image.Clear();
+            string ffmpeg_path = _local_mods_directory + $"MaterialPainter2/ffmpeg.exe";
+
+
+
+            material_brushes_videos.Clear();
+
+            string[] files = Directory.GetFiles(_local_mods_directory + "MaterialPainter2/Custom/Videos/", "*.mp4", SearchOption.AllDirectories);
+            foreach (string file in files)
+            {
+                MPDebug($"Processing: {file}");
+
+                ////////////////
+
+                string outputFilePath = file.Replace(".mp4", ".png");
+                string image_name = System.IO.Path.GetFileNameWithoutExtension(outputFilePath);
+
+                if (File.Exists(ffmpeg_path))
+                {
+                    MPDebug("Found ffmpeg.");
+                    string inputFilePath = file;
+                    string timePosition = "00:00:01"; // one second
+                    string ffmpegArgs = $"-i \"{inputFilePath}\" -ss {timePosition} -vframes 1 \"{outputFilePath}\"";
+
+                    if (!File.Exists(outputFilePath))
+                    {
+                        MPDebug("Creating Thumbnail.");
+
+                        ProcessStartInfo processStartInfo = new ProcessStartInfo
+                        {
+                            FileName = "ffmpeg",
+                            Arguments = ffmpegArgs,
+                            RedirectStandardOutput = true,
+                            RedirectStandardError = true,
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        };
+
+                        using (Process process = new Process())
+                        {
+                            process.StartInfo = processStartInfo;
+                            process.OutputDataReceived += (sender, eventArgs) => Console.WriteLine(eventArgs.Data);
+                            process.ErrorDataReceived += (sender, eventArgs) => Console.WriteLine(eventArgs.Data);
+
+                            process.Start();
+                            process.BeginOutputReadLine();
+                            process.BeginErrorReadLine();
+
+                            process.WaitForExit();
+                        }
+                    }
+
+                    if (File.Exists(outputFilePath))
+                    {
+                        MPDebug("Found thumb.");
+                        if (!sprites.ContainsKey(image_name))
+                        {
+                            MPDebug("Loading as sprite.");
+                            Texture2D texture = new Texture2D(2, 2);
+                            byte[] bytes = System.IO.File.ReadAllBytes(outputFilePath);
+                            texture.LoadImage(bytes);
+
+                            if (texture == null)
+                            {
+                                MPDebug("Texture not found at path: " + outputFilePath);
+                                return;
+                            }
+                            MPDebug("Loaded tex.");
+                            Sprite sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+                            MPDebug("Putting in list.");
+                            sprites.Add(image_name, sprite);
+                        }
+                    }
+
+                }
+
+
+                MaterialType new_type = new MaterialType(name: image_name, preview: sprites.GetValueOrDefault(image_name,""), id: (int)MaterialBrush.Video);
+                if (!material_brushes_videos.ContainsKey(image_name))
+                {
+                    material_brushes_videos.Add(image_name, new_type);
+                }
+                else
+                {
+                    MPDebug($"{image_name} already in mat brushes");
+                }
+
+            }
         }
 
         private string NormalizePath(string path)
@@ -386,6 +491,7 @@ namespace MaterialPainter2
                     }
                 }
                 selected_brush = 0;
+                selected_brush_custom = "";
             }
             else
             {
@@ -428,6 +534,7 @@ namespace MaterialPainter2
                             }
                         }
                         selected_brush = 0;
+                        selected_brush_custom = "";
                     }
                 }
             }
@@ -619,9 +726,9 @@ namespace MaterialPainter2
 
     public class CoroutineManager : MonoBehaviour
     {
-        private static CoroutineManager instance;
+        public static CoroutineManager instance;
 
-        private static CoroutineManager Instance
+        public static CoroutineManager Instance
         {
             get
             {
@@ -639,7 +746,7 @@ namespace MaterialPainter2
             Instance.StartCoroutine(DelayCoroutine(delay, action));
         }
 
-        private static IEnumerator DelayCoroutine(float delay, Action action)
+        public static IEnumerator DelayCoroutine(float delay, Action action)
         {
             yield return new WaitForSeconds(delay);
             action?.Invoke();
