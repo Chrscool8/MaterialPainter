@@ -57,6 +57,7 @@ namespace MaterialPainter2
         public MP2Controller()
         {
             MP2.selected_brush = (int)MaterialBrush.None;
+            MP2.selected_brush_custom = "";
             brush_tool = new MP2BrushTool();
         }
 
@@ -295,11 +296,16 @@ namespace MaterialPainter2
             return outgoing;
         }
 
-        public void SetMaterial(Transform tf, int brush_type = -1)
+        public void SetMaterial(Transform tf, int brush_type = -1, string brush_type_custom="")
         {
             int selected_brush = MP2.selected_brush;
+            string selected_brush_custom = MP2.selected_brush_custom;
+
             if (brush_type != -1)
                 selected_brush = brush_type;
+
+            if (brush_type_custom != "")
+                selected_brush_custom = brush_type_custom;
 
             MP2.MPDebug($"Painting {tf.gameObject.name} with Brush {selected_brush} ({brush_type})");
 
@@ -564,19 +570,12 @@ namespace MaterialPainter2
                         }
                         break;
 
-                    case (int)MaterialBrush.Video_1:
-                    case (int)MaterialBrush.Video_2:
-                    case (int)MaterialBrush.Video_3:
+                    case (int)MaterialBrush.Video:
                         {
-                            string number = "1";
-
-                            if (selected_brush == (int)MaterialBrush.Video_2)
-                                number = "2";
-                            if (selected_brush == (int)MaterialBrush.Video_3)
-                                number = "3";
-
-                            MP2.MPDebug($"Video_{number}");
+                            MP2.MPDebug($"Video");
                             renderer.enabled = true;
+
+                            int number = 0;
 
                             var custom_video = MP2._local_mods_directory + $"MaterialPainter2/Custom/Videos/video-{number}.mp4";
                             var default_video = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + $"/Res/Videos/video-default-{number}.mp4";

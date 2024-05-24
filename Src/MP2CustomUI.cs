@@ -1,5 +1,4 @@
-﻿using ExCSS;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -42,6 +41,7 @@ namespace MaterialPainter2
         public string _button_image_sprite = "checkbox_uncheck";
         public string _button_image_sprite_highlight = "icon_highlight";
         public string _button_image_sprite_select = "icon_selection";
+        public bool _show_base_image = false;
 
         public List<UI_Button> button_family;
 
@@ -59,15 +59,15 @@ namespace MaterialPainter2
         public UI_Button(GameObject parent = null,
             float x = 0, float y = 0, float size_x = 32, float size_y = 32,
             string button_image_sprite = "", string button_image_sprite_highlight = "", string button_image_sprite_select = "",
-            OnMouseHover onMouseHover = null, OnMouseClick onMouseClick = null, string tooltip_text = "")
+            OnMouseHover onMouseHover = null, OnMouseClick onMouseClick = null, string tooltip_text = "", bool show_base_image = true)
         {
-            Setup(parent, x, y, size_x, size_y, button_image_sprite, button_image_sprite_highlight, button_image_sprite_select, onMouseHover, onMouseClick, tooltip_text);
+            Setup(parent, x, y, size_x, size_y, button_image_sprite, button_image_sprite_highlight, button_image_sprite_select, onMouseHover, onMouseClick, tooltip_text, show_base_image);
         }
 
         public UI_Button Setup(GameObject parent = null,
             float x = 0, float y = 0, float size_x = 32, float size_y = 32,
             string button_image_sprite = "", string button_image_sprite_highlight = "", string button_image_sprite_select = "",
-            OnMouseHover onMouseHover = null, OnMouseClick onMouseClick = null, string tooltip_text = "")
+            OnMouseHover onMouseHover = null, OnMouseClick onMouseClick = null, string tooltip_text = "", bool show_base_image = true)
         {
             position = new Vector2(x, y);
             size = new Vector2(size_x, size_y);
@@ -78,6 +78,7 @@ namespace MaterialPainter2
                 _button_image_sprite_highlight = button_image_sprite_highlight;
             if (button_image_sprite_select != "")
                 _button_image_sprite_select = button_image_sprite_select;
+            _show_base_image = show_base_image;
 
             if (onMouseHover == null)
                 on_mouse_hover = default_on_mouse_hover;
@@ -111,6 +112,9 @@ namespace MaterialPainter2
             float yy = position.y;
             if (auto_invert_y)
                 yy = Screen.height - position.y;
+
+            if (_show_base_image)
+                GUI.DrawTexture(new Rect(position.x, yy, size.x, size.y), MP2.get_sprite("tex_blank").texture, ScaleMode.ScaleToFit);
 
             GUI.DrawTexture(new Rect(position.x, yy, size.x, size.y), MP2.get_sprite(_button_image_sprite).texture, ScaleMode.ScaleToFit);
 

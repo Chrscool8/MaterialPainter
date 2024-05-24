@@ -1,5 +1,4 @@
-﻿using DG.Tweening;
-using Parkitect.UI;
+﻿using Parkitect.UI;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -145,6 +144,7 @@ namespace MaterialPainter2
                         if (Input.GetMouseButtonDown(0) && MP2.IsCoolDownReady())
                         {
                             MP2.selected_brush = entry.id;
+                            MP2.selected_brush_custom = entry.id_string;
                             MP2.ResetCountdown();
                             MP2.controller.ActivatePipe();
                         }
@@ -355,12 +355,18 @@ namespace MaterialPainter2
             //
 
             buttons_videos = new List<UI_Button>();
-            UI_Button video1 = new UI_Button(parent: gameObject, button_image_sprite: "icon_video1", button_image_sprite_highlight: "icon_highlight", onMouseClick: () => { MP2.selected_brush = (int)MaterialBrush.Video_1; }, tooltip_text: "Video 1");
-            buttons_videos.Add(video1);
-            UI_Button video2 = new UI_Button(parent: gameObject, button_image_sprite: "icon_video2", button_image_sprite_highlight: "icon_highlight", onMouseClick: () => { MP2.selected_brush = (int)MaterialBrush.Video_2; }, tooltip_text: "Video 2");
-            buttons_videos.Add(video2);
-            UI_Button video3 = new UI_Button(parent: gameObject, button_image_sprite: "icon_video3", button_image_sprite_highlight: "icon_highlight", onMouseClick: () => { MP2.selected_brush = (int)MaterialBrush.Video_3; }, tooltip_text: "Video 3");
-            buttons_videos.Add(video3);
+
+            foreach (MaterialType mt in MP2.material_brushes_videos.Values)
+            {
+                UI_Button butt = new UI_Button(parent: gameObject, button_image_sprite:mt.name, button_image_sprite_highlight: "icon_highlight",
+                    onMouseClick: () => { MP2.selected_brush = mt.id; MP2.selected_brush_custom = mt.id_string; }, tooltip_text: mt.name);
+                buttons_videos.Add(butt);
+            }
+
+            //UI_Button video2 = new UI_Button(parent: gameObject, button_image_sprite: "icon_video2", button_image_sprite_highlight: "icon_highlight", onMouseClick: () => { MP2.selected_brush = (int)MaterialBrush.Video_2; }, tooltip_text: "Video 2");
+            //buttons_videos.Add(video2);
+            //UI_Button video3 = new UI_Button(parent: gameObject, button_image_sprite: "icon_video3", button_image_sprite_highlight: "icon_highlight", onMouseClick: () => { MP2.selected_brush = (int)MaterialBrush.Video_3; }, tooltip_text: "Video 3");
+            //buttons_videos.Add(video3);
 
             grid_videos = new UI_Grid_Buttons();
             grid_videos.AddButtons(buttons_videos);
