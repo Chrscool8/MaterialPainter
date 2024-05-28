@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+
 using UnityEngine;
 
 namespace MaterialPainter2
@@ -72,7 +73,7 @@ namespace MaterialPainter2
             position = new Vector2(x, y);
             size = new Vector2(size_x, size_y);
 
-            if (button_image_sprite != "")
+            if (button_image_sprite != null && button_image_sprite != "")
                 _button_image_sprite = button_image_sprite;
             if (button_image_sprite_highlight != "")
                 _button_image_sprite_highlight = button_image_sprite_highlight;
@@ -116,7 +117,7 @@ namespace MaterialPainter2
             if (_show_base_image)
                 GUI.DrawTexture(new Rect(position.x, yy, size.x, size.y), MP2.get_sprite("tex_blank").texture, ScaleMode.ScaleToFit);
 
-            GUI.DrawTexture(new Rect(position.x, yy, size.x, size.y), MP2.get_sprite(_button_image_sprite).texture, ScaleMode.ScaleToFit);
+            GUI.DrawTexture(new Rect(position.x, yy, size.x, size.y), MP2.get_sprite(_button_image_sprite, MP2.get_sprite("tex_question")).texture, ScaleMode.ScaleToFit);
 
             if (Utils.PointInRectangle(Input.mousePosition, new Rect(position.x, position.y - size.y, size.x, size.y)))
             {
@@ -357,9 +358,12 @@ namespace MaterialPainter2
             int index = 0;
             foreach (var button in buttons)
             {
+                int button_width = (int)Math.Floor((size.x * scale) / (spacing.x * scale + tile_size.x * scale));
+                MP2.MPDebug($"{(size.x * scale) / (spacing.x * scale + tile_size.x * scale)}");
+
                 button.SetPosition(
-                    position.x + (spacing.x * scale + ((index * tile_size.x) + (index * spacing.x)) * scale),
-                    position.y - (spacing.y * scale)
+                    position.x + (spacing.x * scale + (((index % button_width) * tile_size.x) + ((index % button_width) * spacing.x)) * scale),
+                    position.y - (spacing.y * scale + ((index / button_width * tile_size.x) + (index / button_width * spacing.x)) * scale)
                     );
                 button.SetTileSize(tile_size.x * scale, tile_size.y * scale);
                 button.DrawSprite();

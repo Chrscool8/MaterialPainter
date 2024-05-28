@@ -1,15 +1,20 @@
-﻿using HarmonyLib;
-using MiniJSON;
-using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
+
+using HarmonyLib;
+
+using MiniJSON;
+
+using Newtonsoft.Json;
+
 using UnityEngine;
 using UnityEngine.Video;
+
 using static GameController;
 
 namespace MaterialPainter2
@@ -115,7 +120,7 @@ namespace MaterialPainter2
             }
         }
 
-        public static Sprite get_sprite(string name)
+        public static Sprite get_sprite(string name, Sprite def = null)
         {
             if (sprites.ContainsKey(name))
             {
@@ -124,7 +129,7 @@ namespace MaterialPainter2
             else
             {
                 MPDebug("Couldn't load sprite: '" + name + "'");
-                return null;
+                return def;
             }
         }
 
@@ -259,6 +264,7 @@ namespace MaterialPainter2
 
             if (!File.Exists(_local_mods_directory + $"MaterialPainter2/ffmpeg.exe"))
             {
+                MPDebug("ffmpeg not found.");
                 if (FileDownloader.Instance != null)
                 {
                     string ffmpegDownloadUrl = "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffmpeg-6.1-win-64.zip";
@@ -271,6 +277,8 @@ namespace MaterialPainter2
                     MP2.MPDebug("FileDownloader instance is not available.");
                 }
             }
+            else
+                MPDebug("ffmpeg found.");
         }
 
         public void RefreshBrushesVideos()
@@ -280,6 +288,8 @@ namespace MaterialPainter2
 
 
             material_brushes_videos.Clear();
+
+            //material_brushes_videos["None"] = (new MaterialType("icon_none", get_sprite("icon_none"), (int)MaterialBrush.None));
 
             string[] files = Directory.GetFiles(_local_mods_directory + "MaterialPainter2/Custom/Videos/", "*.mp4", SearchOption.AllDirectories);
             foreach (string file in files)
@@ -351,7 +361,7 @@ namespace MaterialPainter2
                 }
 
 
-                MaterialType new_type = new MaterialType(name: image_name, preview: sprites.GetValueOrDefault(image_name,""), id: (int)MaterialBrush.Video);
+                MaterialType new_type = new MaterialType(name: image_name, preview: sprites.GetValueOrDefault(image_name, null), id: (int)MaterialBrush.Video, id_string: image_name);
                 if (!material_brushes_videos.ContainsKey(image_name))
                 {
                     material_brushes_videos.Add(image_name, new_type);
