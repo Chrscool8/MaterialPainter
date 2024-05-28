@@ -1,14 +1,15 @@
-﻿using MaterialPainter2;
-using System.Collections;
+﻿using System.Collections;
 using System.IO;
 using System.IO.Compression;
+
+using MaterialPainter2;
+
 using UnityEngine;
 using UnityEngine.Networking;
 
 public class FileDownloader : MonoBehaviour
 {
     // Singleton instance for easy access
-
     public static FileDownloader instance;
 
     public static FileDownloader Instance
@@ -25,7 +26,7 @@ public class FileDownloader : MonoBehaviour
     }
 
     // Coroutine to download the file
-    public IEnumerator DownloadFile(string url, string path, bool extract=false)
+    public IEnumerator DownloadFile(string url, string path, bool extract = false)
     {
         MP2.MPDebug("DL start");
         using (UnityWebRequest webRequest = UnityWebRequest.Get(url))

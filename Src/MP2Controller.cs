@@ -1,11 +1,13 @@
-﻿using HarmonyLib;
-using Parkitect.Mods.AssetPacks;
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+
+using HarmonyLib;
+
+using Parkitect.Mods.AssetPacks;
+
 using UnityEngine;
 using UnityEngine.Video;
 
@@ -296,7 +298,7 @@ namespace MaterialPainter2
             return outgoing;
         }
 
-        public void SetMaterial(Transform tf, int brush_type = -1, string brush_type_custom="")
+        public void SetMaterial(Transform tf, int brush_type = -1, string brush_type_custom = "")
         {
             int selected_brush = MP2.selected_brush;
             string selected_brush_custom = MP2.selected_brush_custom;
@@ -572,29 +574,23 @@ namespace MaterialPainter2
 
                     case (int)MaterialBrush.Video:
                         {
-                            MP2.MPDebug($"Video");
+                            MP2.MPDebug($"Video, {MP2.selected_brush_custom}");
                             renderer.enabled = true;
 
-                            int number = 0;
 
-                            var custom_video = MP2._local_mods_directory + $"MaterialPainter2/Custom/Videos/video-{number}.mp4";
-                            var default_video = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + $"/Res/Videos/video-default-{number}.mp4";
-                            MP2.MPDebug($"{custom_video}, {default_video}");
 
-                            string url = null;
 
-                            if (File.Exists(custom_video))
-                                url = custom_video;
-                            else if (File.Exists(default_video))
-                                url = default_video;
-                            else
-                                MP2.MPDebug("Couldn't find any videos");
-
-                            MP2.MPDebug("Loading video: " + url);
-
-                            if (url != null)
+                            var video_url = MP2._local_mods_directory + $"MaterialPainter2/Custom/Videos/{MP2.selected_brush_custom}.mp4";
+                            if (!File.Exists(video_url))
                             {
-                                VideoPlayer video_player = null;
+                                MP2.MPDebug($"Couldn't find {video_url}.");
+                                return;
+                            }
+
+                            MP2.MPDebug("Loading video: " + video_url);
+
+                            if (video_url != null)
+                            {
                                 /*if (MP2.cached_videos.ContainsKey(url))
                                 {
                                     video_player = MP2.cached_videos[url];
@@ -606,22 +602,31 @@ namespace MaterialPainter2
                                     MP2.cached_videos.Add(url, video_player);
                                 }*/
 
-                                video_player = tf.gameObject.AddComponent<VideoPlayer>();
 
-                                video_player.url = url;
+                                VideoPlayer video_player = tf.gameObject.AddComponent<VideoPlayer>();
+                                AudioSource audio_source = tf.gameObject.AddComponent<AudioSource>();
 
-                                //videoplayer.audioOutputMode = VideoAudioOutputMode.Direct;
-                                //videoplayer.SetTargetAudioSource(0, audioSource);
+                                //video_player.audioOutputMode = VideoAudioOutputMode.None;
 
+                                video_player.audioOutputMode = VideoAudioOutputMode.AudioSource;
+                                video_player.SetTargetAudioSource(0, audio_source);
+
+                                //audio_source.spatialize = true;
+                                //audio_source.spatialBlend = 1.0f;
+
+                                audio_source.volume = 0;
+
+                                video_player.url = video_url;
                                 video_player.isLooping = true;
-                                video_player.Play();
+                                video_player.Prepare();
+                                video_player.prepareCompleted += OnVideoPrepared;
 
                                 video_player.targetMaterialRenderer = renderer;
                                 video_player.renderMode = VideoRenderMode.MaterialOverride;
                             }
                             else
                             {
-                                MP2.MPDebug($"Couldn't load {url}.");
+                                MP2.MPDebug($"Couldn't load {video_url}.");
                             }
                         }
                         break;
@@ -633,7 +638,11 @@ namespace MaterialPainter2
                 ScriptableSingleton<SoundAssetManager>.Instance.recolorObject.play2D();
             }
         }
-
+        void OnVideoPrepared(VideoPlayer vp)
+        {
+            // Play the video when it is prepared
+            vp.Play();
+        }
         public void OnObjectClicked(GameObject game_object)
         {
             MP2.ResetCountdown();
