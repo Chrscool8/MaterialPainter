@@ -20,6 +20,7 @@ namespace MaterialPainter2
         private VideoPlayer video_player = null;
         private bool _was_enabled = true;
         private int current_brush = -1;
+        private string custom_string = "";
 
         public Material[] GetMaterials()
         { return materials; }
@@ -39,11 +40,17 @@ namespace MaterialPainter2
         public void SetEnabled(bool _was_enabled)
         { this._was_enabled = _was_enabled; }
 
-        public void SetCurrentBrush(int brush)
-        { current_brush = brush; }
+        public void SetCurrentBrush(int brush, string custom_data = "")
+        {
+            current_brush = brush;
+            custom_string = custom_data;
+        }
 
         public int GetCurrentBrush()
         { return current_brush; }
+
+        public string GetCurrentBrushString()
+        { return custom_string; }
 
         public void SetVideoPlayer(VideoPlayer video_player)
         { this.video_player = video_player; }
@@ -309,13 +316,12 @@ namespace MaterialPainter2
             if (brush_type_custom != "")
                 selected_brush_custom = brush_type_custom;
 
-            MP2.MPDebug($"Painting {tf.gameObject.name} with Brush {selected_brush} ({brush_type})");
+            MP2.MPDebug($"Painting {tf.gameObject.name} with Brush {selected_brush} ({brush_type}), {brush_type_custom}");
 
             ChangedMarker cm1 = tf.gameObject.GetComponent<ChangedMarker>();
             if (cm1 != null)
             {
-                int current_brush = cm1.GetCurrentBrush();
-                if (current_brush == selected_brush)
+                if (cm1.GetCurrentBrush() == selected_brush && cm1.GetCurrentBrushString() == selected_brush_custom)
                 {
                     MP2.MPDebug("Same Brush");
                     return;
@@ -343,6 +349,10 @@ namespace MaterialPainter2
                 }
 
                 cm.SetCurrentBrush(selected_brush);
+                if (selected_brush == (int)MaterialBrush.Video)
+                {
+                    cm.SetCurrentBrush(selected_brush, selected_brush_custom);
+                }
 
                 // Set Material
 
@@ -391,10 +401,7 @@ namespace MaterialPainter2
                             MaterialPropertyBlock materialPropertyBlock = new MaterialPropertyBlock();
                             renderer.GetPropertyBlock(materialPropertyBlock);
                             materialPropertyBlock.SetColor(Shader.PropertyToID("_Color"), c);
-                            float H;
-                            float S;
-                            float V;
-                            Color.RGBToHSV(c, out H, out S, out V);
+                            Color.RGBToHSV(c, out float H, out float S, out float V);
                             c = Color.HSVToRGB(H, S, V / 2f);
                             c.a = 0.9019608f;
                             materialPropertyBlock.SetColor(Shader.PropertyToID("_Color2"), c);
@@ -574,17 +581,23 @@ namespace MaterialPainter2
 
                     case (int)MaterialBrush.Video:
                         {
-                            MP2.MPDebug($"Video, {MP2.selected_brush_custom}");
+                            MP2.MPDebug($"Video, {selected_brush_custom}");
                             renderer.enabled = true;
 
-
-
-
-                            var video_url = MP2._local_mods_directory + $"MaterialPainter2/Custom/Videos/{MP2.selected_brush_custom}.mp4";
+                            var video_url = MP2._local_mods_directory + $"MaterialPainter2/Custom/Videos/{selected_brush_custom}.mp4";
                             if (!File.Exists(video_url))
                             {
                                 MP2.MPDebug($"Couldn't find {video_url}.");
-                                return;
+
+                                string fallback = MP2._local_mods_directory + $"MaterialPainter2/Custom/Videos/video-0.mp4"; ;
+                                if (File.Exists(fallback))
+                                {
+                                    video_url = fallback;
+                                }
+                                else
+                                {
+                                    video_url = null;
+                                }
                             }
 
                             MP2.MPDebug("Loading video: " + video_url);
