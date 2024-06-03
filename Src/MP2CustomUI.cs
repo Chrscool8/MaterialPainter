@@ -359,7 +359,7 @@ namespace MaterialPainter2
             foreach (var button in buttons)
             {
                 int button_width = (int)Math.Floor((size.x * scale) / (spacing.x * scale + tile_size.x * scale));
-                MP2.MPDebug($"{(size.x * scale) / (spacing.x * scale + tile_size.x * scale)}");
+                //MP2.MPDebug($"{(size.x * scale) / (spacing.x * scale + tile_size.x * scale)}");
 
                 button.SetPosition(
                     position.x + (spacing.x * scale + (((index % button_width) * tile_size.x) + ((index % button_width) * spacing.x)) * scale),

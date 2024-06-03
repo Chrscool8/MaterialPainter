@@ -28,6 +28,12 @@ public class FileDownloader : MonoBehaviour
     // Coroutine to download the file
     public IEnumerator DownloadFile(string url, string path, bool extract = false)
     {
+        string directoryPath = System.IO.Path.GetDirectoryName(path);
+        if (!Directory.Exists(directoryPath))
+        {
+            Directory.CreateDirectory(directoryPath);
+        }
+
         MP2.MPDebug("DL start");
         using (UnityWebRequest webRequest = UnityWebRequest.Get(url))
         {
