@@ -33,7 +33,131 @@ namespace MaterialPainter2
             }
         }
     }
+    public class UI_PushButton : UI_Item
+    {
+        public Vector2 position;
+        public Vector2 size;
+        public string text;
 
+        public delegate void OnMouseHover();
+
+        private OnMouseHover on_mouse_hover;
+
+        public delegate void OnMouseClick();
+
+        private OnMouseClick on_mouse_click;
+
+        public bool auto_invert_y = true;
+
+        private float lastPressedTime = -1;
+
+        public UI_PushButton(GameObject parent = null, float x = 0, float y = 0, float size_x = 64, float size_y = 64, OnMouseHover onMouseHover = null, OnMouseClick onMouseClick = null, string text = "", string tooltip_text = "")
+        {
+            Setup(parent, x, y, size_x, size_y, onMouseHover, onMouseClick, text, tooltip_text);
+
+        }
+
+        public UI_PushButton Setup(GameObject parent = null, float x = 0, float y = 0, float size_x = 64, float size_y = 64, OnMouseHover onMouseHover = null, OnMouseClick onMouseClick = null, string text = "", string tooltip_text = "")
+        {
+            position = new Vector2(x, y);
+            size = new Vector2(size_x, size_y);
+
+            if (onMouseHover == null)
+                on_mouse_hover = default_on_mouse_hover;
+            else
+                on_mouse_hover = onMouseHover;
+
+            if (onMouseClick == null)
+                on_mouse_click = default_on_mouse_click;
+            else
+                on_mouse_click = onMouseClick;
+
+            this.text = text;
+            this.tooltip_text = tooltip_text;
+            this.parent = parent;
+
+            return this;
+        }
+
+        public void default_on_mouse_hover()
+        {
+        }
+
+        public void default_on_mouse_click()
+        {
+        }
+
+        public void DrawButton()
+        {
+            if (!visible) return;
+
+
+            float yy = position.y;
+            if (auto_invert_y)
+                yy = Screen.height - position.y;
+
+            Rect button_rect = new Rect(position.x, yy, size.x, size.y);
+
+
+            if (!is_depressed())
+                GUI.DrawTexture(button_rect, MP2.get_sprite("tex_button").texture, ScaleMode.StretchToFill);
+            else
+                GUI.DrawTexture(button_rect, MP2.get_sprite("tex_button_pressed").texture, ScaleMode.StretchToFill);
+
+
+            Rect adjusted_button_rect = new Rect(button_rect);
+            adjusted_button_rect.y = position.y - size.y;
+            if (Utils.PointInRectangle(Input.mousePosition, adjusted_button_rect))
+            {
+                GUI.DrawTexture(button_rect, MP2.get_sprite("icon_highlight").texture, ScaleMode.StretchToFill);
+
+                if (MP2.IsCoolDownReady() && Input.GetMouseButtonUp(0))
+                {
+                    MP2.ResetCountdown();
+                    Push();
+
+                }
+
+                setToolTip(tooltip_text);
+            }
+
+            if (text != null)
+            {
+                GUIStyle tooltip_guiStyle = new GUIStyle(GUI.skin.label)
+                {
+                    fontSize = 14,
+                    alignment = TextAnchor.MiddleCenter
+                };
+
+                GUI.color = new Color(153, 168, 166);
+                GUI.Label(button_rect, text, tooltip_guiStyle);
+                GUI.color = Color.white;
+            }
+        }
+        private bool is_depressed() // :(
+        {
+            return !(Time.time - lastPressedTime >= .1f || lastPressedTime == -1);
+        }
+
+        private void Push()
+        {
+            lastPressedTime = Time.time;
+            on_mouse_click?.Invoke();
+        }
+
+        public void SetPosition(float x, float y)
+        {
+            position.x = x;
+            position.y = y;
+        }
+
+        public void SetSize(float x, float y)
+        {
+            size.x = x;
+            size.y = y;
+        }
+
+    }
     public class UI_Button : UI_Item
     {
         public Vector2 position;
@@ -219,6 +343,7 @@ namespace MaterialPainter2
 
         public void default_on_mouse_click()
         {
+            MP2.MPDebug("press!");
         }
 
         public void DrawSprite(float dpi_scale = 1)
@@ -583,5 +708,10 @@ namespace MaterialPainter2
                 index += 1;
             }
         }
+    }
+
+    public class ToolTipper : MonoBehaviour
+    {
+        public string tooltip = "";
     }
 }

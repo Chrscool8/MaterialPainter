@@ -265,6 +265,9 @@ namespace MaterialPainter2
             if (!File.Exists(_local_mods_directory + $"MaterialPainter2/Tools/ffmpeg.exe"))
             {
                 MPDebug("ffmpeg not found.");
+
+                MP2WindowSuggest.ConstructWindowPrefab();
+
                 if (FileDownloader.Instance != null)
                 {
                     string ffmpegDownloadUrl = "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffmpeg-6.1-win-64.zip";

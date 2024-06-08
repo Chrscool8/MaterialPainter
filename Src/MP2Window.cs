@@ -256,9 +256,4 @@ namespace MaterialPainter2
                 Destroy(tt);
         }
     }
-
-    public class ToolTipper : MonoBehaviour
-    {
-        public string tooltip = "";
-    }
 }
