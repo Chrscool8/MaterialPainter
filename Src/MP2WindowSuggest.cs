@@ -118,7 +118,7 @@ namespace MaterialPainter2
             Instance = this;
             MP2.MPDebug("Showing FFMPEG Window");
 
-            button_download = new UI_PushButton(parent: gameObject, text: "Download", tooltip_text: "Automatically downloads from https://github.com/ffbinaries/ffbinaries-prebuilt", onMouseClick: () => { MP2.download_ffmpeg(); windowSuggestInstance.close(); windowSuggestInstance = null; });
+            button_download = new UI_PushButton(parent: gameObject, text: "Download", tooltip_text: "Automatically downloads from https://github.com/BtbN/FFmpeg-Builds", onMouseClick: () => { MP2.download_ffmpeg(); windowSuggestInstance.close(); windowSuggestInstance = null; });
             button_neveragain = new UI_PushButton(parent: gameObject, text: "Ignore", tooltip_text: "Stops reminding you about this until you delete 'Mods/MaterialPainter2/_ignore_ffmpeg'", onMouseClick: () => { MP2.ignore_ffmpeg(); windowSuggestInstance.close(); windowSuggestInstance = null; });
 
             gameObject.AddComponent<ToolTipper>();

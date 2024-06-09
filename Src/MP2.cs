@@ -288,15 +288,32 @@ namespace MaterialPainter2
         {
             if (FileDownloader.Instance != null)
             {
-                string ffmpegDownloadUrl = "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffmpeg-6.1-win-64.zip";
+                string ffmpegDownloadUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n7.0-latest-win64-lgpl-7.0.zip";
                 var savePath = _local_mods_directory + $"MaterialPainter2/Tools/file.zip";
 
-                CoroutineManager.Instance.StartCoroutine(FileDownloader.Instance.DownloadFile(ffmpegDownloadUrl, savePath, true, action_on_complete: RefreshBrushesVideos));
+                CoroutineManager.Instance.StartCoroutine(FileDownloader.Instance.DownloadFile(ffmpegDownloadUrl, savePath, true, action_on_complete: move_ffmpeg));
             }
             else
             {
                 MP2.MPDebug("FileDownloader instance is not available.");
             }
+        }
+
+        public static void move_ffmpeg()
+        {
+            string original_loc = _local_mods_directory + $"MaterialPainter2/Tools/ffmpeg-n7.0-latest-win64-lgpl-7.0/bin/ffmpeg.exe";
+            if (File.Exists(original_loc))
+            {
+                File.Move(original_loc, _local_mods_directory + $"MaterialPainter2/Tools/ffmpeg.exe");
+            }
+
+            if (Directory.Exists(_local_mods_directory + $"MaterialPainter2/Tools/ffmpeg-n7.0-latest-win64-lgpl-7.0"))
+            {
+                // Delete the folder and all its contents
+                Directory.Delete(_local_mods_directory + $"MaterialPainter2/Tools/ffmpeg-n7.0-latest-win64-lgpl-7.0", true);
+            }
+
+            RefreshBrushesVideos();
         }
 
         public static void ignore_ffmpeg()
