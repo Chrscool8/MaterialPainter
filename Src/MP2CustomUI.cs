@@ -54,7 +54,6 @@ namespace MaterialPainter2
         public UI_PushButton(GameObject parent = null, float x = 0, float y = 0, float size_x = 64, float size_y = 64, OnMouseHover onMouseHover = null, OnMouseClick onMouseClick = null, string text = "", string tooltip_text = "")
         {
             Setup(parent, x, y, size_x, size_y, onMouseHover, onMouseClick, text, tooltip_text);
-
         }
 
         public UI_PushButton Setup(GameObject parent = null, float x = 0, float y = 0, float size_x = 64, float size_y = 64, OnMouseHover onMouseHover = null, OnMouseClick onMouseClick = null, string text = "", string tooltip_text = "")
@@ -79,18 +78,13 @@ namespace MaterialPainter2
             return this;
         }
 
-        public void default_on_mouse_hover()
-        {
-        }
+        public void default_on_mouse_hover() { }
 
-        public void default_on_mouse_click()
-        {
-        }
+        public void default_on_mouse_click() { }
 
         public void DrawButton()
         {
             if (!visible) return;
-
 
             float yy = position.y;
             if (auto_invert_y)
@@ -115,7 +109,6 @@ namespace MaterialPainter2
                 {
                     MP2.ResetCountdown();
                     Push();
-
                 }
 
                 setToolTip(tooltip_text);
@@ -125,7 +118,7 @@ namespace MaterialPainter2
             {
                 GUIStyle tooltip_guiStyle = new GUIStyle(GUI.skin.label)
                 {
-                    fontSize = 14,
+                    fontSize = Mathf.RoundToInt(14 * MP2.get_dpi()),
                     alignment = TextAnchor.MiddleCenter
                 };
 
@@ -156,8 +149,8 @@ namespace MaterialPainter2
             size.x = x;
             size.y = y;
         }
-
     }
+
     public class UI_Button : UI_Item
     {
         public Vector2 position;

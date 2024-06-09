@@ -12,6 +12,8 @@ using MiniJSON;
 
 using Newtonsoft.Json;
 
+using Parkitect.UI;
+
 using UnityEngine;
 using UnityEngine.Video;
 
@@ -52,7 +54,7 @@ namespace MaterialPainter2
 
     public class MP2 : AbstractMod, IModSettings
     {
-        public const string VERSION_NUMBER = "240515";
+        public const string VERSION_NUMBER = "240608";
 
         public override string getIdentifier() => "MaterialPainter";
 
@@ -147,6 +149,17 @@ namespace MaterialPainter2
             }
         }
 
+        public static float get_dpi()
+        {
+            float num = Screen.dpi;
+            if (Mathf.Approximately(num, 0f))
+            {
+                num = 72f;
+            }
+            float dpi_scale = DPIHelper.scaleDPI(num / 72f) / 1.3f * Settings.Instance.uiScale;
+
+            return dpi_scale;
+        }
         public MP2()
         {
             _local_mods_directory = GameController.modsPath; //NormalizePath(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Parkitect/Mods/");
@@ -261,34 +274,40 @@ namespace MaterialPainter2
 
             RefreshBrushesVideos();
 
-
             if (!File.Exists(_local_mods_directory + $"MaterialPainter2/Tools/ffmpeg.exe"))
             {
                 MPDebug("ffmpeg not found.");
 
-                MP2WindowSuggest.ConstructWindowPrefab();
-
-                if (FileDownloader.Instance != null)
-                {
-                    string ffmpegDownloadUrl = "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffmpeg-6.1-win-64.zip";
-                    var savePath = _local_mods_directory + $"MaterialPainter2/Tools/file.zip";
-
-                    CoroutineManager.Instance.StartCoroutine(FileDownloader.Instance.DownloadFile(ffmpegDownloadUrl, savePath, true));
-                }
-                else
-                {
-                    MP2.MPDebug("FileDownloader instance is not available.");
-                }
+                if (!File.Exists(_local_mods_directory + $"MaterialPainter2/_ignore_ffmpeg"))
+                    MP2WindowSuggest.ConstructWindowPrefab();
             }
             else
                 MPDebug("ffmpeg found.");
         }
+        public static void download_ffmpeg()
+        {
+            if (FileDownloader.Instance != null)
+            {
+                string ffmpegDownloadUrl = "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffmpeg-6.1-win-64.zip";
+                var savePath = _local_mods_directory + $"MaterialPainter2/Tools/file.zip";
 
-        public void RefreshBrushesVideos()
+                CoroutineManager.Instance.StartCoroutine(FileDownloader.Instance.DownloadFile(ffmpegDownloadUrl, savePath, true, action_on_complete: RefreshBrushesVideos));
+            }
+            else
+            {
+                MP2.MPDebug("FileDownloader instance is not available.");
+            }
+        }
+
+        public static void ignore_ffmpeg()
+        {
+            FileInfo fileInfo = new FileInfo(_local_mods_directory + $"MaterialPainter2/_ignore_ffmpeg");
+            using (FileStream fs = fileInfo.Create()) { }
+        }
+
+        public static void RefreshBrushesVideos()
         {
             string ffmpeg_path = _local_mods_directory + $"MaterialPainter2/Tools/ffmpeg.exe";
-
-
 
             material_brushes_videos.Clear();
 
@@ -338,35 +357,36 @@ namespace MaterialPainter2
                             process.WaitForExit();
                         }
                     }
-
-                    if (File.Exists(outputFilePath))
-                    {
-                        MPDebug("Found thumb.");
-                        if (!sprites.ContainsKey(image_name))
-                        {
-                            MPDebug("Loading as sprite.");
-                            Texture2D texture = new Texture2D(2, 2);
-                            byte[] bytes = System.IO.File.ReadAllBytes(outputFilePath);
-                            texture.LoadImage(bytes);
-
-                            if (texture == null)
-                            {
-                                MPDebug("Texture not found at path: " + outputFilePath);
-                                return;
-                            }
-                            MPDebug("Loaded tex.");
-                            Sprite sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
-                            MPDebug("Putting in list.");
-                            sprites.Add(image_name, sprite);
-                        }
-                    }
-
                 }
 
+                if (File.Exists(outputFilePath))
+                {
+                    MPDebug("Found thumb.");
+                    if (!sprites.ContainsKey(image_name))
+                    {
+                        MPDebug("Loading as sprite.");
+                        Texture2D texture = new Texture2D(2, 2);
+                        byte[] bytes = System.IO.File.ReadAllBytes(outputFilePath);
+                        texture.LoadImage(bytes);
+
+                        if (texture == null)
+                        {
+                            MPDebug("Texture not found at path: " + outputFilePath);
+                            return;
+                        }
+                        MPDebug("Loaded tex.");
+                        Sprite sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+                        MPDebug("Putting in list.");
+                        sprites.Add(image_name, sprite);
+                    }
+                }
+                else
+                    MPDebug($"Didn't find {outputFilePath}");
 
                 MaterialType new_type = new MaterialType(name: image_name, preview: sprites.GetValueOrDefault(image_name, null), id: (int)MaterialBrush.Video, id_string: image_name);
                 if (!material_brushes_videos.ContainsKey(image_name))
                 {
+                    MPDebug($"Adding video brush: {image_name}");
                     material_brushes_videos.Add(image_name, new_type);
                 }
                 else

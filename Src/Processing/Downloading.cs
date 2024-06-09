@@ -12,6 +12,10 @@ public class FileDownloader : MonoBehaviour
     // Singleton instance for easy access
     public static FileDownloader instance;
 
+    public delegate void OnComplete();
+
+    private OnComplete on_complete;
+
     public static FileDownloader Instance
     {
         get
@@ -26,8 +30,10 @@ public class FileDownloader : MonoBehaviour
     }
 
     // Coroutine to download the file
-    public IEnumerator DownloadFile(string url, string path, bool extract = false)
+    public IEnumerator DownloadFile(string url, string path, bool extract = false, OnComplete action_on_complete = null)
     {
+        on_complete = action_on_complete;
+
         string directoryPath = System.IO.Path.GetDirectoryName(path);
         if (!Directory.Exists(directoryPath))
         {
@@ -54,6 +60,9 @@ public class FileDownloader : MonoBehaviour
                     ZipFile.ExtractToDirectory(path, System.IO.Path.GetDirectoryName(path));
                     File.Delete(path);
                 }
+
+                if (on_complete != null)
+                    on_complete();
             }
         }
     }
