@@ -6,9 +6,9 @@ using UnityEngine;
 
 namespace MaterialPainter2
 {
-    public class MP2Window : UIWindow
+    public class Window_Main : UIWindow
     {
-        public static MP2Window Instance { get; private set; }
+        public static Window_Main Instance { get; private set; }
 
         public static List<UI_Button> buttons_elements;
         public static List<UI_Button> buttons_videos;
@@ -88,6 +88,8 @@ namespace MaterialPainter2
                 GUI.Label(tooltip_rect, tt.tooltip, tooltip_guiStyle);
                 GUI.color = Color.white;
             }
+
+            MP2_Controller.wms?.OnGui();
         }
 
 
@@ -254,6 +256,8 @@ namespace MaterialPainter2
             ToolTipper tt = GetComponent<ToolTipper>();
             if (tt != null)
                 Destroy(tt);
+
+            MP2_Controller.wms?.close();
         }
     }
 }

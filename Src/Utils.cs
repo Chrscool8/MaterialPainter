@@ -5,8 +5,34 @@ using UnityEngine.SceneManagement;
 
 namespace MaterialPainter2
 {
+    public static class EnumerableExtensions
+    {
+        public static IEnumerable<(int index, T item)> Enumerate<T>(this IEnumerable<T> source)
+        {
+            int i = 0;
+            foreach (var item in source)
+            {
+                yield return (i, item);
+                i++;
+            }
+        }
+    }
+
+    public static class DictionaryExtensions
+    {
+        public static IEnumerable<(int index, TKey key, TValue value)> Enumerate<TKey, TValue>(this IDictionary<TKey, TValue> source)
+        {
+            int i = 0;
+            foreach (var kvp in source)
+            {
+                yield return (i, kvp.Key, kvp.Value);
+                i++;
+            }
+        }
+    }
     public static class Utils
     {
+
         public static void PrintHierarchy(GameObject gameObject, int depth = 1, bool listComponents = false)
         {
             // Print the GameObject's name with indentation based on its depth

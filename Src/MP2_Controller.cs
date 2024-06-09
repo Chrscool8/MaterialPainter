@@ -4,12 +4,12 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 
-using HarmonyLib;
-
 using Parkitect.Mods.AssetPacks;
 
 using UnityEngine;
 using UnityEngine.Video;
+
+using VLB;
 
 namespace MaterialPainter2
 {
@@ -59,15 +59,16 @@ namespace MaterialPainter2
         { return video_player; }
     }
 
-    public class MP2Controller : MonoBehaviour
+    public class MP2_Controller : MonoBehaviour
     {
         private static IMouseTool brush_tool = null;
+        public static Window_MultiSelector wms = null;
 
-        public MP2Controller()
+        public MP2_Controller()
         {
             MP2.selected_brush = (int)MaterialBrush.None;
             MP2.selected_brush_custom = "";
-            brush_tool = new MP2BrushTool();
+            brush_tool = new MaterialBrushTool();
         }
 
         public void ActivatePipe()
@@ -106,7 +107,11 @@ namespace MaterialPainter2
             }
 
             //MP2.MPDebug("Update");
-            if ((!MP2._setting_drag_select && Input.GetMouseButtonDown(0) && MP2.IsCoolDownReady()) || (MP2._setting_drag_select && Input.GetMouseButton(0)))
+
+            bool left_click = ((!MP2._setting_drag_select && Input.GetMouseButtonUp(0) && MP2.IsCoolDownReady()) || (MP2._setting_drag_select && Input.GetMouseButton(0)) && MP2_Controller.wms == null);
+            bool right_click = (!MP2._setting_drag_select && Input.GetMouseButtonUp(1));
+
+            if (left_click ^ right_click)
             {
                 if (!GameController.Instance.isActiveMouseTool(brush_tool))
                 {
@@ -135,35 +140,36 @@ namespace MaterialPainter2
                 List<GameObject> things = new List<GameObject>();
 
                 Plane[] cameraFrustumPlanes = GeometryUtility.CalculateFrustumPlanes(Camera.main);
-                BoundingVolume.Layers checkMask = BoundingVolume.Layers.Support;
-                GameObject result = null;
-                float distance = float.MaxValue;
+                //BoundingVolume.Layers checkMask = BoundingVolume.Layers.Support;
+                //GameObject result = null;
+                //float distance = float.MaxValue;
                 Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
-                List<BoundingVolume> bvs = Traverse.Create(Collisions.Instance).Field("dynamicBoundingVolumes").GetValue() as List<BoundingVolume>;
-                //MP2.MPDebug($">> {bvs.Count}");
+                /*
+                 List<BoundingVolume> bvs = Traverse.Create(Collisions.Instance).Field("dynamicBoundingVolumes").GetValue() as List<BoundingVolume>;
+                 //MP2.MPDebug($">> {bvs.Count}");
 
-                List<BoundingVolume>.Enumerator enumerator = bvs.GetEnumerator();
-                while (enumerator.MoveNext())
-                {
-                    BoundingVolume current = enumerator.Current;
+                 List<BoundingVolume>.Enumerator enumerator = bvs.GetEnumerator();
+                 while (enumerator.MoveNext())
+                 {
+                     BoundingVolume current = enumerator.Current;
 
-                    if (current.hasMask(checkMask))
-                    {
-                        if (!current.isStatic)
-                        {
-                            current.setPosition(current.gameObject.transform.position, current.gameObject.transform.rotation, current.gameObject.transform.lossyScale);
-                        }
+                     if (current.hasMask(checkMask))
+                     {
+                         if (!current.isStatic)
+                         {
+                             current.setPosition(current.gameObject.transform.position, current.gameObject.transform.rotation, current.gameObject.transform.lossyScale);
+                         }
 
-                        if (current.isVisible(cameraFrustumPlanes) && current.collides(ray, out var distance2) && distance2 < distance)
-                        {
-                            distance = distance2;
-                            result = current.gameObject;
-                            things.Add(enumerator.Current.gameObject);
-                            MP2.MPDebug($"{current.gameObject.name}");
-                        }
-                    }
-                }
+                         if (current.isVisible(cameraFrustumPlanes) && current.collides(ray, out var distance2) && distance2 < distance)
+                         {
+                             distance = distance2;
+                             result = current.gameObject;
+                             things.Add(enumerator.Current.gameObject);
+                             MP2.MPDebug($"{current.gameObject.name}");
+                         }
+                     }
+                 }*/
 
                 //MP2.MPDebug($"{things.Count}");
 
@@ -177,9 +183,31 @@ namespace MaterialPainter2
                 for (int i = 0; i < sortedList.Count; i++)
                 {
                     MouseCollider.HitInfo raycastHit = sortedList[i];
+                    MP2.MPDebug($"{i} {raycastHit.hitObject.name} - {raycastHit.hitDistance}");
+                }
+
+                List<GameObject> list = new List<GameObject>();
+
+                for (int i = 0; i < sortedList.Count; i++)
+                {
+                    MouseCollider.HitInfo raycastHit = sortedList[i];
                     //MP2.MPDebug($"{raycastHit.hitObject.name} - {raycastHit.hitDistance}");
-                    if (i == 0)
+                    if (i == 0 && left_click)
+                    {
                         OnObjectClicked(raycastHit.hitObject);
+                    }
+                    else if (right_click)
+                    {
+                        list.Add(raycastHit.hitObject);
+                    }
+                }
+
+                if (right_click)
+                {
+                    wms?.close();
+
+                    if (list.Count > 0)
+                        wms = new Window_MultiSelector(list, Input.mousePosition.xy());
                 }
             }
         }

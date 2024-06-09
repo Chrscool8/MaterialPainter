@@ -2,6 +2,7 @@
 
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace MaterialPainter2
@@ -82,7 +83,7 @@ namespace MaterialPainter2
 
             //Features setup
             DestroyImmediate(mp2_button.GetComponent<UIMenuWindowButton>());
-            var mpWindowButton = mp2_button.AddComponent<MP2WindowButton>();
+            var mpWindowButton = mp2_button.AddComponent<ToolbarButton>();
             //mpWindowButton.hotkeyIdentifier = MaterialPainter2.MPActiveHotkey.Identifier;
             var toggle = mp2_button.GetComponent<Toggle>();
             RemoveListeners(toggle);
@@ -96,5 +97,105 @@ namespace MaterialPainter2
         {
             DestroyImmediate(mp2_button);
         }
+    }
+
+    public class ToolbarButton : UIMenuButton, IPointerClickHandler
+    {
+        public static ToolbarButton Instance { get; private set; }
+        public static Window_Main Window { get; private set; }
+
+        private Toggle toggle;
+
+        protected override void Awake()
+        {
+            base.Awake();
+
+            Instance = this;
+
+            var tooltip = gameObject.GetComponent<UITooltip>();
+            tooltip.text = gameObject.name;
+
+            toggle = gameObject.GetComponent<Toggle>();
+            var colors = toggle.colors;
+            colors.normalColor = new Color(0.792f, 0.805f, 1f, 1f);
+            colors.highlightedColor = Color.white;
+            toggle.colors = colors;
+
+            var rect = gameObject.GetComponent<RectTransform>();
+            rect.anchoredPosition = new Vector2(387 + 10, -15);
+        }
+
+        public void SetButtonEnabled(bool state)
+        {
+            MP2.MPDebug("SetButtonEnabled = " + state);
+        }
+
+        public void SetWindowOpened(bool state)
+        {
+            MP2.MPDebug("SetWindowOpened = " + state);
+            toggle.isOn = state;
+        }
+
+        protected override void onSelected()
+        {
+            var prefab = ConstructWindowPrefab();
+            if (prefab == null)
+                MP2.MPDebug("Window prefab is null");
+
+            if (ScriptableSingleton<UIAssetManager>.Instance.uiWindowFrameGO == null)
+                MP2.MPDebug("uiWindowFrameGO is null, what?");
+
+            windowInstance = UIWindowsController.Instance.spawnWindow(prefab, null);
+            windowInstance.OnClose += this.OnWindowClose;
+        }
+
+        protected override void onDeselected()
+        {
+            if (windowInstance != null)
+            {
+                this.windowInstance.close();
+                windowInstance = null;
+            }
+        }
+
+        public Window_Main ConstructWindowPrefab()
+        {
+            MP2.MPDebug("ConstructWindowPrefab");
+            var WindowPrefab = new GameObject(MP2.Instance.getName());
+            WindowPrefab.SetActive(false);
+
+            var rect = WindowPrefab.AddComponent<RectTransform>();
+            rect.sizeDelta = new Vector2(200, 150);
+
+            //WindowPrefab.AddComponent<CanvasRenderer>();
+            Window = WindowPrefab.AddComponent<Window_Main>();
+            //WindowPrefab.AddComponent<Canvas>();
+
+            var windowSettings = WindowPrefab.AddComponent<UIWindowSettings>();
+            windowSettings.closable = true;
+            windowSettings.defaultWindowPosition = new Vector2(0.5f, 0.5f);
+            windowSettings.title = "Material Painter";
+            windowSettings.uniqueTag = MP2.Instance.getName();
+            windowSettings.uniqueTagString = MP2.Instance.getName();
+            windowSettings.resizeability = 0;
+
+            WindowPrefab.SetActive(true);
+
+            MP2.controller.ActivatePipe();
+
+            return Window;
+        }
+
+        private void OnWindowClose(UIWindowFrame window)
+        {
+            setSelected(false);
+            MP2.controller.DeactivatePipe();
+        }
+
+        public void OnPointerClick(PointerEventData eventData)
+        {
+        }
+
+        private UIWindowFrame windowInstance;
     }
 }
