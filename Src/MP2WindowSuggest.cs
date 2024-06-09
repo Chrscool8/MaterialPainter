@@ -11,10 +11,9 @@ namespace MaterialPainter2
         private UI_PushButton button_neveragain;
         private static UIWindowFrame windowSuggestInstance;
 
-
         public static MP2WindowSuggest Window { get; private set; }
 
-        public static Vector2 SuggestWindowSize = new Vector2(200, 150);
+        public static Vector2 SuggestWindowSize = new Vector2(300, 200);
 
         public static MP2WindowSuggest ConstructWindowPrefab()
         {
@@ -56,37 +55,48 @@ namespace MaterialPainter2
             if (OptionsMenu.instance != null)
                 return;
 
-            float num = Screen.dpi;
-            if (Mathf.Approximately(num, 0f))
-            {
-                num = 72f;
-            }
-            float dpi_scale = DPIHelper.scaleDPI(num / 72f) / 1.3f * Settings.Instance.uiScale;
+            float dpi_scale = MP2.get_dpi();
 
-            float left_offset = 7f * dpi_scale;
-            float top_offset = 80.0f * dpi_scale;
+            float left_offset = 28f * dpi_scale;
+            float top_offset = 45.0f * dpi_scale;
 
-            float button_width = 76 * dpi_scale;
-            float button_height = 32 * dpi_scale;
+            float button_width = 76f * dpi_scale * 1.25f;
+            float button_height = 24f * dpi_scale * 1.25f;
 
             ToolTipper tt = GetComponent<ToolTipper>();
             tt.tooltip = "";
 
+            GUIStyle text_guiStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = Mathf.RoundToInt(14 * dpi_scale),
+                alignment = TextAnchor.UpperLeft
+            };
+
+            GUI.color = new Color(153, 168, 166);
+            GUI.Label(new Rect(transform.parent.parent.position.x + left_offset, Screen.height - transform.parent.parent.position.y + top_offset, SuggestWindowSize.x * dpi_scale * 1.3f - left_offset * 2, SuggestWindowSize.y * dpi_scale * 1.3f),
+                "(Probably Windows OSes only.) Material Painter can use ffmpeg for automatic creation of thumbnails in the Video Paints tab. " +
+                "I can download it for you right now, if you'd like, or you could supply your own copy of the " +
+                "exe and place it in 'Parkitect/Mods/MaterialPainter2/Tools/ffmpeg.exe'. If you want to generate " +
+                "thumbs on your own, or just use it without them, you can also just ignore this suggestion.",
+                text_guiStyle);
+
+            GUI.color = Color.white;
+
+            top_offset = SuggestWindowSize.y * dpi_scale + button_height;
+
             button_download.SetSize(button_width, button_height);
-            button_download.SetPosition(left_offset + transform.parent.parent.position.x, transform.parent.parent.position.y - (top_offset));
+            button_download.SetPosition(transform.parent.parent.position.x + left_offset, transform.parent.parent.position.y - top_offset);
             button_download.DrawButton();
 
-            top_offset += button_height * 1.5f;
-
             button_neveragain.SetSize(button_width, button_height);
-            button_neveragain.SetPosition(left_offset + transform.parent.parent.position.x, transform.parent.parent.position.y - (top_offset));
+            button_neveragain.SetPosition(transform.parent.parent.position.x + SuggestWindowSize.x * dpi_scale * 1.3f - left_offset - button_width, transform.parent.parent.position.y - top_offset);
             button_neveragain.DrawButton();
 
             if (tt.tooltip != "")
             {
                 GUIStyle tooltip_guiStyle = new GUIStyle(GUI.skin.label)
                 {
-                    fontSize = 14,
+                    fontSize = Mathf.RoundToInt(14 * dpi_scale),
                     alignment = TextAnchor.MiddleCenter
                 };
                 Vector2 size_ = tooltip_guiStyle.CalcSize(new GUIContent(tt.tooltip));
@@ -108,8 +118,8 @@ namespace MaterialPainter2
             Instance = this;
             MP2.MPDebug("Showing FFMPEG Window");
 
-            button_download = new UI_PushButton(parent: gameObject, text: "Download", tooltip_text: "Automatically downloads from https://github.com/ffbinaries/ffbinaries-prebuilt");
-            button_neveragain = new UI_PushButton(parent: gameObject, text: "Ignore", tooltip_text: "Stops reminding you about this unless you delete 'Mods/MaterialPainter2/_ignore_ffmpeg'");
+            button_download = new UI_PushButton(parent: gameObject, text: "Download", tooltip_text: "Automatically downloads from https://github.com/ffbinaries/ffbinaries-prebuilt", onMouseClick: () => { MP2.download_ffmpeg(); windowSuggestInstance.close(); windowSuggestInstance = null; });
+            button_neveragain = new UI_PushButton(parent: gameObject, text: "Ignore", tooltip_text: "Stops reminding you about this until you delete 'Mods/MaterialPainter2/_ignore_ffmpeg'", onMouseClick: () => { MP2.ignore_ffmpeg(); windowSuggestInstance.close(); windowSuggestInstance = null; });
 
             gameObject.AddComponent<ToolTipper>();
 
