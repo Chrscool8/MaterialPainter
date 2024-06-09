@@ -103,12 +103,12 @@ namespace MaterialPainter2
 
         public static bool IsCoolDownReady()
         {
-            return (Time.time - lastExecutionTime >= cooldownDuration || lastExecutionTime == -1);
+            return (Time.unscaledTime - lastExecutionTime >= cooldownDuration || lastExecutionTime == -1);
         }
 
         public static void ResetCountdown()
         {
-            lastExecutionTime = Time.time;
+            lastExecutionTime = Time.unscaledTime;
         }
 
         public static void MPDebug(string debug_string, bool always_show = false)
