@@ -4,18 +4,18 @@ using UnityEngine;
 
 namespace MaterialPainter2
 {
-    public class MP2WindowSuggest : UIWindow
+    public class Window_SuggestDL : UIWindow
     {
-        public static MP2WindowSuggest Instance { get; private set; }
+        public static Window_SuggestDL Instance { get; private set; }
         private UI_PushButton button_download;
         private UI_PushButton button_neveragain;
         private static UIWindowFrame windowSuggestInstance;
 
-        public static MP2WindowSuggest Window { get; private set; }
+        public static Window_SuggestDL Window { get; private set; }
 
         public static Vector2 SuggestWindowSize = new Vector2(300, 200);
 
-        public static MP2WindowSuggest ConstructWindowPrefab()
+        public static Window_SuggestDL ConstructWindowPrefab()
         {
             MP2.MPDebug("ConstructWindowPrefab FFMPEG");
             var WindowPrefab = new GameObject(MP2.Instance.getName());
@@ -25,7 +25,7 @@ namespace MaterialPainter2
             rect.sizeDelta = SuggestWindowSize;
 
             //WindowPrefab.AddComponent<CanvasRenderer>();
-            Window = WindowPrefab.AddComponent<MP2WindowSuggest>();
+            Window = WindowPrefab.AddComponent<Window_SuggestDL>();
             //WindowPrefab.AddComponent<Canvas>();
 
             var windowSettings = WindowPrefab.AddComponent<UIWindowSettings>();

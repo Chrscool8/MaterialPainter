@@ -45,7 +45,7 @@ namespace MaterialPainter2
 
         public delegate void OnMouseClick();
 
-        private OnMouseClick on_mouse_click;
+        public OnMouseClick on_mouse_click;
 
         public bool auto_invert_y = true;
 
@@ -515,7 +515,7 @@ namespace MaterialPainter2
         public delegate void OnMouseClick();
 
         public string my_tab_name;
-        public MP2Window mp2window { get; set; }
+        public Window_Main mp2window { get; set; }
 
         public UI_Tab_Bar my_tab_bar;
 

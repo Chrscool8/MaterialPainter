@@ -54,7 +54,7 @@ namespace MaterialPainter2
 
     public class MP2 : AbstractMod, IModSettings
     {
-        public const string VERSION_NUMBER = "240608";
+        public const string VERSION_NUMBER = "240609";
 
         public override string getIdentifier() => "MaterialPainter";
 
@@ -77,8 +77,8 @@ namespace MaterialPainter2
         public static List<MaterialType> material_brushes_images { get; set; } = new List<MaterialType>();
         public static Dictionary<string, MaterialType> material_brushes_videos { get; set; } = new Dictionary<string, MaterialType>();
 
-        public static MP2Controller controller { get; set; }
-        public static MP2WindowButton window_button { get; set; }
+        public static MP2_Controller controller { get; set; }
+        public static ToolbarButton window_button { get; set; }
         public ConstructWindowToggle construct_window_toggle { get; set; }
         private static Dictionary<string, Sprite> sprites { get; set; }
         private static Dictionary<string, VideoClip> videos { get; set; }
@@ -252,7 +252,7 @@ namespace MaterialPainter2
 
             go = new GameObject();
             go.name = "MP2 GameObject";
-            controller = go.AddComponent<MP2Controller>();
+            controller = go.AddComponent<MP2_Controller>();
             construct_window_toggle = go.AddComponent<ConstructWindowToggle>();
 
             material_brushes = new List<MaterialType>
@@ -279,7 +279,7 @@ namespace MaterialPainter2
                 MPDebug("ffmpeg not found.");
 
                 if (!File.Exists(_local_mods_directory + $"MaterialPainter2/_ignore_ffmpeg"))
-                    MP2WindowSuggest.ConstructWindowPrefab();
+                    Window_SuggestDL.ConstructWindowPrefab();
             }
             else
                 MPDebug("ffmpeg found.");

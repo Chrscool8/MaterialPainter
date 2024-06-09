@@ -1,4 +1,4 @@
-﻿internal class MP2BrushTool : AbstractMouseTool
+﻿internal class MaterialBrushTool : AbstractMouseTool
 {
     public override void onMouseToolEnable()
     {
