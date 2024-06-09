@@ -129,12 +129,12 @@ namespace MaterialPainter2
         }
         private bool is_depressed() // :(
         {
-            return !(Time.time - lastPressedTime >= .1f || lastPressedTime == -1);
+            return !(Time.unscaledTime - lastPressedTime >= .1f || lastPressedTime == -1);
         }
 
         private void Push()
         {
-            lastPressedTime = Time.time;
+            lastPressedTime = Time.unscaledTime;
             on_mouse_click?.Invoke();
         }
 
