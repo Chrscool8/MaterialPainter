@@ -54,7 +54,7 @@ namespace MaterialPainter2
 
     public class MP2 : AbstractMod, IModSettings
     {
-        public const string VERSION_NUMBER = "240609";
+        public const string VERSION_NUMBER = "240611";
 
         public override string getIdentifier() => "MaterialPainter";
 
@@ -215,7 +215,7 @@ namespace MaterialPainter2
             RegisterHotkeys();
 
             _material_painter_directory = ModManager.Instance.getMod(getIdentifier()).path;
-            var loadedAB = AssetBundle.LoadFromFile(_material_painter_directory + "/res/materialpainter.assets");
+            var loadedAB = AssetBundle.LoadFromFile(_material_painter_directory + "/Res/materialpainter.assets");
 
             UnityEngine.Object[] objects = loadedAB.LoadAllAssets();
             for (int i = 0; i < objects.Length; i++)
@@ -351,27 +351,36 @@ namespace MaterialPainter2
                     {
                         MPDebug("Creating Thumbnail.");
 
-                        ProcessStartInfo processStartInfo = new ProcessStartInfo
+                        try
                         {
-                            FileName = "ffmpeg",
-                            Arguments = ffmpegArgs,
-                            RedirectStandardOutput = true,
-                            RedirectStandardError = true,
-                            UseShellExecute = false,
-                            CreateNoWindow = true
-                        };
+                            ProcessStartInfo processStartInfo = new ProcessStartInfo
+                            {
+                                FileName = "ffmpeg",
+                                Arguments = ffmpegArgs,
+                                RedirectStandardOutput = true,
+                                RedirectStandardError = true,
+                                UseShellExecute = false,
+                                CreateNoWindow = true
+                            };
 
-                        using (Process process = new Process())
+                            using (Process process = new Process())
+                            {
+                                process.StartInfo = processStartInfo;
+                                process.OutputDataReceived += (sender, eventArgs) => Console.WriteLine(eventArgs.Data);
+                                process.ErrorDataReceived += (sender, eventArgs) => Console.WriteLine(eventArgs.Data);
+
+                                process.Start();
+                                process.BeginOutputReadLine();
+                                process.BeginErrorReadLine();
+
+                                process.WaitForExit();
+                            }
+                        }
+                        catch (Exception ex)
                         {
-                            process.StartInfo = processStartInfo;
-                            process.OutputDataReceived += (sender, eventArgs) => Console.WriteLine(eventArgs.Data);
-                            process.ErrorDataReceived += (sender, eventArgs) => Console.WriteLine(eventArgs.Data);
-
-                            process.Start();
-                            process.BeginOutputReadLine();
-                            process.BeginErrorReadLine();
-
-                            process.WaitForExit();
+                            MP2.MPDebug("FFMPEG Messed up");
+                            MP2.MPDebug("An error occurred: " + ex.Message);
+                            MP2.MPDebug("Stack Trace: " + ex.StackTrace);
                         }
                     }
                 }
@@ -410,7 +419,6 @@ namespace MaterialPainter2
                 {
                     MPDebug($"{image_name} already in mat brushes");
                 }
-
             }
         }
 
@@ -503,154 +511,178 @@ namespace MaterialPainter2
 
         public void ReassignMaterialsAfterLoadingSave()
         {
-            List<GameObject> allObjects = Utils.GetAllObjectsInScene();
-            MPDebug($"Number of GOs: {allObjects.Count}");
-            MPDebug($"Numbers of Serials: {GameController.Instance.getSerializedObjects().Count}");
 
-            if (current_file_path == null || current_file_path == "")
+            MP2.MPDebug("Assigning Materials From Save.");
+
+            try
             {
-                MPDebug("Bad current_file_path");
-                return;
-            }
+                List<GameObject> allObjects = Utils.GetAllObjectsInScene();
+                MPDebug($"Number of GOs: {allObjects.Count}");
+                MPDebug($"Numbers of Serials: {GameController.Instance.getSerializedObjects().Count}");
 
-            if (File.Exists(current_file_path + ".mat"))
-            {
-                MPDebug("File Schema V1");
-
-                string file_path = current_file_path + ".mat";
-
-                MPDebug(file_path);
-                Dictionary<string, int> myDictionary = new Dictionary<string, int>();
-                if (file_path != "" && File.Exists(file_path))
+                if (current_file_path == null || current_file_path == "")
                 {
-                    string json = File.ReadAllText(file_path);
-                    StringIntDictionary serializedDictionary = JsonConvert.DeserializeObject<StringIntDictionary>(json);
-                    foreach (var pair in serializedDictionary.pairs)
-                    {
-                        myDictionary[pair.key] = pair.value;
-                    }
-                }
-                foreach (var obj in allObjects)
-                {
-                    string key = obj.name + ":" + obj.transform.position.ToString();
-                    if (myDictionary.ContainsKey(key))
-                    {
-                        int previous_brush = myDictionary[key];
-                        controller.SetMaterial(obj.transform, (int)MaterialBrush.None);
-                        controller.SetMaterial(obj.transform, previous_brush);
-                    }
-                }
-                selected_brush = 0;
-                selected_brush_custom = "";
-            }
-            else
-            {
-
-                string file_path = current_file_path;
-                MPDebug(file_path);
-
-                bool compressed = !System.IO.Path.GetExtension(current_file_path).Equals(".txt");
-
-                if (!compressed)
-                {
-                    MPDebug("Uncompressed is not yet supported.");
+                    MPDebug("Bad current_file_path");
                     return;
                 }
 
-                List<string> file_lines = LoadGZippedTextFile(file_path);
-                foreach (string line in file_lines)
+                bool set_any_new = false;
+
                 {
-                    Dictionary<string, object> dictionary = (Dictionary<string, object>)Json.Deserialize(line);
+                    string file_path = current_file_path;
+                    MPDebug(file_path);
 
-                    if (dictionary != null && dictionary.ContainsKey("MaterialPainter2"))
+                    bool compressed = !System.IO.Path.GetExtension(current_file_path).Equals(".txt");
+
+                    if (!compressed)
                     {
-                        string inner_json = (string)dictionary["MaterialPainter2"];
+                        MPDebug("Uncompressed is not yet supported.");
+                        return;
+                    }
 
-                        if (inner_json.Contains("_schema"))
+                    List<string> file_lines = LoadGZippedTextFile(file_path);
+                    foreach (string line in file_lines)
+                    {
+                        Dictionary<string, object> dictionary = (Dictionary<string, object>)Json.Deserialize(line);
+
+                        if (dictionary != null && dictionary.ContainsKey("MaterialPainter2"))
                         {
-                            Dictionary<string, string> myDictionary = new Dictionary<string, string>();
-                            StringStringDictionary serializedDictionary = JsonConvert.DeserializeObject<StringStringDictionary>(inner_json);
+                            set_any_new = true;
 
-                            foreach (var pair in serializedDictionary.pairs)
+                            string inner_json = (string)dictionary["MaterialPainter2"];
+
+                            if (inner_json.Contains("_schema"))
                             {
-                                myDictionary[pair.key] = pair.value;
+                                Dictionary<string, string> myDictionary = new Dictionary<string, string>();
+                                StringStringDictionary serializedDictionary = JsonConvert.DeserializeObject<StringStringDictionary>(inner_json);
+
+                                foreach (var pair in serializedDictionary.pairs)
+                                {
+                                    myDictionary[pair.key] = pair.value;
+                                }
+
+                                MPDebug($"File Schema V{myDictionary["_schema"]}");
+
+                                if (int.TryParse(myDictionary["_schema"], out int schema) && schema == 3)
+                                {
+                                    foreach (var obj in allObjects)
+                                    {
+                                        string key = obj.name + ":" + obj.transform.position.ToString();
+                                        if (myDictionary.ContainsKey(key))
+                                        {
+                                            string brush_data = myDictionary[key];
+                                            MPDebug($"{key}: {brush_data}");
+
+
+                                            if (brush_data.Contains(":")) // has subbrush
+                                            {
+                                                string[] parts = brush_data.Split(':');
+                                                if (int.TryParse(parts[0], out int brush_type) && parts[1] != "")
+                                                {
+                                                    controller.SetMaterial(obj.transform, brush_type, parts[1]);
+                                                }
+                                                else
+                                                {
+                                                    MPDebug($"Brush detail empty.");
+                                                }
+                                            }
+                                            else //basic brush
+                                            {
+                                                if (int.TryParse(brush_data, out int value))
+                                                {
+                                                    controller.SetMaterial(obj.transform, value);
+                                                }
+                                                else
+                                                {
+                                                    MPDebug($"Invalid Brush: {value}");
+                                                }
+                                            }
+
+                                            myDictionary.Remove(key);
+                                        }
+                                    }
+
+                                    myDictionary.Remove("_schema");
+
+                                    if (myDictionary.Count == 0)
+                                        MP2.MPDebug("Every key in the dictionary was assigned!");
+                                    else
+                                    {
+                                        MP2.MPDebug("The following items were not reassigned materials:");
+                                        foreach (var (index, key, value) in myDictionary.Enumerate())
+                                        {
+                                            MP2.MPDebug($"{index} {key} {value}");
+                                        }
+                                    }
+                                }
                             }
-
-
-                            MPDebug($"File Schema V{myDictionary["_schema"]}");
-
-                            if (int.TryParse(myDictionary["_schema"], out int schema) && schema == 3)
+                            else
                             {
+                                MPDebug("File Schema V2");
+
+                                Dictionary<string, int> myDictionary = new Dictionary<string, int>();
+                                StringIntDictionary serializedDictionary = JsonConvert.DeserializeObject<StringIntDictionary>(inner_json);
+
+                                foreach (var pair in serializedDictionary.pairs)
+                                {
+                                    myDictionary[pair.key] = pair.value;
+                                }
+
                                 foreach (var obj in allObjects)
                                 {
                                     string key = obj.name + ":" + obj.transform.position.ToString();
                                     if (myDictionary.ContainsKey(key))
                                     {
-                                        string brush_data = myDictionary[key];
-                                        MPDebug($"{key}: {brush_data}");
-
-
-                                        if (brush_data.Contains(":")) // has subbrush
-                                        {
-                                            string[] parts = brush_data.Split(':');
-                                            if (int.TryParse(parts[0], out int brush_type) && parts[1] != "")
-                                            {
-                                                controller.SetMaterial(obj.transform, brush_type, parts[1]);
-                                            }
-                                            else
-                                            {
-                                                MPDebug($"Brush detail empty.");
-                                            }
-                                        }
-                                        else //basic brush
-                                        {
-                                            if (int.TryParse(brush_data, out int value))
-                                            {
-                                                controller.SetMaterial(obj.transform, value);
-                                            }
-                                            else
-                                            {
-                                                MPDebug($"Invalid Brush: {value}");
-                                            }
-                                        }
+                                        int previous_brush = myDictionary[key];
+                                        controller.SetMaterial(obj.transform, previous_brush);
                                     }
                                 }
                             }
+
+                            selected_brush = 0;
+                            selected_brush_custom = "";
                         }
-                        else
-                        {
-                            MPDebug("File Schema V2");
-
-                            Dictionary<string, int> myDictionary = new Dictionary<string, int>();
-                            StringIntDictionary serializedDictionary = JsonConvert.DeserializeObject<StringIntDictionary>(inner_json);
-
-                            foreach (var pair in serializedDictionary.pairs)
-                            {
-                                myDictionary[pair.key] = pair.value;
-                            }
-
-
-
-                            foreach (var obj in allObjects)
-                            {
-                                string key = obj.name + ":" + obj.transform.position.ToString();
-                                if (myDictionary.ContainsKey(key))
-                                {
-                                    int previous_brush = myDictionary[key];
-                                    controller.SetMaterial(obj.transform, previous_brush);
-                                }
-                            }
-
-                        }
-
-
-                        selected_brush = 0;
-                        selected_brush_custom = "";
                     }
                 }
+
+                if (!set_any_new && File.Exists(current_file_path + ".mat"))
+                {
+                    MPDebug("File Schema V1");
+
+                    string file_path = current_file_path + ".mat";
+
+                    MPDebug(file_path);
+                    Dictionary<string, int> myDictionary = new Dictionary<string, int>();
+                    if (file_path != "" && File.Exists(file_path))
+                    {
+                        string json = File.ReadAllText(file_path);
+                        StringIntDictionary serializedDictionary = JsonConvert.DeserializeObject<StringIntDictionary>(json);
+                        foreach (var pair in serializedDictionary.pairs)
+                        {
+                            myDictionary[pair.key] = pair.value;
+                        }
+                    }
+                    foreach (var obj in allObjects)
+                    {
+                        string key = obj.name + ":" + obj.transform.position.ToString();
+                        if (myDictionary.ContainsKey(key))
+                        {
+                            int previous_brush = myDictionary[key];
+                            controller.SetMaterial(obj.transform, (int)MaterialBrush.None);
+                            controller.SetMaterial(obj.transform, previous_brush);
+                        }
+                    }
+                    selected_brush = 0;
+                    selected_brush_custom = "";
+                }
+            }
+            catch (Exception ex)
+            {
+                MP2.MPDebug("Loading Messed up!");
+                MP2.MPDebug("An error occurred: " + ex.Message);
+                MP2.MPDebug("Stack Trace: " + ex.StackTrace);
             }
         }
-
         public void ConvertLegacySpellsToMP()
         {
             MPDebug("Converting Legacy Spells to MP");

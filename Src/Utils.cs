@@ -32,7 +32,6 @@ namespace MaterialPainter2
     }
     public static class Utils
     {
-
         public static void PrintHierarchy(GameObject gameObject, int depth = 1, bool listComponents = false)
         {
             // Print the GameObject's name with indentation based on its depth

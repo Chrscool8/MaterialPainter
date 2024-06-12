@@ -22,6 +22,9 @@ namespace MaterialPainter2
 
         private UI_CheckBox checkbox_multiselect;
         private UI_CheckBox checkbox_targetsupports;
+        private UI_PushButton button_reload;
+
+        UI_Tab settings_tab = null;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Fugeddabouddit.")]
         private void OnGUI()
@@ -69,6 +72,12 @@ namespace MaterialPainter2
             checkbox_targetsupports.SetTileSize(checkbox_size, checkbox_size);
             checkbox_targetsupports.SetPosition(left_offset + transform.parent.parent.position.x + 16 * dpi_scale, transform.parent.parent.position.y - (tab_height * dpi_scale) - (top_offset) + 2 - (checkbox_size * 1.5f) - 16 * dpi_scale);
             checkbox_targetsupports.DrawSprite(dpi_scale);
+
+            button_reload.SetSize(checkbox_size * 8f, checkbox_size);
+            button_reload.SetPosition(left_offset + transform.parent.parent.position.x + 16 * dpi_scale, transform.parent.parent.position.y - (tab_height * dpi_scale) - (top_offset) + 2 - (checkbox_size * 3f) - 16 * dpi_scale);
+
+            if (settings_tab != null && settings_tab.selected)
+                button_reload.DrawButton();
 
             if (tt.tooltip != "")
             {
@@ -188,6 +197,7 @@ namespace MaterialPainter2
 
             checkbox_multiselect = new UI_CheckBox(parent: gameObject, text: "Multi-Select", onMouseClick: () => { MP2._setting_drag_select = !MP2._setting_drag_select; }, check_state: MP2._setting_drag_select, tooltip_text: "Clicking and dragging will continuously paint objects the brush crosses over.");
             checkbox_targetsupports = new UI_CheckBox(parent: gameObject, text: "Target Supports", onMouseClick: () => { MP2._setting_target_supports = !MP2._setting_target_supports; }, check_state: MP2._setting_target_supports, tooltip_text: "Selectively paints support structures. Note, not all supports are currently recognized due to how the game was programmed.");
+            button_reload = new UI_PushButton(parent: gameObject, text: "Reload From Save", tooltip_text: "If you find that paints are being applied when loading a park, try this. Sometimes if a park loads too long, it needs another try.", onMouseClick: () => { MP2.Instance.ReassignMaterialsAfterLoadingSave(); });
 
             //
 
@@ -195,7 +205,7 @@ namespace MaterialPainter2
             UI_Tab tab0 = tab_bar_types.AddTab(icon_sprite: "icon_elements", object_to_control_: grid_elements, tab_name: "Elements");
             tab_bar_types.AddTab(icon_sprite: "icon_camera", object_to_control_: grid_settings, tab_name: "Images");
             tab_bar_types.AddTab(icon_sprite: "icon_videocamera", object_to_control_: grid_videos, tab_name: "Videos");
-            tab_bar_types.AddTab(icon_sprite: "icon_toolbox", object_to_control_: new List<UI_Item> { grid_settings, checkbox_multiselect, checkbox_targetsupports }, tab_name: "Settings");
+            settings_tab = tab_bar_types.AddTab(icon_sprite: "icon_toolbox", object_to_control_: new List<UI_Item> { grid_settings, checkbox_multiselect, checkbox_targetsupports }, tab_name: "Settings");
 
             foreach (UI_Tab ui_tab in tab_bar_types.tabs)
             {

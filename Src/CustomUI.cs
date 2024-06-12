@@ -703,6 +703,8 @@ namespace MaterialPainter2
         }
     }
 
+
+
     public class ToolTipper : MonoBehaviour
     {
         public string tooltip = "";
