@@ -11,6 +11,7 @@ using UnityEngine.Video;
 
 using VLB;
 
+
 namespace MaterialPainter2
 {
     public class ChangedMarker : MonoBehaviour
@@ -512,6 +513,16 @@ namespace MaterialPainter2
                             }
 
                             renderer.materials = shares;
+
+                            Color c = new Color(1, 1, 1, 1);
+                            if (tf.gameObject.GetComponent<CustomColors>() != null)
+                                c = tf.gameObject.GetComponent<CustomColors>().getColors()[0];
+                            c.a = .5f;
+
+                            MaterialPropertyBlock materialPropertyBlock = new MaterialPropertyBlock();
+                            renderer.GetPropertyBlock(materialPropertyBlock);
+                            materialPropertyBlock.SetColor(Shader.PropertyToID("_Color"), c);
+                            renderer.SetPropertyBlock(materialPropertyBlock);
                         }
                         break;
 
