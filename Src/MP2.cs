@@ -54,7 +54,7 @@ namespace MaterialPainter2
 
     public class MP2 : AbstractMod, IModSettings
     {
-        public const string VERSION_NUMBER = "240611";
+        public const string VERSION_NUMBER = "240706";
 
         public override string getIdentifier() => "MaterialPainter";
 
@@ -801,6 +801,18 @@ namespace MaterialPainter2
                     c.a = 0.9019608f;
                     materialPropertyBlock.SetColor(Shader.PropertyToID("_Color2"), c);
                     materialPropertyBlock.SetColor(Shader.PropertyToID("_ShoreColor"), Color.HSVToRGB(H, S / 3f, V));
+                    renderer.SetPropertyBlock(materialPropertyBlock);
+                }
+                else if (cm.GetCurrentBrush() == (int)MaterialBrush.Glass)
+                {
+                    //MP2.MPDebug("APPLY!");
+
+                    Color c = colors[0];
+                    c.a = 0.5f;
+
+                    MaterialPropertyBlock materialPropertyBlock = new MaterialPropertyBlock();
+                    renderer.GetPropertyBlock(materialPropertyBlock);
+                    materialPropertyBlock.SetColor(Shader.PropertyToID("_Color"), c);
                     renderer.SetPropertyBlock(materialPropertyBlock);
                 }
             }
