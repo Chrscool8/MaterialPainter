@@ -53,19 +53,20 @@ namespace MaterialPainter2
             mp2_button.transform.SetParent(content, false);
             mp2_button.name = "Material Painter";
 
+
             Image ic = mp2_button.transform.Find("Image").GetComponent<Image>();
             ic.sprite = MP2.get_sprite("icon_magic_brush");
 
             //Utils.PrintHierarchy(GameObject.Find("MenuCanvas"), 1, listComponents: true);
 
             //line_break2.GetComponent<RectTransform>().anchoredPosition += button_width * 2.25f;
-            mp2_button.GetComponent<RectTransform>().anchoredPosition += button_width * 2.25f;
+            //mp2_button.GetComponent<RectTransform>().anchoredPosition += button_width * 4.25f;
 
             RectTransform vrt = viewport.GetComponent<RectTransform>();
-            vrt.sizeDelta = new Vector2((float)(vrt.sizeDelta.x + (button_width[0] * 3f)), vrt.sizeDelta.y);
+            vrt.sizeDelta = new Vector2((float)(vrt.sizeDelta.x + (button_width[0] * 5f)), vrt.sizeDelta.y);
 
             RectTransform crt = content.GetComponent<RectTransform>();
-            crt.sizeDelta = new Vector2((float)(crt.sizeDelta.x + (button_width[0] * 3f)), crt.sizeDelta.y);
+            crt.sizeDelta = new Vector2((float)(crt.sizeDelta.x + (button_width[0] * 5f)), crt.sizeDelta.y);
 
             //RectTransform srt = scroll_view.GetComponent<RectTransform>();
             //srt.sizeDelta = new Vector2((float)(srt.sizeDelta.x + (button_width[0] * 3)), srt.sizeDelta.y);
@@ -91,6 +92,11 @@ namespace MaterialPainter2
 
             painterButton.SetActive(true);
             mp2_button.SetActive(true);
+
+            mp2_button.transform.position += new Vector3(button_width.x * 1.5f, 0, 0);
+
+            if (GameController.Instance.isInScenarioEditor)
+                mp2_button.transform.position += new Vector3(button_width.x * 2.15f, 0, 0);
         }
 
         public void OnDisable()
