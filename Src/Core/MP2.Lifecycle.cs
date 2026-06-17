@@ -81,7 +81,6 @@ namespace MaterialPainter2
                 sprites = new Dictionary<string, Sprite>();
                 videos = new Dictionary<string, VideoClip>();
                 custom_images = new Dictionary<string, Texture2D>();
-                cached_videos = new Dictionary<string, VideoPlayer>();
             }
             catch (System.Exception ex)
             {
@@ -171,6 +170,9 @@ namespace MaterialPainter2
         public override void onDisabled()
         {
             //_keys.UnregisterAll();
+            if (controller != null)
+                controller.ClearSharedMediaCaches();
+
             UnityEngine.Object.DestroyImmediate(go);
             sprites.Clear();
             videos.Clear();

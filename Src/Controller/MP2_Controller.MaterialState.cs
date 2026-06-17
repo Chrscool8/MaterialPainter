@@ -66,9 +66,19 @@ namespace MaterialPainter2
             if (mesh_filter != null && changed_marker.GetSharedMesh() != null)
                 mesh_filter.sharedMesh = changed_marker.GetSharedMesh();
 
+            foreach (string media_material_key in changed_marker.GetMediaMaterialKeys())
+            {
+                ReleaseSharedMediaMaterial(media_material_key);
+            }
+
             Mesh generated_mesh = changed_marker.GetGeneratedMesh();
-            if (generated_mesh != null)
+            int generated_mesh_key = changed_marker.GetGeneratedMeshKey();
+            if (generated_mesh_key != 0)
+                ReleaseSharedProjectedMesh(generated_mesh_key);
+            else if (generated_mesh != null)
                 DestroyImmediate(generated_mesh);
+
+            ReleaseSharedVideoPaint(changed_marker.GetSharedVideoKey());
 
             RenderTexture video_texture = changed_marker.GetVideoTexture();
             if (video_texture != null)

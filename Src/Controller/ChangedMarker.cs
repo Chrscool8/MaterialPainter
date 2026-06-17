@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 using UnityEngine;
 using UnityEngine.Video;
 
@@ -9,9 +11,12 @@ namespace MaterialPainter2
         private MaterialPropertyBlock material_property_block = null;
         private Mesh shared_mesh = null;
         private Mesh generated_mesh = null;
+        private int generated_mesh_key = 0;
         private RenderTexture video_texture = null;
         private VideoPlayer video_player = null;
         private AudioSource audio_source = null;
+        private string shared_video_key = "";
+        private List<string> media_material_keys = new List<string>();
         private bool _was_enabled = true;
         private int current_brush = -1;
         private string custom_string = "";
@@ -40,11 +45,29 @@ namespace MaterialPainter2
         public void SetGeneratedMesh(Mesh generated_mesh)
         { this.generated_mesh = generated_mesh; }
 
+        public int GetGeneratedMeshKey()
+        { return generated_mesh_key; }
+
+        public void SetGeneratedMeshKey(int generated_mesh_key)
+        { this.generated_mesh_key = generated_mesh_key; }
+
         public RenderTexture GetVideoTexture()
         { return video_texture; }
 
         public void SetVideoTexture(RenderTexture video_texture)
         { this.video_texture = video_texture; }
+
+        public string GetSharedVideoKey()
+        { return shared_video_key; }
+
+        public void SetSharedVideoKey(string shared_video_key)
+        { this.shared_video_key = shared_video_key; }
+
+        public List<string> GetMediaMaterialKeys()
+        { return media_material_keys; }
+
+        public void AddMediaMaterialKey(string media_material_key)
+        { media_material_keys.Add(media_material_key); }
 
         public bool WasEnabled()
         { return _was_enabled; }
