@@ -19,17 +19,80 @@ namespace MaterialPainter2
             {
                 return sprites[name];
             }
-            else
-            {
-                MPDebug("Couldn't load sprite: '" + name + "'");
-                if (def != null)
-                    return def;
 
-                if (sprites != null && name != FALLBACK_IMAGE_SPRITE_NAME && sprites.ContainsKey(FALLBACK_IMAGE_SPRITE_NAME))
-                    return sprites[FALLBACK_IMAGE_SPRITE_NAME];
+            if (TryLoadBundledSprite(name))
+                return sprites[name];
 
+            MPDebug("Couldn't load sprite: '" + name + "'");
+            if (def != null)
                 return def;
+
+            if (sprites != null && name != FALLBACK_IMAGE_SPRITE_NAME && sprites.ContainsKey(FALLBACK_IMAGE_SPRITE_NAME))
+                return sprites[FALLBACK_IMAGE_SPRITE_NAME];
+
+            return def;
+        }
+
+        private static bool TryLoadBundledSprite(string spriteName)
+        {
+            if (sprites == null || string.IsNullOrEmpty(spriteName))
+                return false;
+
+            string directPath = GetBundledSpriteFilePath(spriteName);
+            if (IsSupportedImageFile(directPath) && LoadSpriteFromImageFile(directPath, System.IO.Path.GetFileNameWithoutExtension(spriteName)))
+                return true;
+
+            foreach (string extension in IMAGE_FILE_EXTENSIONS)
+            {
+                string candidatePath = GetBundledSpriteFilePath(spriteName + extension);
+                if (LoadSpriteFromImageFile(candidatePath, spriteName))
+                    return true;
             }
+
+            return false;
+        }
+
+        public static Texture2D GetBundledSpriteTexture(string textureName)
+        {
+            if (string.IsNullOrEmpty(textureName))
+                return null;
+
+            if (bundled_textures != null && bundled_textures.ContainsKey(textureName))
+                return bundled_textures[textureName];
+
+            string texturePath = ResolveBundledSpriteFilePath(textureName);
+            Texture2D texture = LoadTextureFromImageFile(texturePath);
+            if (texture == null)
+            {
+                MPDebug("Couldn't load bundled texture: '" + textureName + "'");
+                return null;
+            }
+
+            if (bundled_textures == null)
+                bundled_textures = new System.Collections.Generic.Dictionary<string, Texture2D>();
+
+            texture.name = System.IO.Path.GetFileNameWithoutExtension(texturePath);
+            bundled_textures[textureName] = texture;
+            return texture;
+        }
+
+        private static string ResolveBundledSpriteFilePath(string textureName)
+        {
+            string directPath = GetBundledSpriteFilePath(textureName);
+            if (File.Exists(directPath))
+                return directPath;
+
+            if (!System.IO.Path.HasExtension(textureName))
+            {
+                foreach (string extension in IMAGE_FILE_EXTENSIONS)
+                {
+                    string candidatePath = GetBundledSpriteFilePath(textureName + extension);
+                    if (File.Exists(candidatePath))
+                        return candidatePath;
+                }
+            }
+
+            return directPath;
         }
 
         public static Texture2D GetCustomImageTexture(string imageName)

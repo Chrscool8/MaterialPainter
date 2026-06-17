@@ -18,6 +18,30 @@ namespace MaterialPainter2
         InvisiblePreview = 6,
         Video = 7,
         Image = 8,
+        UndergroundTerrain = 9,
+        DataView = 10,
+        Selected = 11,
+        Deleted = 12,
+        SceneGhost = 13,
+        DecoGlow = 14,
+        CollisionGlow = 15,
+        RideLight = 16,
+        CoasterStats = 17,
+        Waterfall = 18,
+        BlackHoleCore = 19,
+        BlackHoleDisc = 20,
+        TriplanarTerrain = 21,
+        TriplanarTerrainGrass = 22,
+        TriplanarTerrainDirt = 23,
+        TriplanarTerrainStone = 24,
+        TriplanarTerrainSnow = 25,
+        TriplanarTerrainSand = 26,
+        TriplanarTerrainIce = 27,
+        TriplanarTerrainLavarock = 28,
+        TriplanarTerrainAsh = 29,
+        TriplanarTerrainCrackedSoil = 30,
+        TriplanarTerrainDeadGrass = 31,
+        TriplanarTerrainBlueprint = 32,
         //Texture = ?,
     }
 
@@ -66,9 +90,26 @@ namespace MaterialPainter2
         private static Dictionary<string, Sprite> sprites { get; set; }
         private static Dictionary<string, VideoClip> videos { get; set; }
         private static Dictionary<string, Texture2D> custom_images { get; set; }
+        private static Dictionary<string, Texture2D> bundled_textures { get; set; }
 
         public static int selected_brush { get; set; }
         public static string selected_brush_custom { get; set; }
+        public static readonly HashSet<int> material_brush_runtime_blacklist = new HashSet<int>
+        {
+            (int)MaterialBrush.Terrain,
+            (int)MaterialBrush.UndergroundTerrain,
+            (int)MaterialBrush.DataView,
+            (int)MaterialBrush.Selected,
+            (int)MaterialBrush.Deleted,
+            (int)MaterialBrush.SceneGhost,
+            (int)MaterialBrush.DecoGlow,
+            (int)MaterialBrush.CollisionGlow,
+            (int)MaterialBrush.RideLight,
+            (int)MaterialBrush.CoasterStats,
+            (int)MaterialBrush.Waterfall,
+            (int)MaterialBrush.BlackHoleCore,
+            (int)MaterialBrush.BlackHoleDisc,
+        };
 
         private static bool debug_mode = false;
         public static float cooldownDuration = .01f;
@@ -81,6 +122,12 @@ namespace MaterialPainter2
 
         public static bool _setting_drag_select = false;
         public static bool _setting_target_supports = false;
+        public static bool _setting_go_wild = false;
         public static bool pipe_active = false;
+
+        public static bool IsMaterialBrushVisible(int brush)
+        {
+            return _setting_go_wild || !material_brush_runtime_blacklist.Contains(brush);
+        }
     }
 }
