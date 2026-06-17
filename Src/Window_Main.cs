@@ -3,11 +3,16 @@
 using System.Collections.Generic;
 
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace MaterialPainter2
 {
     public class Window_Main : UIWindow
     {
+        private const float GRID_WIDTH = 260f;
+        private const float MINIMUM_GRID_HEIGHT = 155f;
+        private const float MINIMUM_WINDOW_HEIGHT = 150f;
+
         public static Window_Main Instance { get; private set; }
 
         public static List<UI_Button> buttons_elements;
@@ -30,6 +35,7 @@ namespace MaterialPainter2
 
         UI_Tab settings_tab = null;
         private bool pipeActivated;
+        private float lastAppliedWindowHeight = -1f;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Fugeddabouddit.")]
         private void OnGUI()
@@ -57,19 +63,25 @@ namespace MaterialPainter2
             tab_bar_types.SetPosition(left_offset + transform.parent.parent.position.x, transform.parent.parent.position.y - (top_offset));
             tab_bar_types.DrawTabs(dpi_scale);
 
-            grid_elements.SetSize(260, 155);
+            float elementsGridHeight = GetGridHeight(grid_elements);
+            float videosGridHeight = GetGridHeight(grid_videos);
+            float imagesGridHeight = GetGridHeight(grid_images);
+            float settingsGridHeight = GetGridHeight(grid_settings);
+            ApplyWindowHeight(GetActiveGridHeight(elementsGridHeight, videosGridHeight, imagesGridHeight, settingsGridHeight));
+
+            grid_elements.SetSize(GRID_WIDTH, elementsGridHeight);
             grid_elements.SetPosition(left_offset + transform.parent.parent.position.x, transform.parent.parent.position.y - (tab_height) * dpi_scale - (top_offset) + 2);
             grid_elements.DrawGrid(dpi_scale);
 
-            grid_videos.SetSize(260, 155);
+            grid_videos.SetSize(GRID_WIDTH, videosGridHeight);
             grid_videos.SetPosition(left_offset + transform.parent.parent.position.x, transform.parent.parent.position.y - (tab_height) * dpi_scale - (top_offset) + 2);
             grid_videos.DrawGrid(dpi_scale);
 
-            grid_images.SetSize(260, 155);
+            grid_images.SetSize(GRID_WIDTH, imagesGridHeight);
             grid_images.SetPosition(left_offset + transform.parent.parent.position.x, transform.parent.parent.position.y - (tab_height) * dpi_scale - (top_offset) + 2);
             grid_images.DrawGrid(dpi_scale);
 
-            grid_settings.SetSize(260, 155);
+            grid_settings.SetSize(GRID_WIDTH, settingsGridHeight);
             grid_settings.SetPosition(left_offset + transform.parent.parent.position.x, transform.parent.parent.position.y - (tab_height) * dpi_scale - (top_offset) + 2);
             grid_settings.DrawGrid(dpi_scale);
 
@@ -114,6 +126,75 @@ namespace MaterialPainter2
             MP2_Controller.wms?.OnGui();
         }
 
+        private float GetGridHeight(UI_Grid_Buttons grid)
+        {
+            if (grid == null)
+                return MINIMUM_GRID_HEIGHT;
+
+            return Mathf.Max(MINIMUM_GRID_HEIGHT, grid.GetContentHeight(GRID_WIDTH));
+        }
+
+        private float GetActiveGridHeight(float elementsGridHeight, float videosGridHeight, float imagesGridHeight, float settingsGridHeight)
+        {
+            if (grid_elements != null && grid_elements.visible)
+                return elementsGridHeight;
+            if (grid_videos != null && grid_videos.visible)
+                return videosGridHeight;
+            if (grid_images != null && grid_images.visible)
+                return imagesGridHeight;
+            if (grid_settings != null && grid_settings.visible)
+                return settingsGridHeight;
+
+            return MINIMUM_GRID_HEIGHT;
+        }
+
+        private void ApplyWindowHeight(float gridHeight)
+        {
+            float targetHeight = MINIMUM_WINDOW_HEIGHT + Mathf.Max(0f, gridHeight - MINIMUM_GRID_HEIGHT);
+            if (Mathf.Approximately(lastAppliedWindowHeight, targetHeight))
+                return;
+
+            lastAppliedWindowHeight = targetHeight;
+
+            SetRectTransformHeight(rectTransform, targetHeight);
+            ApplyContentLayoutHeight(targetHeight);
+
+            if (windowFrame == null)
+                return;
+
+            if (windowFrame.contentHolderTransform != null)
+                LayoutRebuilder.ForceRebuildLayoutImmediate(windowFrame.contentHolderTransform);
+
+            if (windowFrame.rectTransform != null)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(windowFrame.rectTransform);
+                windowFrame.rectTransform.ForceUpdateRectTransforms();
+            }
+
+            windowFrame.limitToScreenBounds();
+        }
+
+        private void ApplyContentLayoutHeight(float height)
+        {
+            LayoutElement layoutElement = GetComponent<LayoutElement>();
+            if (layoutElement == null)
+                return;
+
+            layoutElement.minHeight = MINIMUM_WINDOW_HEIGHT;
+            layoutElement.preferredHeight = height;
+        }
+
+        private void SetRectTransformHeight(RectTransform targetRectTransform, float height)
+        {
+            if (targetRectTransform == null)
+                return;
+
+            targetRectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height);
+
+            Vector2 sizeDelta = targetRectTransform.sizeDelta;
+            sizeDelta.y = height;
+            targetRectTransform.sizeDelta = sizeDelta;
+        }
 
         public void SetWindowTitle(string title)
         {
