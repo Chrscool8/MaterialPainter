@@ -14,6 +14,7 @@ namespace MaterialPainter2
     {
         private const string MAIN_TEXTURE_PROPERTY_NAME = "_MainTex";
         private const string BASE_MAP_PROPERTY_NAME = "_BaseMap";
+        private const float MIN_ATLAS_REMAP_UV_SIZE = 0.0001f;
         private static readonly int mainTexturePropertyID = Shader.PropertyToID("_MainTex");
         private static readonly int baseMapPropertyID = Shader.PropertyToID("_BaseMap");
         private static readonly int colorPropertyID = Shader.PropertyToID("_Color");
@@ -310,20 +311,8 @@ namespace MaterialPainter2
                             Texture2D image_texture = MP2.GetCustomImageTexture(selected_brush_custom);
                             if (image_texture != null)
                             {
-                                PrintImagePaintUvDebug(tf, renderer, selected_brush_custom);
-                                bool useAtlasRemap = TryGetSingleSubmeshUvRemap(renderer, out Vector2 uvMin, out Vector2 uvSize, out string remapReason);
-                                if (useAtlasRemap)
-                                {
-                                    Vector2 textureScale = GetAtlasRemapScale(uvSize);
-                                    Vector2 textureOffset = GetAtlasRemapOffset(uvMin, uvSize);
-                                    MP2.MPDebug($"[ImagePaintUV] atlasRemap=enabled scale=({FormatFloat(textureScale.x)}, {FormatFloat(textureScale.y)}) offset=({FormatFloat(textureOffset.x)}, {FormatFloat(textureOffset.y)})", always_show: true);
-                                }
-                                else
-                                {
-                                    MP2.MPDebug("[ImagePaintUV] atlasRemap=disabled reason='" + remapReason + "'", always_show: true);
-                                }
-
-                                ApplyImageMaterial(renderer, image_texture, useAtlasRemap, uvMin, uvSize);
+                                bool useAtlasRemap = PrepareMediaPaintUv(tf, renderer, "Image", selected_brush_custom, out Vector2 uvMin, out Vector2 uvSize);
+                                ApplyMediaMaterial(renderer, image_texture, useAtlasRemap, uvMin, uvSize);
                             }
                             else
                             {
@@ -357,6 +346,11 @@ namespace MaterialPainter2
 
                             if (video_url != null)
                             {
+                                bool useAtlasRemap = PrepareMediaPaintUv(tf, renderer, "Video", selected_brush_custom, out Vector2 uvMin, out Vector2 uvSize);
+                                RenderTexture videoTexture = CreateVideoRenderTexture(16, 16, selected_brush_custom);
+                                cm.SetVideoTexture(videoTexture);
+                                ApplyMediaMaterial(renderer, videoTexture, useAtlasRemap, uvMin, uvSize);
+
                                 /*if (MP2.cached_videos.ContainsKey(url))
                                 {
                                     video_player = MP2.cached_videos[url];
@@ -386,11 +380,10 @@ namespace MaterialPainter2
 
                                 video_player.url = video_url;
                                 video_player.isLooping = true;
+                                video_player.renderMode = VideoRenderMode.RenderTexture;
+                                video_player.targetTexture = videoTexture;
                                 video_player.Prepare();
                                 video_player.prepareCompleted += OnVideoPrepared;
-
-                                video_player.targetMaterialRenderer = renderer;
-                                video_player.renderMode = VideoRenderMode.MaterialOverride;
                             }
                             else
                             {
@@ -414,6 +407,30 @@ namespace MaterialPainter2
             materialPropertyBlock.SetTexture(mainTexturePropertyID, texture);
             materialPropertyBlock.SetTexture(baseMapPropertyID, texture);
             renderer.SetPropertyBlock(materialPropertyBlock);
+        }
+
+        private bool PrepareMediaPaintUv(Transform tf, Renderer renderer, string mediaType, string mediaName, out Vector2 uvMin, out Vector2 uvSize)
+        {
+            PrintMediaPaintUvDebug(tf, renderer, mediaType, mediaName);
+
+            bool useAtlasRemap = TryGetSingleSubmeshUvRemap(renderer, out uvMin, out uvSize, out string remapReason);
+            if (useAtlasRemap)
+            {
+                Vector2 textureScale = GetAtlasRemapScale(uvSize);
+                Vector2 textureOffset = GetAtlasRemapOffset(uvMin, uvSize);
+                MP2.MPDebug($"[MediaPaintUV] type='{mediaType}' atlasRemap=enabled scale=({FormatFloat(textureScale.x)}, {FormatFloat(textureScale.y)}) offset=({FormatFloat(textureOffset.x)}, {FormatFloat(textureOffset.y)})", always_show: true);
+            }
+            else
+            {
+                MP2.MPDebug($"[MediaPaintUV] type='{mediaType}' atlasRemap=disabled reason='{remapReason}'", always_show: true);
+                bool useBoxProjection = TryApplyBoxProjectedUvMesh(renderer, out string projectionReason);
+                if (useBoxProjection)
+                    MP2.MPDebug($"[MediaPaintUV] type='{mediaType}' boxProjection=enabled", always_show: true);
+                else
+                    MP2.MPDebug($"[MediaPaintUV] type='{mediaType}' boxProjection=disabled reason='{projectionReason}'", always_show: true);
+            }
+
+            return useAtlasRemap;
         }
 
         private bool TryGetSingleSubmeshUvRemap(Renderer renderer, out Vector2 uvMin, out Vector2 uvSize, out string reason)
@@ -451,7 +468,7 @@ namespace MaterialPainter2
                 }
 
                 uvSize = uvMax - uvMin;
-                if (Mathf.Abs(uvSize.x) < 0.0001f || Mathf.Abs(uvSize.y) < 0.0001f)
+                if (Mathf.Abs(uvSize.x) < MIN_ATLAS_REMAP_UV_SIZE || Mathf.Abs(uvSize.y) < MIN_ATLAS_REMAP_UV_SIZE)
                 {
                     reason = "uv bounds are too small";
                     return false;
@@ -466,33 +483,33 @@ namespace MaterialPainter2
             return true;
         }
 
-        private void PrintImagePaintUvDebug(Transform tf, Renderer renderer, string imageName)
+        private void PrintMediaPaintUvDebug(Transform tf, Renderer renderer, string mediaType, string mediaName)
         {
             try
             {
                 Mesh mesh = GetRendererSharedMesh(renderer);
                 if (mesh == null)
                 {
-                    MP2.MPDebug($"[ImagePaintUV] object='{tf.gameObject.name}' image='{imageName}' renderer='{renderer.GetType().Name}' mesh=<none>", always_show: true);
+                    MP2.MPDebug($"[MediaPaintUV] type='{mediaType}' object='{tf.gameObject.name}' media='{mediaName}' renderer='{renderer.GetType().Name}' mesh=<none>", always_show: true);
                     return;
                 }
 
                 Vector2[] uvs = mesh.uv;
                 if (uvs == null || uvs.Length == 0)
                 {
-                    MP2.MPDebug($"[ImagePaintUV] object='{tf.gameObject.name}' image='{imageName}' mesh='{mesh.name}' uvs=<none>", always_show: true);
+                    MP2.MPDebug($"[MediaPaintUV] type='{mediaType}' object='{tf.gameObject.name}' media='{mediaName}' mesh='{mesh.name}' uvs=<none>", always_show: true);
                     return;
                 }
 
                 Material[] materials = renderer.sharedMaterials;
-                MP2.MPDebug($"[ImagePaintUV] object='{tf.gameObject.name}' image='{imageName}' renderer='{renderer.GetType().Name}' mesh='{mesh.name}' vertices={mesh.vertexCount} uvs={uvs.Length} subMeshes={mesh.subMeshCount} materials={materials.Length}", always_show: true);
+                MP2.MPDebug($"[MediaPaintUV] type='{mediaType}' object='{tf.gameObject.name}' media='{mediaName}' renderer='{renderer.GetType().Name}' mesh='{mesh.name}' vertices={mesh.vertexCount} uvs={uvs.Length} subMeshes={mesh.subMeshCount} materials={materials.Length}", always_show: true);
 
                 for (var submeshIndex = 0; submeshIndex < mesh.subMeshCount; submeshIndex++)
                 {
                     int[] triangles = mesh.GetTriangles(submeshIndex);
                     if (triangles == null || triangles.Length == 0)
                     {
-                        MP2.MPDebug($"[ImagePaintUV] submesh={submeshIndex} triangles=<none>", always_show: true);
+                        MP2.MPDebug($"[MediaPaintUV] type='{mediaType}' submesh={submeshIndex} triangles=<none>", always_show: true);
                         continue;
                     }
 
@@ -515,7 +532,7 @@ namespace MaterialPainter2
 
                     if (!foundUv)
                     {
-                        MP2.MPDebug($"[ImagePaintUV] submesh={submeshIndex} uvBounds=<none>", always_show: true);
+                        MP2.MPDebug($"[MediaPaintUV] type='{mediaType}' submesh={submeshIndex} uvBounds=<none>", always_show: true);
                         continue;
                     }
 
@@ -528,12 +545,12 @@ namespace MaterialPainter2
                         ? $"pixelRect=({FormatFloat(min.x * texture.width)}, {FormatFloat(min.y * texture.height)}, {FormatFloat((max.x - min.x) * texture.width)}, {FormatFloat((max.y - min.y) * texture.height)})"
                         : "pixelRect=<none>";
 
-                    MP2.MPDebug($"[ImagePaintUV] submesh={submeshIndex} material='{materialName}' texture='{textureName}' textureSize={textureSize} uvMin=({FormatFloat(min.x)}, {FormatFloat(min.y)}) uvMax=({FormatFloat(max.x)}, {FormatFloat(max.y)}) uvSize=({FormatFloat(max.x - min.x)}, {FormatFloat(max.y - min.y)}) {pixelRect}", always_show: true);
+                    MP2.MPDebug($"[MediaPaintUV] type='{mediaType}' submesh={submeshIndex} material='{materialName}' texture='{textureName}' textureSize={textureSize} uvMin=({FormatFloat(min.x)}, {FormatFloat(min.y)}) uvMax=({FormatFloat(max.x)}, {FormatFloat(max.y)}) uvSize=({FormatFloat(max.x - min.x)}, {FormatFloat(max.y - min.y)}) {pixelRect}", always_show: true);
                 }
             }
             catch (Exception ex)
             {
-                MP2.MPDebug("[ImagePaintUV] failed: " + ex.Message, always_show: true);
+                MP2.MPDebug("[MediaPaintUV] failed: " + ex.Message, always_show: true);
             }
         }
 
@@ -561,6 +578,117 @@ namespace MaterialPainter2
             }
 
             return foundUv;
+        }
+
+        private bool TryApplyBoxProjectedUvMesh(Renderer renderer, out string reason)
+        {
+            reason = "";
+
+            if (renderer is SkinnedMeshRenderer)
+            {
+                reason = "skinned renderer";
+                return false;
+            }
+
+            MeshFilter meshFilter = renderer.GetComponent<MeshFilter>();
+            if (meshFilter == null)
+            {
+                reason = "no mesh filter";
+                return false;
+            }
+
+            Mesh sourceMesh = meshFilter.sharedMesh;
+            if (sourceMesh == null)
+            {
+                reason = "no mesh";
+                return false;
+            }
+
+            if (sourceMesh.subMeshCount != 1)
+            {
+                reason = "submesh count is " + sourceMesh.subMeshCount;
+                return false;
+            }
+
+            try
+            {
+                Vector3[] vertices = sourceMesh.vertices;
+                if (vertices == null || vertices.Length == 0)
+                {
+                    reason = "no vertices";
+                    return false;
+                }
+
+                Mesh projectedMesh = UnityEngine.Object.Instantiate(sourceMesh);
+                projectedMesh.name = sourceMesh.name + "_MP2BoxProjection";
+
+                Vector3[] normals = sourceMesh.normals;
+                if (normals == null || normals.Length != vertices.Length)
+                {
+                    projectedMesh.RecalculateNormals();
+                    normals = projectedMesh.normals;
+                }
+
+                Bounds bounds = sourceMesh.bounds;
+                Vector2[] projectedUvs = new Vector2[vertices.Length];
+                for (int i = 0; i < vertices.Length; i++)
+                {
+                    Vector3 normal = normals != null && i < normals.Length ? normals[i] : Vector3.up;
+                    projectedUvs[i] = GetBoxProjectedUv(vertices[i], normal, bounds);
+                }
+
+                projectedMesh.uv = projectedUvs;
+                meshFilter.sharedMesh = projectedMesh;
+
+                ChangedMarker changedMarker = renderer.GetComponent<ChangedMarker>();
+                if (changedMarker != null)
+                    changedMarker.SetGeneratedMesh(projectedMesh);
+
+                MP2.MPDebug($"[MediaPaintUV] boxProjection mesh='{projectedMesh.name}' boundsSize=({FormatFloat(bounds.size.x)}, {FormatFloat(bounds.size.y)}, {FormatFloat(bounds.size.z)})", always_show: true);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                reason = ex.Message;
+                return false;
+            }
+        }
+
+        private Vector2 GetBoxProjectedUv(Vector3 vertex, Vector3 normal, Bounds bounds)
+        {
+            Vector3 absNormal = new Vector3(Mathf.Abs(normal.x), Mathf.Abs(normal.y), Mathf.Abs(normal.z));
+            float x = InverseLerpSafe(bounds.min.x, bounds.max.x, vertex.x);
+            float y = InverseLerpSafe(bounds.min.y, bounds.max.y, vertex.y);
+            float z = InverseLerpSafe(bounds.min.z, bounds.max.z, vertex.z);
+
+            if (absNormal.y >= absNormal.x && absNormal.y >= absNormal.z)
+            {
+                if (normal.y < 0f)
+                    z = 1f - z;
+
+                return new Vector2(x, z);
+            }
+
+            if (absNormal.x >= absNormal.z)
+            {
+                if (normal.x > 0f)
+                    z = 1f - z;
+
+                return new Vector2(z, y);
+            }
+
+            if (normal.z < 0f)
+                x = 1f - x;
+
+            return new Vector2(x, y);
+        }
+
+        private float InverseLerpSafe(float min, float max, float value)
+        {
+            if (Mathf.Abs(max - min) < MIN_ATLAS_REMAP_UV_SIZE)
+                return 0.5f;
+
+            return Mathf.InverseLerp(min, max, value);
         }
 
         private Mesh GetRendererSharedMesh(Renderer renderer)
@@ -602,7 +730,7 @@ namespace MaterialPainter2
             return new Vector2(-uvMin.x / uvSize.x, -uvMin.y / uvSize.y);
         }
 
-        private void ApplyImageMaterial(Renderer renderer, Texture texture, bool useAtlasRemap, Vector2 uvMin, Vector2 uvSize)
+        private void ApplyMediaMaterial(Renderer renderer, Texture texture, bool useAtlasRemap, Vector2 uvMin, Vector2 uvSize)
         {
             Shader imageShader = Shader.Find("Unlit/Texture");
             if (imageShader == null)
@@ -610,12 +738,13 @@ namespace MaterialPainter2
 
             if (imageShader == null)
             {
-                MP2.MPDebug("No image material shader found; falling back to texture override.", always_show: true);
-                ApplyImageTexture(renderer, texture);
+                MP2.MPDebug("No media material shader found; falling back to texture override.", always_show: true);
+                if (texture != null)
+                    ApplyImageTexture(renderer, texture);
                 return;
             }
 
-            MP2.MPDebug("Image material shader: " + imageShader.name);
+            MP2.MPDebug("Media material shader: " + imageShader.name);
 
             Vector2 textureScale = Vector2.one;
             Vector2 textureOffset = Vector2.zero;
@@ -629,11 +758,14 @@ namespace MaterialPainter2
             for (var i = 0; i < shares.Count(); i++)
             {
                 Material material_new = new Material(imageShader);
-                material_new.mainTexture = texture;
+                if (texture != null)
+                    material_new.mainTexture = texture;
 
                 if (material_new.HasProperty(mainTexturePropertyID))
                 {
-                    material_new.SetTexture(mainTexturePropertyID, texture);
+                    if (texture != null)
+                        material_new.SetTexture(mainTexturePropertyID, texture);
+
                     if (useAtlasRemap)
                     {
                         material_new.SetTextureScale(MAIN_TEXTURE_PROPERTY_NAME, textureScale);
@@ -643,7 +775,9 @@ namespace MaterialPainter2
 
                 if (material_new.HasProperty(baseMapPropertyID))
                 {
-                    material_new.SetTexture(baseMapPropertyID, texture);
+                    if (texture != null)
+                        material_new.SetTexture(baseMapPropertyID, texture);
+
                     if (useAtlasRemap)
                     {
                         material_new.SetTextureScale(BASE_MAP_PROPERTY_NAME, textureScale);
@@ -662,8 +796,70 @@ namespace MaterialPainter2
             renderer.SetPropertyBlock(new MaterialPropertyBlock());
         }
 
+        private RenderTexture CreateVideoRenderTexture(int width, int height, string name)
+        {
+            width = Mathf.Max(1, width);
+            height = Mathf.Max(1, height);
+
+            RenderTexture renderTexture = new RenderTexture(width, height, 0, RenderTextureFormat.ARGB32);
+            renderTexture.name = "MP2VideoTexture_" + name;
+            renderTexture.wrapMode = TextureWrapMode.Clamp;
+            renderTexture.filterMode = FilterMode.Point;
+            renderTexture.Create();
+            return renderTexture;
+        }
+
+        private void ResizePreparedVideoRenderTexture(VideoPlayer videoPlayer)
+        {
+            int width = Mathf.Max(1, (int)videoPlayer.width);
+            int height = Mathf.Max(1, (int)videoPlayer.height);
+            RenderTexture oldTexture = videoPlayer.targetTexture;
+
+            if (oldTexture != null && oldTexture.width == width && oldTexture.height == height)
+                return;
+
+            RenderTexture newTexture = CreateVideoRenderTexture(width, height, videoPlayer.gameObject.name);
+            videoPlayer.targetTexture = newTexture;
+
+            ChangedMarker changedMarker = videoPlayer.GetComponent<ChangedMarker>();
+            if (changedMarker != null)
+                changedMarker.SetVideoTexture(newTexture);
+
+            Renderer renderer = videoPlayer.GetComponent<Renderer>();
+            if (renderer != null)
+                SetRendererMediaTexture(renderer, newTexture);
+
+            if (oldTexture != null)
+            {
+                oldTexture.Release();
+                DestroyImmediate(oldTexture);
+            }
+        }
+
+        private void SetRendererMediaTexture(Renderer renderer, Texture texture)
+        {
+            Material[] materials = renderer.materials;
+            for (var i = 0; i < materials.Count(); i++)
+            {
+                Material material = materials[i];
+                if (material == null)
+                    continue;
+
+                material.mainTexture = texture;
+
+                if (material.HasProperty(mainTexturePropertyID))
+                    material.SetTexture(mainTexturePropertyID, texture);
+
+                if (material.HasProperty(baseMapPropertyID))
+                    material.SetTexture(baseMapPropertyID, texture);
+            }
+
+            renderer.materials = materials;
+        }
+
         void OnVideoPrepared(VideoPlayer vp)
         {
+            ResizePreparedVideoRenderTexture(vp);
             // Play the video when it is prepared
             vp.Play();
         }
