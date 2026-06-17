@@ -476,6 +476,9 @@ namespace MaterialPainter2
             int index = 0;
             foreach (var button in buttons)
             {
+                if (!button.visible)
+                    continue;
+
                 int button_width = (int)Math.Floor((size.x * scale) / (spacing.x * scale + tile_size.x * scale));
                 //MP2.MPDebug($"{(size.x * scale) / (spacing.x * scale + tile_size.x * scale)}");
 

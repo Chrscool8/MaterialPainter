@@ -122,6 +122,11 @@ namespace MaterialPainter2
             return CombinePath(GetAssemblyDirectory(), RES_FOLDER_NAME, SPRITES_FOLDER_NAME, FALLBACK_IMAGE_FILE_NAME);
         }
 
+        private static string GetBundledSpriteFilePath(string fileName)
+        {
+            return CombinePath(GetAssemblyDirectory(), RES_FOLDER_NAME, SPRITES_FOLDER_NAME, fileName);
+        }
+
         private static string GetAssetBundlePath()
         {
             return CombinePath(_material_painter_directory, RES_FOLDER_NAME, ASSET_BUNDLE_FILE_NAME);

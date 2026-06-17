@@ -15,6 +15,12 @@ namespace MaterialPainter2
     {
         private const string MAIN_TEXTURE_PROPERTY_NAME = "_MainTex";
         private const string BASE_MAP_PROPERTY_NAME = "_BaseMap";
+        private const string TRIPLANAR_SHADER_NAME = "Rollercoaster/Triplanar";
+        private const string WATERFALL_SHADER_NAME = "Rollercoaster/CustomColorWaterFountainFalling3";
+        private const string BLACK_HOLE_CORE_SHADER_NAME = "Rollercoaster/BlackHoleCore";
+        private const string BLACK_HOLE_DISC_SHADER_NAME = "Rollercoaster/BlackHoleAccretionDisc";
+        private const string TEXTURE_SCALE_PROPERTY_NAME = "_TextureScale";
+        private const string TRIPLANAR_BLEND_SHARPNESS_PROPERTY_NAME = "_TriplanarBlendSharpness";
         private const float MIN_ATLAS_REMAP_UV_SIZE = 0.0001f;
         private const int SHARED_VIDEO_TEXTURE_SIZE = 1024;
         private static readonly int mainTexturePropertyID = Shader.PropertyToID("_MainTex");
@@ -23,7 +29,10 @@ namespace MaterialPainter2
         private static readonly Dictionary<string, SharedMediaMaterial> sharedMediaMaterials = new Dictionary<string, SharedMediaMaterial>();
         private static readonly Dictionary<int, SharedProjectedMesh> sharedProjectedMeshes = new Dictionary<int, SharedProjectedMesh>();
         private static readonly Dictionary<string, SharedVideoPaint> sharedVideoPaints = new Dictionary<string, SharedVideoPaint>();
+        private static readonly Dictionary<MaterialBrush, Material> terrainBrushMaterialCache = new Dictionary<MaterialBrush, Material>();
+        private static readonly Dictionary<MaterialBrush, Material> wildBrushMaterialCache = new Dictionary<MaterialBrush, Material>();
         private static Shader mediaShader = null;
+        private static Shader triplanarShader = null;
 
         private class SharedMediaMaterial
         {
@@ -239,31 +248,36 @@ namespace MaterialPainter2
                         break;
 
                     case (int)MaterialBrush.Terrain:
+                    case (int)MaterialBrush.UndergroundTerrain:
+                    case (int)MaterialBrush.DataView:
+                    case (int)MaterialBrush.Selected:
+                    case (int)MaterialBrush.Deleted:
+                    case (int)MaterialBrush.SceneGhost:
+                    case (int)MaterialBrush.DecoGlow:
+                    case (int)MaterialBrush.CollisionGlow:
+                    case (int)MaterialBrush.RideLight:
+                    case (int)MaterialBrush.CoasterStats:
+                    case (int)MaterialBrush.Waterfall:
+                    case (int)MaterialBrush.BlackHoleCore:
+                    case (int)MaterialBrush.BlackHoleDisc:
+                    case (int)MaterialBrush.TriplanarTerrain:
+                    case (int)MaterialBrush.TriplanarTerrainGrass:
+                    case (int)MaterialBrush.TriplanarTerrainDirt:
+                    case (int)MaterialBrush.TriplanarTerrainStone:
+                    case (int)MaterialBrush.TriplanarTerrainSnow:
+                    case (int)MaterialBrush.TriplanarTerrainSand:
+                    case (int)MaterialBrush.TriplanarTerrainIce:
+                    case (int)MaterialBrush.TriplanarTerrainLavarock:
+                    case (int)MaterialBrush.TriplanarTerrainAsh:
+                    case (int)MaterialBrush.TriplanarTerrainCrackedSoil:
+                    case (int)MaterialBrush.TriplanarTerrainDeadGrass:
+                    case (int)MaterialBrush.TriplanarTerrainBlueprint:
                         {
-                            MaterialDecorator materialDecorator = new MaterialDecorator();
-                            Material snag = new Material(ScriptableSingleton<AssetManager>.Instance.terrainMaterial);
-                            //Material snag = ScriptableSingleton<AssetManager>.Instance.decoVisibilityHighlightOverlayMaterial;
-
-                            if (snag == null)
+                            if (!ApplyBorrowedMaterial((MaterialBrush)selected_brush, renderer))
                             {
-                                MP2.MPDebug("No terrainMaterial in Material list?");
+                                RevertMaterial(tf.gameObject);
                                 return;
                             }
-
-                            Material[] shares = renderer.materials;
-
-                            for (var i = 0; i < shares.Count(); i++)
-                            {
-                                Material material_old = shares[i];
-                                if (material_old != null)
-                                {
-                                    Material material_new = snag;
-                                    material_new.enableInstancing = true;
-                                    shares[i] = material_new;
-                                }
-                            }
-
-                            renderer.materials = shares;
                         }
                         break;
 
@@ -394,6 +408,363 @@ namespace MaterialPainter2
                 Instantiate(ScriptableSingleton<AssetManager>.Instance.plopParticlesGO).transform.position = tf.position;
                 ScriptableSingleton<SoundAssetManager>.Instance.recolorObject.play2D();
             }
+        }
+
+        private bool ApplyBorrowedMaterial(MaterialBrush brush, Renderer renderer)
+        {
+            MP2.MPDebug(brush.ToString());
+            renderer.enabled = true;
+
+            Material sourceMaterial = GetBorrowedMaterial(brush);
+            if (sourceMaterial == null)
+            {
+                MP2.MPDebug($"No borrowed material found for {brush}.");
+                return false;
+            }
+
+            Material[] shares = renderer.materials;
+
+            for (var i = 0; i < shares.Count(); i++)
+            {
+                Material material_old = shares[i];
+                if (material_old != null)
+                {
+                    Material material_new = new Material(sourceMaterial);
+                    material_new.enableInstancing = true;
+                    shares[i] = material_new;
+                }
+            }
+
+            renderer.materials = shares;
+            renderer.SetPropertyBlock(new MaterialPropertyBlock());
+            return true;
+        }
+
+        private Material GetBorrowedMaterial(MaterialBrush brush)
+        {
+            AssetManager assetManager = ScriptableSingleton<AssetManager>.Instance;
+
+            switch (brush)
+            {
+                case MaterialBrush.Terrain:
+                    return assetManager != null ? assetManager.terrainMaterial : null;
+                case MaterialBrush.TriplanarTerrain:
+                    return GetTerrainBrushMaterial(MaterialBrush.TriplanarTerrain, "Grass", "TriplanarTerrain", Color.white, 1f);
+                case MaterialBrush.TriplanarTerrainGrass:
+                    return GetTerrainBrushMaterial(MaterialBrush.TriplanarTerrainGrass, "Grass", "TriplanarTerrainGrass", Color.white, 1f);
+                case MaterialBrush.TriplanarTerrainDirt:
+                    return GetTerrainBrushMaterial(MaterialBrush.TriplanarTerrainDirt, "Dirt", "TriplanarTerrainDirt", Color.white, 1f);
+                case MaterialBrush.TriplanarTerrainStone:
+                    return GetTerrainBrushMaterial(MaterialBrush.TriplanarTerrainStone, "Rock", "TriplanarTerrainStone", Color.white, 1f);
+                case MaterialBrush.TriplanarTerrainSnow:
+                    return GetTerrainBrushMaterial(MaterialBrush.TriplanarTerrainSnow, "Snow", "TriplanarTerrainSnow", Color.white, 1f);
+                case MaterialBrush.TriplanarTerrainSand:
+                    return GetTerrainBrushMaterial(MaterialBrush.TriplanarTerrainSand, "Sand", "TriplanarTerrainSand", Color.white, 1f);
+                case MaterialBrush.TriplanarTerrainIce:
+                    return GetTerrainBrushMaterial(MaterialBrush.TriplanarTerrainIce, "Ice", "TriplanarTerrainIce", Color.white, 1f);
+                case MaterialBrush.TriplanarTerrainLavarock:
+                    return GetTerrainBrushMaterial(MaterialBrush.TriplanarTerrainLavarock, "Lava Rock", "TriplanarTerrainLavarock", Color.white, 1f);
+                case MaterialBrush.TriplanarTerrainAsh:
+                    return GetTerrainBrushMaterial(MaterialBrush.TriplanarTerrainAsh, "Ash", "TriplanarTerrainAsh", Color.white, 1f);
+                case MaterialBrush.TriplanarTerrainCrackedSoil:
+                    return GetTerrainBrushMaterial(MaterialBrush.TriplanarTerrainCrackedSoil, "Cracked Dirt", "TriplanarTerrainCrackedSoil", Color.white, 1f);
+                case MaterialBrush.TriplanarTerrainDeadGrass:
+                    return GetTerrainBrushMaterial(MaterialBrush.TriplanarTerrainDeadGrass, "Dead Grass", "TriplanarTerrainDeadGrass", Color.white, 1f);
+                case MaterialBrush.TriplanarTerrainBlueprint:
+                    return GetTerrainBrushMaterial(MaterialBrush.TriplanarTerrainBlueprint, "", "TriplanarTerrainBlueprint", new Color(0.35f, 0.65f, 1f, 1f), 2f);
+                case MaterialBrush.UndergroundTerrain:
+                    return assetManager != null ? assetManager.undergroundViewTerrainMaterial : null;
+                case MaterialBrush.DataView:
+                    return assetManager != null ? assetManager.dataViewMaterial : null;
+                case MaterialBrush.Selected:
+                    return assetManager != null ? assetManager.selectedObjectMaterial : null;
+                case MaterialBrush.Deleted:
+                    return assetManager != null ? assetManager.deletedObjectMaterial : null;
+                case MaterialBrush.SceneGhost:
+                    return assetManager != null ? assetManager.sceneViewGhostMaterial : null;
+                case MaterialBrush.DecoGlow:
+                    return assetManager != null ? assetManager.decoVisibilityHighlightOverlayMaterial : null;
+                case MaterialBrush.CollisionGlow:
+                    return assetManager != null ? assetManager.collidingObjectsHighlightOverlayMaterial : null;
+                case MaterialBrush.RideLight:
+                    return assetManager != null ? assetManager.rideLightMaterial : null;
+                case MaterialBrush.CoasterStats:
+                    return assetManager != null ? assetManager.trackedRideStatVisualizerMaterial : null;
+                case MaterialBrush.Waterfall:
+                    return GetWaterfallBrushMaterial();
+                case MaterialBrush.BlackHoleCore:
+                    return GetBlackHoleCoreBrushMaterial();
+                case MaterialBrush.BlackHoleDisc:
+                    return GetBlackHoleDiscBrushMaterial();
+                default:
+                    return null;
+            }
+        }
+
+        private Material FindLoadedMaterial(params string[] materialNames)
+        {
+            Material[] loadedMaterials = Resources.FindObjectsOfTypeAll<Material>();
+            foreach (string materialName in materialNames)
+            {
+                foreach (Material material in loadedMaterials)
+                {
+                    if (material == null)
+                        continue;
+
+                    if (NormalizeUnityObjectName(material.name) == materialName)
+                    {
+                        MP2.MPDebug($"Borrowed loaded material '{material.name}' for '{materialName}'.", always_show: true);
+                        return material;
+                    }
+                }
+            }
+
+            MP2.MPDebug("Loaded material not found. Tried: " + string.Join(", ", materialNames), always_show: true);
+            return null;
+        }
+
+        private Material GetWaterfallBrushMaterial()
+        {
+            Material cachedMaterial;
+            if (wildBrushMaterialCache.TryGetValue(MaterialBrush.Waterfall, out cachedMaterial) && cachedMaterial != null)
+                return cachedMaterial;
+
+            Shader shader = GetOptionalShader(WATERFALL_SHADER_NAME, "Standard");
+            if (shader == null)
+                return null;
+
+            Material material = new Material(shader);
+            material.name = "MP2_Waterfall";
+            Texture bumpTexture = MP2.GetBundledSpriteTexture("effect_water_normal");
+            Texture edgeTexture = MP2.GetBundledSpriteTexture("effect_water_flowing_edge");
+            Texture flowPatternTexture = MP2.GetBundledSpriteTexture("effect_water_flowing_pattern");
+            Texture noiseTexture = MP2.GetBundledSpriteTexture("effect_fountain_water_transparency_noise");
+            SetTextureIfPresent(material, "_BumpMap", bumpTexture);
+            SetTextureIfPresent(material, "_Edge", edgeTexture);
+            SetTextureIfPresent(material, "_FlowPattern", flowPatternTexture);
+            SetTextureIfPresent(material, "_Noise", noiseTexture);
+            SetMainTextureIfPresent(material, flowPatternTexture);
+            SetColorIfPresent(material, "_Color", new Color(0.32941177f, 0.76862746f, 0.96862745f, 0.22352941f));
+            SetColorIfPresent(material, "_CustomColor1", new Color(0.32941177f, 0.76862746f, 0.96862745f, 0.22352941f));
+            SetColorIfPresent(material, "_WaterColor", new Color(0.32941177f, 0.76862746f, 0.96862745f, 0.22352941f));
+            SetColorIfPresent(material, "_SpecularColor", new Color(0.1838235f, 0.1838235f, 0.1838235f, 1f));
+            SetFloatIfPresent(material, "_CustomColors", 0f);
+            SetFloatIfPresent(material, "_Distortions", 1f);
+            SetFloatIfPresent(material, "_BumpStrength", 0.38f);
+            SetFloatIfPresent(material, "_BumpVerticalSpeed", 1.35f);
+            SetFloatIfPresent(material, "_BumpHorizontalSpeed", 0.1f);
+            SetFloatIfPresent(material, "_DistortionStrength", 1f);
+            SetFloatIfPresent(material, "_EdgeFuzzyness", 0.059f);
+            SetFloatIfPresent(material, "_FlowPatternTransparency", 0.125f);
+            SetFloatIfPresent(material, "_FlowPatternVerticalSpeed", 1.43f);
+            SetFloatIfPresent(material, "_FlowPatternHorizontalSpeed", 0.2f);
+            SetFloatIfPresent(material, "_FlowRippleSpeed", 0.2f);
+            SetFloatIfPresent(material, "_Glossiness", 0.822f);
+            SetFloatIfPresent(material, "_NormalMultiplier", 4.36f);
+            SetFloatIfPresent(material, "_WaveHeight", 0.025f);
+            material.enableInstancing = true;
+
+            wildBrushMaterialCache[MaterialBrush.Waterfall] = material;
+            return material;
+        }
+
+        private Material GetBlackHoleCoreBrushMaterial()
+        {
+            Material cachedMaterial;
+            if (wildBrushMaterialCache.TryGetValue(MaterialBrush.BlackHoleCore, out cachedMaterial) && cachedMaterial != null)
+                return cachedMaterial;
+
+            Shader shader = GetOptionalShader(BLACK_HOLE_CORE_SHADER_NAME, "Standard");
+            if (shader == null)
+                return null;
+
+            Material material = new Material(shader);
+            material.name = "MP2_BlackHoleCore";
+            Texture texture = MP2.GetBundledSpriteTexture("effect_black_hole_core");
+            SetMainTextureIfPresent(material, texture);
+            SetColorIfPresent(material, "_Color", Color.white);
+            SetFloatIfPresent(material, "_InnerRadius", 0.53f);
+            SetFloatIfPresent(material, "_Range", 0.9f);
+            SetFloatIfPresent(material, "_ShineIntensity", 200f);
+            material.enableInstancing = true;
+
+            wildBrushMaterialCache[MaterialBrush.BlackHoleCore] = material;
+            return material;
+        }
+
+        private Material GetBlackHoleDiscBrushMaterial()
+        {
+            Material cachedMaterial;
+            if (wildBrushMaterialCache.TryGetValue(MaterialBrush.BlackHoleDisc, out cachedMaterial) && cachedMaterial != null)
+                return cachedMaterial;
+
+            Shader shader = GetOptionalShader(BLACK_HOLE_DISC_SHADER_NAME, "Standard");
+            if (shader == null)
+                return null;
+
+            Material material = new Material(shader);
+            material.name = "MP2_BlackHoleAccretionDisc";
+            Texture colorsTexture = MP2.GetBundledSpriteTexture("effect_accretion_disc_colors");
+            Texture noiseTexture = MP2.GetBundledSpriteTexture("effect_accretion_disc_noise");
+            SetTextureIfPresent(material, "_ColorsTex", colorsTexture);
+            SetTextureIfPresent(material, "_NoiseTex", noiseTexture);
+            SetMainTextureIfPresent(material, colorsTexture);
+            SetColorIfPresent(material, "_Color", Color.white);
+            SetFloatIfPresent(material, "_InnerRadius", 0.6f);
+            SetFloatIfPresent(material, "_Range", 0.9f);
+            SetFloatIfPresent(material, "_ShineIntensity", 16f);
+            material.enableInstancing = true;
+
+            wildBrushMaterialCache[MaterialBrush.BlackHoleDisc] = material;
+            return material;
+        }
+
+        private Shader GetOptionalShader(string shaderName, string fallbackShaderName)
+        {
+            Shader shader = Shader.Find(shaderName);
+            if (shader != null)
+                return shader;
+
+            MP2.MPDebug($"Shader '{shaderName}' not found, trying '{fallbackShaderName}'.", always_show: true);
+            shader = Shader.Find(fallbackShaderName);
+            if (shader == null)
+                MP2.MPDebug($"Fallback shader '{fallbackShaderName}' not found.", always_show: true);
+
+            return shader;
+        }
+
+        private void SetMainTextureIfPresent(Material material, Texture texture)
+        {
+            SetTextureIfPresent(material, MAIN_TEXTURE_PROPERTY_NAME, texture);
+            SetTextureIfPresent(material, BASE_MAP_PROPERTY_NAME, texture);
+        }
+
+        private void SetTextureIfPresent(Material material, string propertyName, Texture texture)
+        {
+            if (material == null || texture == null)
+                return;
+
+            if (material.HasProperty(propertyName))
+                material.SetTexture(propertyName, texture);
+        }
+
+        private void SetColorIfPresent(Material material, string propertyName, Color color)
+        {
+            if (material != null && material.HasProperty(propertyName))
+                material.SetColor(propertyName, color);
+        }
+
+        private void SetFloatIfPresent(Material material, string propertyName, float value)
+        {
+            if (material != null && material.HasProperty(propertyName))
+                material.SetFloat(propertyName, value);
+        }
+
+        private Material GetTerrainBrushMaterial(MaterialBrush brush, string terrainTypeName, string materialName, Color color, float textureScale)
+        {
+            Material cachedMaterial;
+            if (terrainBrushMaterialCache.TryGetValue(brush, out cachedMaterial) && cachedMaterial != null)
+                return cachedMaterial;
+
+            TerrainType terrainType = FindTerrainType(terrainTypeName);
+            Texture texture = terrainType != null ? terrainType.groundTexture : null;
+            if (texture == null)
+            {
+                texture = Texture2D.whiteTexture;
+                MP2.MPDebug($"Terrain texture not found for '{terrainTypeName}', using white texture for '{materialName}'.", always_show: true);
+            }
+
+            Shader shader = GetTriplanarShader();
+            Material material = null;
+            if (shader != null)
+            {
+                material = new Material(shader);
+            }
+            else if (terrainType != null && terrainType.cliffMaterial != null)
+            {
+                material = new Material(terrainType.cliffMaterial);
+            }
+
+            if (material == null)
+            {
+                MP2.MPDebug($"Could not create terrain brush material '{materialName}'.", always_show: true);
+                return null;
+            }
+
+            material.name = "MP2_" + materialName;
+            material.mainTexture = texture;
+            if (material.HasProperty(mainTexturePropertyID))
+                material.SetTexture(MAIN_TEXTURE_PROPERTY_NAME, texture);
+            if (material.HasProperty(baseMapPropertyID))
+                material.SetTexture(BASE_MAP_PROPERTY_NAME, texture);
+            if (material.HasProperty(colorPropertyID))
+                material.SetColor(colorPropertyID, color);
+            if (material.HasProperty(TEXTURE_SCALE_PROPERTY_NAME))
+                material.SetFloat(TEXTURE_SCALE_PROPERTY_NAME, textureScale);
+            if (material.HasProperty(TRIPLANAR_BLEND_SHARPNESS_PROPERTY_NAME))
+                material.SetFloat(TRIPLANAR_BLEND_SHARPNESS_PROPERTY_NAME, 1f);
+
+            material.enableInstancing = true;
+            terrainBrushMaterialCache[brush] = material;
+            return material;
+        }
+
+        private TerrainType FindTerrainType(string terrainTypeName)
+        {
+            if (string.IsNullOrEmpty(terrainTypeName))
+                return null;
+
+            AssetManager assetManager = ScriptableSingleton<AssetManager>.Instance;
+            if (assetManager == null || assetManager.terrainTypes == null)
+                return null;
+
+            foreach (TerrainType terrainType in assetManager.terrainTypes)
+            {
+                if (terrainType != null && string.Equals(terrainType.name, terrainTypeName, StringComparison.OrdinalIgnoreCase))
+                    return terrainType;
+            }
+
+            MP2.MPDebug($"Terrain type '{terrainTypeName}' not found.", always_show: true);
+            return null;
+        }
+
+        private Shader GetTriplanarShader()
+        {
+            if (triplanarShader != null)
+                return triplanarShader;
+
+            triplanarShader = Shader.Find(TRIPLANAR_SHADER_NAME);
+            if (triplanarShader == null)
+            {
+                MP2.MPDebug($"Shader '{TRIPLANAR_SHADER_NAME}' not found, trying Standard.", always_show: true);
+                triplanarShader = Shader.Find("Standard");
+            }
+
+            return triplanarShader;
+        }
+
+        private string NormalizeUnityObjectName(string objectName)
+        {
+            if (string.IsNullOrEmpty(objectName))
+                return "";
+
+            string normalizedName = objectName;
+            string[] suffixes = { " (Instance)", " (Clone)" };
+            bool trimmedSuffix = true;
+            while (trimmedSuffix)
+            {
+                trimmedSuffix = false;
+                foreach (string suffix in suffixes)
+                {
+                    if (normalizedName.EndsWith(suffix, StringComparison.Ordinal))
+                    {
+                        normalizedName = normalizedName.Substring(0, normalizedName.Length - suffix.Length);
+                        trimmedSuffix = true;
+                    }
+                }
+            }
+
+            return normalizedName;
         }
 
         private void ApplyImageTexture(Renderer renderer, Texture texture)
@@ -999,6 +1370,20 @@ namespace MaterialPainter2
 
         public void ClearSharedMediaCaches()
         {
+            foreach (Material material in terrainBrushMaterialCache.Values.ToList())
+            {
+                if (material != null)
+                    UnityEngine.Object.DestroyImmediate(material);
+            }
+            terrainBrushMaterialCache.Clear();
+
+            foreach (Material material in wildBrushMaterialCache.Values.ToList())
+            {
+                if (material != null)
+                    UnityEngine.Object.DestroyImmediate(material);
+            }
+            wildBrushMaterialCache.Clear();
+
             foreach (SharedMediaMaterial sharedMaterial in sharedMediaMaterials.Values.ToList())
             {
                 if (sharedMaterial.material != null)
