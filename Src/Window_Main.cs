@@ -107,7 +107,7 @@ namespace MaterialPainter2
             UIWindowSettings ws = GetComponent<UIWindowSettings>();
             if (ws != null)
             {
-                ws.title = "Material Painter - " + title;
+                ws.title = MP2.GetWindowTitle(title);
             }
         }
 

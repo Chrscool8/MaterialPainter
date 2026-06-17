@@ -54,10 +54,30 @@ namespace MaterialPainter2
     public class MP2 : AbstractMod, IModSettings
     {
         public const string VERSION_NUMBER = "260617";
+        public const string MOD_IDENTIFIER = "MaterialPainter";
+        public const string MOD_DISPLAY_NAME = "Material Painter";
+        public const string MOD_FOLDER_NAME = "MaterialPainter2";
+        public const string SAVE_DATA_KEY = "MaterialPainter2";
+        public const string SAVE_SCHEMA_KEY = "_schema";
+        public const int CURRENT_SAVE_SCHEMA_VERSION = 3;
+        public const string VIDEO_FILE_EXTENSION = ".mp4";
 
-        public override string getIdentifier() => "MaterialPainter";
+        private const string LOG_FILE_NAME = "MaterialPainterLog.txt";
+        private const string LOG_PREFIX = MOD_DISPLAY_NAME + ": ";
+        private const string DEBUG_FLAG_FILE_NAME = "mp_debug";
+        private const string CUSTOM_FOLDER_NAME = "Custom";
+        private const string VIDEOS_FOLDER_NAME = "Videos";
+        private const string IMAGES_FOLDER_NAME = "Images";
+        private const string RES_FOLDER_NAME = "Res";
+        private const string ASSET_BUNDLE_FILE_NAME = "materialpainter.assets";
+        private const string DEFAULT_VIDEO_PREFIX = "video-default-";
+        private const string CUSTOM_VIDEO_PREFIX = "video-";
+        private const string FALLBACK_VIDEO_NAME = "video-0";
+        private const string CONTROLLER_GAME_OBJECT_NAME = "MP2 GameObject";
 
-        public override string getName() => "Material Painter";
+        public override string getIdentifier() => MOD_IDENTIFIER;
+
+        public override string getName() => MOD_DISPLAY_NAME;
 
         public override string getDescription() => @"The long awaited mod is here! Transform the materials of most objects into water, lava, and glass, make them invisible, or more! Lightly a work in progress. Have fun!";
 
@@ -114,11 +134,95 @@ namespace MaterialPainter2
         {
             if (debug_mode || always_show)
             {
-                UnityEngine.Debug.LogWarning("Material Painter: " + debug_string);
+                UnityEngine.Debug.LogWarning(LOG_PREFIX + debug_string);
 
                 if (_local_mods_directory != "")
-                    File.AppendAllText(_local_mods_directory + "/MaterialPainterLog.txt", "Material Painter: " + debug_string + "\n");
+                    File.AppendAllText(GetLogFilePath(), LOG_PREFIX + debug_string + "\n");
             }
+        }
+
+        public static string GetWindowTitle(string title)
+        {
+            return MOD_DISPLAY_NAME + " - " + title;
+        }
+
+        public static string GetCustomVideoFilePath(string videoName)
+        {
+            return CombineLocalModsPath(MOD_FOLDER_NAME, CUSTOM_FOLDER_NAME, VIDEOS_FOLDER_NAME, videoName + VIDEO_FILE_EXTENSION);
+        }
+
+        public static string GetFallbackVideoPath()
+        {
+            return GetCustomVideoFilePath(FALLBACK_VIDEO_NAME);
+        }
+
+        private static string GetCustomDirectory()
+        {
+            return CombineLocalModsPath(MOD_FOLDER_NAME, CUSTOM_FOLDER_NAME);
+        }
+
+        private static string GetCustomVideoDirectory()
+        {
+            return CombineLocalModsPath(MOD_FOLDER_NAME, CUSTOM_FOLDER_NAME, VIDEOS_FOLDER_NAME);
+        }
+
+        private static string GetCustomImageDirectory()
+        {
+            return CombineLocalModsPath(MOD_FOLDER_NAME, CUSTOM_FOLDER_NAME, IMAGES_FOLDER_NAME);
+        }
+
+        private static string GetDefaultCustomVideoPath(int index)
+        {
+            return GetCustomVideoFilePath(CUSTOM_VIDEO_PREFIX + index);
+        }
+
+        private static string GetBundledDefaultVideoPath(int index)
+        {
+            return CombinePath(GetAssemblyDirectory(), RES_FOLDER_NAME, VIDEOS_FOLDER_NAME, DEFAULT_VIDEO_PREFIX + index + VIDEO_FILE_EXTENSION);
+        }
+
+        private static string GetAssetBundlePath()
+        {
+            return CombinePath(_material_painter_directory, RES_FOLDER_NAME, ASSET_BUNDLE_FILE_NAME);
+        }
+
+        private static string GetLogFilePath()
+        {
+            return CombinePath(_local_mods_directory, LOG_FILE_NAME);
+        }
+
+        private static string GetDebugFlagPath()
+        {
+            return CombinePath(_local_mods_directory, DEBUG_FLAG_FILE_NAME);
+        }
+
+        private static string GetParkitectModsDirectory()
+        {
+            string documentsDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            return EnsureTrailingSlash(CombinePath(documentsDirectory, "Parkitect", "Mods"));
+        }
+
+        private static string GetAssemblyDirectory()
+        {
+            return System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        }
+
+        private static string CombineLocalModsPath(params string[] parts)
+        {
+            string[] pathParts = new string[parts.Length + 1];
+            pathParts[0] = _local_mods_directory;
+            Array.Copy(parts, 0, pathParts, 1, parts.Length);
+            return CombinePath(pathParts);
+        }
+
+        private static string CombinePath(params string[] parts)
+        {
+            return NormalizePath(System.IO.Path.Combine(parts));
+        }
+
+        private static string EnsureTrailingSlash(string path)
+        {
+            return path.EndsWith("/") ? path : path + "/";
         }
 
         public static Sprite get_sprite(string name, Sprite def = null)
@@ -164,13 +268,13 @@ namespace MaterialPainter2
             try
             {
                 MPDebug("LAUNCHING MP2", always_show: true);
-                _local_mods_directory = NormalizePath(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Parkitect/Mods/"); // GameController.modsPath; 
+                _local_mods_directory = GetParkitectModsDirectory(); // GameController.modsPath;
 
                 string[] folders =
                         {
-            _local_mods_directory + "MaterialPainter2/Custom/",
-            _local_mods_directory + "MaterialPainter2/Custom/Videos/",
-            _local_mods_directory + "MaterialPainter2/Custom/Images/"
+            GetCustomDirectory(),
+            GetCustomVideoDirectory(),
+            GetCustomImageDirectory()
         };
 
                 foreach (var folder in folders)
@@ -197,8 +301,8 @@ namespace MaterialPainter2
 
                 for (int i = 1; i <= 3; i++)
                 {
-                    var default_video = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + $"/Res/Videos/video-default-{i}.mp4";
-                    var custom_video = _local_mods_directory + $"MaterialPainter2/Custom/Videos/video-{i}.mp4";
+                    var default_video = GetBundledDefaultVideoPath(i);
+                    var custom_video = GetDefaultCustomVideoPath(i);
 
                     if (!File.Exists(custom_video) && File.Exists(default_video))
                     {
@@ -206,7 +310,7 @@ namespace MaterialPainter2
                     }
                 }
 
-                if (File.Exists(_local_mods_directory + "/mp_debug"))
+                if (File.Exists(GetDebugFlagPath()))
                 {
                     debug_mode = true;
                     MPDebug("Found debug flag file.");
@@ -248,7 +352,7 @@ namespace MaterialPainter2
             RegisterHotkeys();
 
             _material_painter_directory = ModManager.Instance.getMod(getIdentifier()).path;
-            var loadedAB = AssetBundle.LoadFromFile(_material_painter_directory + "/Res/materialpainter.assets");
+            var loadedAB = AssetBundle.LoadFromFile(GetAssetBundlePath());
 
             UnityEngine.Object[] objects = loadedAB.LoadAllAssets();
             for (int i = 0; i < objects.Length; i++)
@@ -284,7 +388,7 @@ namespace MaterialPainter2
             }
 
             go = new GameObject();
-            go.name = "MP2 GameObject";
+            go.name = CONTROLLER_GAME_OBJECT_NAME;
             controller = go.AddComponent<MP2_Controller>();
             construct_window_toggle = go.AddComponent<ConstructWindowToggle>();
 
@@ -314,7 +418,7 @@ namespace MaterialPainter2
 
             //material_brushes_videos["None"] = (new MaterialType("icon_none", get_sprite("icon_none"), (int)MaterialBrush.None));
 
-            string video_directory = _local_mods_directory + "MaterialPainter2/Custom/Videos/";
+            string video_directory = GetCustomVideoDirectory();
             if (!Directory.Exists(video_directory))
             {
                 MPDebug($"Video directory not found: {video_directory}", always_show: true);
@@ -441,10 +545,9 @@ namespace MaterialPainter2
                 sprites.Add(spriteName, sprite);
         }
 
-        private string NormalizePath(string path)
+        private static string NormalizePath(string path)
         {
-            // You may need a more complex normalization depending on your specific requirements
-            return path.Replace("\\", "/").ToLowerInvariant();
+            return path.Replace("\\", "/");
         }
 
         public override void onDisabled()
@@ -564,13 +667,13 @@ namespace MaterialPainter2
                     {
                         Dictionary<string, object> dictionary = (Dictionary<string, object>)Json.Deserialize(line);
 
-                        if (dictionary != null && dictionary.ContainsKey("MaterialPainter2"))
+                        if (dictionary != null && dictionary.ContainsKey(SAVE_DATA_KEY))
                         {
                             set_any_new = true;
 
-                            string inner_json = (string)dictionary["MaterialPainter2"];
+                            string inner_json = (string)dictionary[SAVE_DATA_KEY];
 
-                            if (inner_json.Contains("_schema"))
+                            if (inner_json.Contains(SAVE_SCHEMA_KEY))
                             {
                                 Dictionary<string, string> myDictionary = new Dictionary<string, string>();
                                 StringStringDictionary serializedDictionary = JsonConvert.DeserializeObject<StringStringDictionary>(inner_json);
@@ -580,9 +683,9 @@ namespace MaterialPainter2
                                     myDictionary[pair.key] = pair.value;
                                 }
 
-                                MPDebug($"File Schema V{myDictionary["_schema"]}");
+                                MPDebug($"File Schema V{myDictionary[SAVE_SCHEMA_KEY]}");
 
-                                if (int.TryParse(myDictionary["_schema"], out int schema) && schema == 3)
+                                if (int.TryParse(myDictionary[SAVE_SCHEMA_KEY], out int schema) && schema == CURRENT_SAVE_SCHEMA_VERSION)
                                 {
                                     foreach (var obj in allObjects)
                                     {
@@ -621,7 +724,7 @@ namespace MaterialPainter2
                                         }
                                     }
 
-                                    myDictionary.Remove("_schema");
+                                    myDictionary.Remove(SAVE_SCHEMA_KEY);
 
                                     if (myDictionary.Count == 0)
                                         MP2.MPDebug("Every key in the dictionary was assigned!");
@@ -863,7 +966,7 @@ namespace MaterialPainter2
             }
 
             Dictionary<string, string> myDictionary = new Dictionary<string, string>();
-            myDictionary["_schema"] = "3";
+            myDictionary[MP2.SAVE_SCHEMA_KEY] = MP2.CURRENT_SAVE_SCHEMA_VERSION.ToString();
 
             foreach (GameObject obj in objectsWithChangedMarker)
             {
@@ -894,7 +997,7 @@ namespace MaterialPainter2
 
             Dictionary<string, object> dictionary = new Dictionary<string, object>
             {
-                { "MaterialPainter2", json }
+                { MP2.SAVE_DATA_KEY, json }
             };
 
             data.Add(dictionary);

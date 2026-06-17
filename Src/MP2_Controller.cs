@@ -623,12 +623,12 @@ namespace MaterialPainter2
                             MP2.MPDebug($"Video, {selected_brush_custom}");
                             renderer.enabled = true;
 
-                            var video_url = MP2._local_mods_directory + $"MaterialPainter2/Custom/Videos/{selected_brush_custom}.mp4";
+                            var video_url = MP2.GetCustomVideoFilePath(selected_brush_custom);
                             if (!File.Exists(video_url))
                             {
                                 MP2.MPDebug($"Couldn't find {video_url}.");
 
-                                string fallback = MP2._local_mods_directory + $"MaterialPainter2/Custom/Videos/video-0.mp4"; ;
+                                string fallback = MP2.GetFallbackVideoPath();
                                 if (File.Exists(fallback))
                                 {
                                     video_url = fallback;

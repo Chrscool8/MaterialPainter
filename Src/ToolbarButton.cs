@@ -51,7 +51,7 @@ namespace MaterialPainter2
 
             mp2_button = GameObject.Instantiate(painterButton);
             mp2_button.transform.SetParent(content, false);
-            mp2_button.name = "Material Painter";
+            mp2_button.name = MP2.MOD_DISPLAY_NAME;
 
 
             Image ic = mp2_button.transform.Find("Image").GetComponent<Image>();
@@ -180,7 +180,7 @@ namespace MaterialPainter2
             var windowSettings = WindowPrefab.AddComponent<UIWindowSettings>();
             windowSettings.closable = true;
             windowSettings.defaultWindowPosition = new Vector2(0.5f, 0.5f);
-            windowSettings.title = "Material Painter";
+            windowSettings.title = MP2.MOD_DISPLAY_NAME;
             windowSettings.uniqueTag = MP2.Instance.getName();
             windowSettings.uniqueTagString = MP2.Instance.getName();
             windowSettings.resizeability = 0;
