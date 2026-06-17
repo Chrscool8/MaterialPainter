@@ -7,6 +7,9 @@ namespace MaterialPainter2
     {
         private Material[] materials = null;
         private MaterialPropertyBlock material_property_block = null;
+        private Mesh shared_mesh = null;
+        private Mesh generated_mesh = null;
+        private RenderTexture video_texture = null;
         private VideoPlayer video_player = null;
         private AudioSource audio_source = null;
         private bool _was_enabled = true;
@@ -24,6 +27,24 @@ namespace MaterialPainter2
 
         public void SetMaterialPropertyBlock(MaterialPropertyBlock material_property_block)
         { this.material_property_block = material_property_block; }
+
+        public Mesh GetSharedMesh()
+        { return shared_mesh; }
+
+        public void SetSharedMesh(Mesh shared_mesh)
+        { this.shared_mesh = shared_mesh; }
+
+        public Mesh GetGeneratedMesh()
+        { return generated_mesh; }
+
+        public void SetGeneratedMesh(Mesh generated_mesh)
+        { this.generated_mesh = generated_mesh; }
+
+        public RenderTexture GetVideoTexture()
+        { return video_texture; }
+
+        public void SetVideoTexture(RenderTexture video_texture)
+        { this.video_texture = video_texture; }
 
         public bool WasEnabled()
         { return _was_enabled; }

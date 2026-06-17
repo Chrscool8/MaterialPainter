@@ -27,6 +27,10 @@ namespace MaterialPainter2
                     renderer.GetPropertyBlock(old_block);
                     changed_marker.SetMaterialPropertyBlock(old_block);
                     changed_marker.SetEnabled(renderer.enabled);
+
+                    MeshFilter mesh_filter = game_object.GetComponent<MeshFilter>();
+                    if (mesh_filter != null)
+                        changed_marker.SetSharedMesh(mesh_filter.sharedMesh);
                 }
                 else
                     MP2.MPDebug("No Renderer For: " + game_object.name);
@@ -56,6 +60,21 @@ namespace MaterialPainter2
                 renderer.materials = changed_marker.GetMaterials();
                 renderer.SetPropertyBlock(changed_marker.GetMaterialPropertyBlock());
                 renderer.enabled = (changed_marker.WasEnabled());
+            }
+
+            MeshFilter mesh_filter = game_object.GetComponent<MeshFilter>();
+            if (mesh_filter != null && changed_marker.GetSharedMesh() != null)
+                mesh_filter.sharedMesh = changed_marker.GetSharedMesh();
+
+            Mesh generated_mesh = changed_marker.GetGeneratedMesh();
+            if (generated_mesh != null)
+                DestroyImmediate(generated_mesh);
+
+            RenderTexture video_texture = changed_marker.GetVideoTexture();
+            if (video_texture != null)
+            {
+                video_texture.Release();
+                DestroyImmediate(video_texture);
             }
 
             VideoPlayer video_player = changed_marker.GetVideoPlayer();
