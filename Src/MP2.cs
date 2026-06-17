@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
@@ -54,7 +53,7 @@ namespace MaterialPainter2
 
     public class MP2 : AbstractMod, IModSettings
     {
-        public const string VERSION_NUMBER = "251004";
+        public const string VERSION_NUMBER = "260617";
 
         public override string getIdentifier() => "MaterialPainter";
 
@@ -307,141 +306,51 @@ namespace MaterialPainter2
             //EventManager.Instance.OnGameSaved += new EventManager.OnGameSavedHandler(PostSaveHooked);
 
             RefreshBrushesVideos();
-
-            if (!File.Exists(_local_mods_directory + $"MaterialPainter2/Tools/ffmpeg.exe"))
-            {
-                MPDebug("ffmpeg not found.");
-
-                if (!File.Exists(_local_mods_directory + $"MaterialPainter2/_ignore_ffmpeg"))
-                    Window_SuggestDL.ConstructWindowPrefab();
-            }
-            else
-                MPDebug("ffmpeg found.");
-        }
-        public static void download_ffmpeg()
-        {
-            if (FileDownloader.Instance != null)
-            {
-                string ffmpegDownloadUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n7.1-latest-win64-lgpl-7.1.zip";
-                var savePath = _local_mods_directory + $"MaterialPainter2/Tools/file.zip";
-
-                CoroutineManager.Instance.StartCoroutine(FileDownloader.Instance.DownloadFile(ffmpegDownloadUrl, savePath, true, action_on_complete: move_ffmpeg));
-            }
-            else
-            {
-                MP2.MPDebug("FileDownloader instance is not available.");
-            }
-        }
-
-        public static void move_ffmpeg()
-        {
-            string original_loc = _local_mods_directory + $"MaterialPainter2/Tools/ffmpeg-n7.0-latest-win64-lgpl-7.0/bin/ffmpeg.exe";
-            if (File.Exists(original_loc))
-            {
-                File.Move(original_loc, _local_mods_directory + $"MaterialPainter2/Tools/ffmpeg.exe");
-            }
-
-            if (Directory.Exists(_local_mods_directory + $"MaterialPainter2/Tools/ffmpeg-n7.0-latest-win64-lgpl-7.0"))
-            {
-                // Delete the folder and all its contents
-                Directory.Delete(_local_mods_directory + $"MaterialPainter2/Tools/ffmpeg-n7.0-latest-win64-lgpl-7.0", true);
-            }
-
-            RefreshBrushesVideos();
-        }
-
-        public static void ignore_ffmpeg()
-        {
-            FileInfo fileInfo = new FileInfo(_local_mods_directory + $"MaterialPainter2/_ignore_ffmpeg");
-            using (FileStream fs = fileInfo.Create()) { }
         }
 
         public static void RefreshBrushesVideos()
         {
-            string ffmpeg_path = _local_mods_directory + $"MaterialPainter2/Tools/ffmpeg.exe";
-
             material_brushes_videos.Clear();
 
             //material_brushes_videos["None"] = (new MaterialType("icon_none", get_sprite("icon_none"), (int)MaterialBrush.None));
 
-            string[] files = Directory.GetFiles(_local_mods_directory + "MaterialPainter2/Custom/Videos/", "*.mp4", SearchOption.AllDirectories);
+            string video_directory = _local_mods_directory + "MaterialPainter2/Custom/Videos/";
+            if (!Directory.Exists(video_directory))
+            {
+                MPDebug($"Video directory not found: {video_directory}", always_show: true);
+                return;
+            }
+
+            string[] files = Directory.GetFiles(video_directory, "*.mp4", SearchOption.AllDirectories);
             foreach (string file in files)
             {
                 MPDebug($"Processing: {file}");
 
-                ////////////////
-
-                string outputFilePath = file.Replace(".mp4", ".png");
+                string outputFilePath = System.IO.Path.ChangeExtension(file, ".png");
                 string image_name = System.IO.Path.GetFileNameWithoutExtension(outputFilePath);
-
-                if (File.Exists(ffmpeg_path))
-                {
-                    MPDebug("Found ffmpeg.");
-                    string inputFilePath = file;
-                    string timePosition = "00:00:01"; // one second
-                    string ffmpegArgs = $"-i \"{inputFilePath}\" -ss {timePosition} -vframes 1 \"{outputFilePath}\"";
-
-                    if (!File.Exists(outputFilePath))
-                    {
-                        MPDebug("Creating Thumbnail.");
-
-                        try
-                        {
-                            ProcessStartInfo processStartInfo = new ProcessStartInfo
-                            {
-                                FileName = "ffmpeg",
-                                Arguments = ffmpegArgs,
-                                RedirectStandardOutput = true,
-                                RedirectStandardError = true,
-                                UseShellExecute = false,
-                                CreateNoWindow = true
-                            };
-
-                            using (Process process = new Process())
-                            {
-                                process.StartInfo = processStartInfo;
-                                process.OutputDataReceived += (sender, eventArgs) => Console.WriteLine(eventArgs.Data);
-                                process.ErrorDataReceived += (sender, eventArgs) => Console.WriteLine(eventArgs.Data);
-
-                                process.Start();
-                                process.BeginOutputReadLine();
-                                process.BeginErrorReadLine();
-
-                                process.WaitForExit();
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            MP2.MPDebug("FFMPEG Messed up");
-                            MP2.MPDebug("An error occurred: " + ex.Message);
-                            MP2.MPDebug("Stack Trace: " + ex.StackTrace);
-                        }
-                    }
-                }
+                bool needsThumbnailGeneration = false;
 
                 if (File.Exists(outputFilePath))
                 {
-                    MPDebug("Found thumb.");
-                    if (!sprites.ContainsKey(image_name))
+                    if (!LoadSpriteFromImageFile(outputFilePath, image_name, true, true))
                     {
-                        MPDebug("Loading as sprite.");
-                        Texture2D texture = new Texture2D(2, 2);
-                        byte[] bytes = System.IO.File.ReadAllBytes(outputFilePath);
-                        texture.LoadImage(bytes);
-
-                        if (texture == null)
-                        {
-                            MPDebug("Texture not found at path: " + outputFilePath);
-                            return;
-                        }
-                        MPDebug("Loaded tex.");
-                        Sprite sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
-                        MPDebug("Putting in list.");
-                        sprites.Add(image_name, sprite);
+                        EnsureVideoFallbackSprite(image_name);
+                        needsThumbnailGeneration = true;
                     }
                 }
                 else
-                    MPDebug($"Didn't find {outputFilePath}");
+                {
+                    EnsureVideoFallbackSprite(image_name);
+                    needsThumbnailGeneration = true;
+                }
+
+                if (needsThumbnailGeneration)
+                {
+                    CoroutineManager.Instance.StartCoroutine(VideoThumbnailGenerator.GenerateThumbnail(file, outputFilePath, (path, texture) =>
+                    {
+                        RegisterGeneratedVideoThumbnail(image_name, path, texture);
+                    }));
+                }
 
                 MaterialType new_type = new MaterialType(name: image_name, preview: sprites.GetValueOrDefault(image_name, null), id: (int)MaterialBrush.Video, id_string: image_name);
                 if (!material_brushes_videos.ContainsKey(image_name))
@@ -454,6 +363,82 @@ namespace MaterialPainter2
                     MPDebug($"{image_name} already in mat brushes");
                 }
             }
+        }
+
+        private static void EnsureVideoFallbackSprite(string name)
+        {
+            if (sprites.ContainsKey(name))
+                return;
+
+            Sprite fallback = get_sprite("icon_video1", get_sprite("tex_question"));
+            if (fallback != null)
+                sprites.Add(name, fallback);
+        }
+
+        private static bool LoadSpriteFromImageFile(string filePath, string spriteName, bool replaceExisting = false, bool rejectEmptyGeneratedThumbnail = false)
+        {
+            if (!File.Exists(filePath))
+                return false;
+
+            if (sprites.ContainsKey(spriteName) && !replaceExisting)
+                return true;
+
+            try
+            {
+                Texture2D texture = new Texture2D(2, 2);
+                byte[] bytes = File.ReadAllBytes(filePath);
+                if (!texture.LoadImage(bytes))
+                {
+                    MPDebug("Texture not found at path: " + filePath);
+                    return false;
+                }
+
+                if (rejectEmptyGeneratedThumbnail && IsEmptyGeneratedThumbnail(texture))
+                {
+                    MPDebug("Ignoring empty generated thumbnail cache: " + filePath);
+                    return false;
+                }
+
+                Sprite sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+                sprite.name = spriteName;
+                SetSprite(spriteName, sprite);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MPDebug("Thumbnail load failed for " + filePath);
+                MPDebug("An error occurred: " + ex.Message);
+                MPDebug("Stack Trace: " + ex.StackTrace);
+                return false;
+            }
+        }
+
+        private static bool IsEmptyGeneratedThumbnail(Texture2D texture)
+        {
+            return VideoThumbnailGenerator.IsEmptyThumbnail(texture);
+        }
+
+        private static void RegisterGeneratedVideoThumbnail(string spriteName, string filePath, Texture2D texture)
+        {
+            if (sprites == null || texture == null)
+                return;
+
+            Sprite sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+            sprite.name = spriteName;
+            SetSprite(spriteName, sprite);
+
+            if (material_brushes_videos != null && material_brushes_videos.ContainsKey(spriteName))
+                material_brushes_videos[spriteName].preview = sprite;
+
+            MPDebug("Generated native thumbnail: " + filePath);
+        }
+
+        private static void SetSprite(string spriteName, Sprite sprite)
+        {
+            if (sprites.ContainsKey(spriteName))
+                sprites[spriteName] = sprite;
+            else
+                sprites.Add(spriteName, sprite);
         }
 
         private string NormalizePath(string path)
