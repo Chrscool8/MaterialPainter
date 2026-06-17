@@ -454,6 +454,28 @@ namespace MaterialPainter2
             size = new Vector2(width, height);
         }
 
+        public float GetContentHeight(float width)
+        {
+            int visibleButtonCount = 0;
+            foreach (var button in buttons)
+            {
+                if (button.visible)
+                    visibleButtonCount += 1;
+            }
+
+            if (visibleButtonCount == 0)
+                return 0f;
+
+            int buttonWidth = GetButtonWidth(width);
+            int rows = (int)Math.Ceiling((float)visibleButtonCount / buttonWidth);
+            return spacing.y + rows * (tile_size.y + spacing.y);
+        }
+
+        private int GetButtonWidth(float width)
+        {
+            return Math.Max(1, (int)Math.Floor(width / (spacing.x + tile_size.x)));
+        }
+
         public void DrawGrid(float scale = 1)
         {
             if (!visible)
@@ -474,17 +496,17 @@ namespace MaterialPainter2
             UnityEngine.Object.Destroy(texture);
 
             int index = 0;
+            int button_width = GetButtonWidth(size.x);
             foreach (var button in buttons)
             {
                 if (!button.visible)
                     continue;
 
-                int button_width = (int)Math.Floor((size.x * scale) / (spacing.x * scale + tile_size.x * scale));
                 //MP2.MPDebug($"{(size.x * scale) / (spacing.x * scale + tile_size.x * scale)}");
 
                 button.SetPosition(
                     position.x + (spacing.x * scale + (((index % button_width) * tile_size.x) + ((index % button_width) * spacing.x)) * scale),
-                    position.y - (spacing.y * scale + ((index / button_width * tile_size.x) + (index / button_width * spacing.x)) * scale)
+                    position.y - (spacing.y * scale + ((index / button_width * tile_size.y) + (index / button_width * spacing.y)) * scale)
                     );
                 button.SetTileSize(tile_size.x * scale, tile_size.y * scale);
                 button.DrawSprite();

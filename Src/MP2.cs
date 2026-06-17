@@ -67,7 +67,7 @@ namespace MaterialPainter2
 
         public override string getName() => MOD_DISPLAY_NAME;
 
-        public override string getDescription() => @"The long awaited mod is here! Transform the materials of most objects into water, lava, and glass, make them invisible, or more! Lightly a work in progress. Have fun!";
+        public override string getDescription() => @"The long existing mod continues to be here! Transform the materials of most objects into water, lava, and glass, make them invisible, apply custom images and video to them, and more! Sometimes a work in progress. Have fun!";
 
         public override string getVersionNumber() => VERSION_NUMBER;
 
