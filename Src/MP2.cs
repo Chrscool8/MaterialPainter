@@ -76,8 +76,6 @@ namespace MaterialPainter2
         public static string current_file_path = "";
         public static bool MOD_ENABLED = false;
 
-        public static Dictionary<string, VideoPlayer> cached_videos;
-
         public static string _local_mods_directory = "";
         public static string _material_painter_directory = "";
 

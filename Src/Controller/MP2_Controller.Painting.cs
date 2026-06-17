@@ -1,6 +1,7 @@
 using Parkitect.Mods.AssetPacks;
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -15,9 +16,35 @@ namespace MaterialPainter2
         private const string MAIN_TEXTURE_PROPERTY_NAME = "_MainTex";
         private const string BASE_MAP_PROPERTY_NAME = "_BaseMap";
         private const float MIN_ATLAS_REMAP_UV_SIZE = 0.0001f;
+        private const int SHARED_VIDEO_TEXTURE_SIZE = 1024;
         private static readonly int mainTexturePropertyID = Shader.PropertyToID("_MainTex");
         private static readonly int baseMapPropertyID = Shader.PropertyToID("_BaseMap");
         private static readonly int colorPropertyID = Shader.PropertyToID("_Color");
+        private static readonly Dictionary<string, SharedMediaMaterial> sharedMediaMaterials = new Dictionary<string, SharedMediaMaterial>();
+        private static readonly Dictionary<int, SharedProjectedMesh> sharedProjectedMeshes = new Dictionary<int, SharedProjectedMesh>();
+        private static readonly Dictionary<string, SharedVideoPaint> sharedVideoPaints = new Dictionary<string, SharedVideoPaint>();
+        private static Shader mediaShader = null;
+
+        private class SharedMediaMaterial
+        {
+            public Material material;
+            public int references;
+        }
+
+        private class SharedProjectedMesh
+        {
+            public Mesh mesh;
+            public int references;
+        }
+
+        private class SharedVideoPaint
+        {
+            public GameObject gameObject;
+            public VideoPlayer videoPlayer;
+            public AudioSource audioSource;
+            public RenderTexture renderTexture;
+            public int references;
+        }
 
         public void SetMaterial(Transform tf, int brush_type = -1, string brush_type_custom = "")
         {
@@ -312,7 +339,7 @@ namespace MaterialPainter2
                             if (image_texture != null)
                             {
                                 bool useAtlasRemap = PrepareMediaPaintUv(tf, renderer, "Image", selected_brush_custom, out Vector2 uvMin, out Vector2 uvSize);
-                                ApplyMediaMaterial(renderer, image_texture, useAtlasRemap, uvMin, uvSize);
+                                ApplyMediaMaterial(renderer, image_texture, useAtlasRemap, uvMin, uvSize, cm);
                             }
                             else
                             {
@@ -347,43 +374,12 @@ namespace MaterialPainter2
                             if (video_url != null)
                             {
                                 bool useAtlasRemap = PrepareMediaPaintUv(tf, renderer, "Video", selected_brush_custom, out Vector2 uvMin, out Vector2 uvSize);
-                                RenderTexture videoTexture = CreateVideoRenderTexture(16, 16, selected_brush_custom);
-                                cm.SetVideoTexture(videoTexture);
-                                ApplyMediaMaterial(renderer, videoTexture, useAtlasRemap, uvMin, uvSize);
+                                SharedVideoPaint sharedVideoPaint = AcquireSharedVideoPaint(video_url, selected_brush_custom);
+                                cm.SetSharedVideoKey(video_url);
+                                ApplyMediaMaterial(renderer, sharedVideoPaint.renderTexture, useAtlasRemap, uvMin, uvSize, cm);
 
-                                /*if (MP2.cached_videos.ContainsKey(url))
-                                {
-                                    video_player = MP2.cached_videos[url];
-                                    tf.gameObject.AddComponent<VideoPlayer>(video_player);
-                                }
-                                else
-                                {
-                                    video_player = tf.gameObject.AddComponent<VideoPlayer>();
-                                    MP2.cached_videos.Add(url, video_player);
-                                }*/
-
-
-                                VideoPlayer video_player = tf.gameObject.AddComponent<VideoPlayer>();
-                                AudioSource audio_source = tf.gameObject.AddComponent<AudioSource>();
-                                cm.SetVideoPlayer(video_player);
-                                cm.SetAudioSource(audio_source);
-
-                                //video_player.audioOutputMode = VideoAudioOutputMode.None;
-
-                                video_player.audioOutputMode = VideoAudioOutputMode.AudioSource;
-                                video_player.SetTargetAudioSource(0, audio_source);
-
-                                //audio_source.spatialize = true;
-                                //audio_source.spatialBlend = 1.0f;
-
-                                audio_source.volume = 0;
-
-                                video_player.url = video_url;
-                                video_player.isLooping = true;
-                                video_player.renderMode = VideoRenderMode.RenderTexture;
-                                video_player.targetTexture = videoTexture;
-                                video_player.Prepare();
-                                video_player.prepareCompleted += OnVideoPrepared;
+                                if (sharedVideoPaint.videoPlayer != null && !sharedVideoPaint.videoPlayer.isPrepared)
+                                    sharedVideoPaint.videoPlayer.Prepare();
                             }
                             else
                             {
@@ -610,40 +606,25 @@ namespace MaterialPainter2
                 return false;
             }
 
+            ChangedMarker changedMarker = renderer.GetComponent<ChangedMarker>();
+            if (changedMarker == null)
+            {
+                reason = "no changed marker";
+                return false;
+            }
+
             try
             {
-                Vector3[] vertices = sourceMesh.vertices;
-                if (vertices == null || vertices.Length == 0)
-                {
-                    reason = "no vertices";
+                int sourceMeshKey = sourceMesh.GetInstanceID();
+                Mesh projectedMesh = AcquireSharedProjectedMesh(sourceMesh, sourceMeshKey, out reason);
+                if (projectedMesh == null)
                     return false;
-                }
 
-                Mesh projectedMesh = UnityEngine.Object.Instantiate(sourceMesh);
-                projectedMesh.name = sourceMesh.name + "_MP2BoxProjection";
-
-                Vector3[] normals = sourceMesh.normals;
-                if (normals == null || normals.Length != vertices.Length)
-                {
-                    projectedMesh.RecalculateNormals();
-                    normals = projectedMesh.normals;
-                }
+                meshFilter.sharedMesh = projectedMesh;
+                changedMarker.SetGeneratedMesh(projectedMesh);
+                changedMarker.SetGeneratedMeshKey(sourceMeshKey);
 
                 Bounds bounds = sourceMesh.bounds;
-                Vector2[] projectedUvs = new Vector2[vertices.Length];
-                for (int i = 0; i < vertices.Length; i++)
-                {
-                    Vector3 normal = normals != null && i < normals.Length ? normals[i] : Vector3.up;
-                    projectedUvs[i] = GetBoxProjectedUv(vertices[i], normal, bounds);
-                }
-
-                projectedMesh.uv = projectedUvs;
-                meshFilter.sharedMesh = projectedMesh;
-
-                ChangedMarker changedMarker = renderer.GetComponent<ChangedMarker>();
-                if (changedMarker != null)
-                    changedMarker.SetGeneratedMesh(projectedMesh);
-
                 MP2.MPDebug($"[MediaPaintUV] boxProjection mesh='{projectedMesh.name}' boundsSize=({FormatFloat(bounds.size.x)}, {FormatFloat(bounds.size.y)}, {FormatFloat(bounds.size.z)})", always_show: true);
                 return true;
             }
@@ -652,6 +633,68 @@ namespace MaterialPainter2
                 reason = ex.Message;
                 return false;
             }
+        }
+
+        private Mesh AcquireSharedProjectedMesh(Mesh sourceMesh, int sourceMeshKey, out string reason)
+        {
+            reason = "";
+
+            SharedProjectedMesh sharedProjectedMesh;
+            if (sharedProjectedMeshes.TryGetValue(sourceMeshKey, out sharedProjectedMesh))
+            {
+                sharedProjectedMesh.references++;
+                return sharedProjectedMesh.mesh;
+            }
+
+            Vector3[] vertices = sourceMesh.vertices;
+            if (vertices == null || vertices.Length == 0)
+            {
+                reason = "no vertices";
+                return null;
+            }
+
+            Mesh projectedMesh = UnityEngine.Object.Instantiate(sourceMesh);
+            projectedMesh.name = sourceMesh.name + "_MP2BoxProjection";
+
+            Vector3[] normals = sourceMesh.normals;
+            if (normals == null || normals.Length != vertices.Length)
+            {
+                projectedMesh.RecalculateNormals();
+                normals = projectedMesh.normals;
+            }
+
+            Bounds bounds = sourceMesh.bounds;
+            Vector2[] projectedUvs = new Vector2[vertices.Length];
+            for (int i = 0; i < vertices.Length; i++)
+            {
+                Vector3 normal = normals != null && i < normals.Length ? normals[i] : Vector3.up;
+                projectedUvs[i] = GetBoxProjectedUv(vertices[i], normal, bounds);
+            }
+
+            projectedMesh.uv = projectedUvs;
+            sharedProjectedMeshes[sourceMeshKey] = new SharedProjectedMesh
+            {
+                mesh = projectedMesh,
+                references = 1
+            };
+
+            return projectedMesh;
+        }
+
+        private static void ReleaseSharedProjectedMesh(int sourceMeshKey)
+        {
+            SharedProjectedMesh sharedProjectedMesh;
+            if (!sharedProjectedMeshes.TryGetValue(sourceMeshKey, out sharedProjectedMesh))
+                return;
+
+            sharedProjectedMesh.references--;
+            if (sharedProjectedMesh.references > 0)
+                return;
+
+            if (sharedProjectedMesh.mesh != null)
+                UnityEngine.Object.DestroyImmediate(sharedProjectedMesh.mesh);
+
+            sharedProjectedMeshes.Remove(sourceMeshKey);
         }
 
         private Vector2 GetBoxProjectedUv(Vector3 vertex, Vector3 normal, Bounds bounds)
@@ -730,21 +773,15 @@ namespace MaterialPainter2
             return new Vector2(-uvMin.x / uvSize.x, -uvMin.y / uvSize.y);
         }
 
-        private void ApplyMediaMaterial(Renderer renderer, Texture texture, bool useAtlasRemap, Vector2 uvMin, Vector2 uvSize)
+        private void ApplyMediaMaterial(Renderer renderer, Texture texture, bool useAtlasRemap, Vector2 uvMin, Vector2 uvSize, ChangedMarker changedMarker)
         {
-            Shader imageShader = Shader.Find("Unlit/Texture");
-            if (imageShader == null)
-                imageShader = Shader.Find("Standard");
-
-            if (imageShader == null)
+            if (GetMediaShader() == null)
             {
                 MP2.MPDebug("No media material shader found; falling back to texture override.", always_show: true);
                 if (texture != null)
                     ApplyImageTexture(renderer, texture);
                 return;
             }
-
-            MP2.MPDebug("Media material shader: " + imageShader.name);
 
             Vector2 textureScale = Vector2.one;
             Vector2 textureOffset = Vector2.zero;
@@ -754,46 +791,119 @@ namespace MaterialPainter2
                 textureOffset = GetAtlasRemapOffset(uvMin, uvSize);
             }
 
-            Material[] shares = renderer.materials;
+            Material[] shares = renderer.sharedMaterials;
             for (var i = 0; i < shares.Count(); i++)
             {
-                Material material_new = new Material(imageShader);
-                if (texture != null)
-                    material_new.mainTexture = texture;
-
-                if (material_new.HasProperty(mainTexturePropertyID))
-                {
-                    if (texture != null)
-                        material_new.SetTexture(mainTexturePropertyID, texture);
-
-                    if (useAtlasRemap)
-                    {
-                        material_new.SetTextureScale(MAIN_TEXTURE_PROPERTY_NAME, textureScale);
-                        material_new.SetTextureOffset(MAIN_TEXTURE_PROPERTY_NAME, textureOffset);
-                    }
-                }
-
-                if (material_new.HasProperty(baseMapPropertyID))
-                {
-                    if (texture != null)
-                        material_new.SetTexture(baseMapPropertyID, texture);
-
-                    if (useAtlasRemap)
-                    {
-                        material_new.SetTextureScale(BASE_MAP_PROPERTY_NAME, textureScale);
-                        material_new.SetTextureOffset(BASE_MAP_PROPERTY_NAME, textureOffset);
-                    }
-                }
-
-                if (material_new.HasProperty(colorPropertyID))
-                    material_new.SetColor(colorPropertyID, Color.white);
-
-                material_new.enableInstancing = true;
-                shares[i] = material_new;
+                string materialKey;
+                shares[i] = AcquireSharedMediaMaterial(texture, textureScale, textureOffset, out materialKey);
+                if (changedMarker != null)
+                    changedMarker.AddMediaMaterialKey(materialKey);
             }
 
-            renderer.materials = shares;
+            renderer.sharedMaterials = shares;
             renderer.SetPropertyBlock(new MaterialPropertyBlock());
+        }
+
+        private Shader GetMediaShader()
+        {
+            if (mediaShader != null)
+                return mediaShader;
+
+            mediaShader = Shader.Find("Unlit/Texture");
+            if (mediaShader == null)
+                mediaShader = Shader.Find("Standard");
+
+            if (mediaShader != null)
+                MP2.MPDebug("Media material shader: " + mediaShader.name);
+
+            return mediaShader;
+        }
+
+        private Material AcquireSharedMediaMaterial(Texture texture, Vector2 textureScale, Vector2 textureOffset, out string materialKey)
+        {
+            materialKey = GetMediaMaterialKey(texture, textureScale, textureOffset);
+
+            SharedMediaMaterial sharedMaterial;
+            if (sharedMediaMaterials.TryGetValue(materialKey, out sharedMaterial))
+            {
+                sharedMaterial.references++;
+                return sharedMaterial.material;
+            }
+
+            Material material = new Material(GetMediaShader());
+            material.name = "MP2Media_" + materialKey.GetHashCode().ToString(CultureInfo.InvariantCulture);
+
+            if (texture != null)
+                material.mainTexture = texture;
+
+            if (material.HasProperty(mainTexturePropertyID))
+            {
+                if (texture != null)
+                    material.SetTexture(mainTexturePropertyID, texture);
+
+                material.SetTextureScale(MAIN_TEXTURE_PROPERTY_NAME, textureScale);
+                material.SetTextureOffset(MAIN_TEXTURE_PROPERTY_NAME, textureOffset);
+            }
+
+            if (material.HasProperty(baseMapPropertyID))
+            {
+                if (texture != null)
+                    material.SetTexture(baseMapPropertyID, texture);
+
+                material.SetTextureScale(BASE_MAP_PROPERTY_NAME, textureScale);
+                material.SetTextureOffset(BASE_MAP_PROPERTY_NAME, textureOffset);
+            }
+
+            if (material.HasProperty(colorPropertyID))
+                material.SetColor(colorPropertyID, Color.white);
+
+            material.enableInstancing = true;
+
+            sharedMediaMaterials[materialKey] = new SharedMediaMaterial
+            {
+                material = material,
+                references = 1
+            };
+
+            return material;
+        }
+
+        private string GetMediaMaterialKey(Texture texture, Vector2 textureScale, Vector2 textureOffset)
+        {
+            string textureKey = texture != null ? texture.GetInstanceID().ToString(CultureInfo.InvariantCulture) : "none";
+            return string.Join("|", new[]
+            {
+                GetMediaShader().name,
+                textureKey,
+                FormatKeyFloat(textureScale.x),
+                FormatKeyFloat(textureScale.y),
+                FormatKeyFloat(textureOffset.x),
+                FormatKeyFloat(textureOffset.y)
+            });
+        }
+
+        private static string FormatKeyFloat(float value)
+        {
+            return value.ToString("R", CultureInfo.InvariantCulture);
+        }
+
+        private static void ReleaseSharedMediaMaterial(string materialKey)
+        {
+            if (string.IsNullOrEmpty(materialKey))
+                return;
+
+            SharedMediaMaterial sharedMaterial;
+            if (!sharedMediaMaterials.TryGetValue(materialKey, out sharedMaterial))
+                return;
+
+            sharedMaterial.references--;
+            if (sharedMaterial.references > 0)
+                return;
+
+            if (sharedMaterial.material != null)
+                UnityEngine.Object.DestroyImmediate(sharedMaterial.material);
+
+            sharedMediaMaterials.Remove(materialKey);
         }
 
         private RenderTexture CreateVideoRenderTexture(int width, int height, string name)
@@ -809,59 +919,119 @@ namespace MaterialPainter2
             return renderTexture;
         }
 
-        private void ResizePreparedVideoRenderTexture(VideoPlayer videoPlayer)
+        private SharedVideoPaint AcquireSharedVideoPaint(string videoUrl, string videoName)
         {
-            int width = Mathf.Max(1, (int)videoPlayer.width);
-            int height = Mathf.Max(1, (int)videoPlayer.height);
-            RenderTexture oldTexture = videoPlayer.targetTexture;
+            SharedVideoPaint sharedVideoPaint;
+            if (sharedVideoPaints.TryGetValue(videoUrl, out sharedVideoPaint))
+            {
+                sharedVideoPaint.references++;
+                return sharedVideoPaint;
+            }
 
-            if (oldTexture != null && oldTexture.width == width && oldTexture.height == height)
+            GameObject videoGameObject = new GameObject("MP2 Shared Video - " + videoName);
+            if (MP2.Instance != null && MP2.Instance.go != null)
+                videoGameObject.transform.SetParent(MP2.Instance.go.transform, false);
+
+            RenderTexture renderTexture = CreateVideoRenderTexture(SHARED_VIDEO_TEXTURE_SIZE, SHARED_VIDEO_TEXTURE_SIZE, videoName);
+            VideoPlayer videoPlayer = videoGameObject.AddComponent<VideoPlayer>();
+            AudioSource audioSource = videoGameObject.AddComponent<AudioSource>();
+
+            videoPlayer.audioOutputMode = VideoAudioOutputMode.AudioSource;
+            videoPlayer.SetTargetAudioSource(0, audioSource);
+            audioSource.volume = 0;
+
+            videoPlayer.url = videoUrl;
+            videoPlayer.isLooping = true;
+            videoPlayer.aspectRatio = VideoAspectRatio.FitOutside;
+            videoPlayer.renderMode = VideoRenderMode.RenderTexture;
+            videoPlayer.targetTexture = renderTexture;
+            videoPlayer.prepareCompleted += OnSharedVideoPrepared;
+            videoPlayer.Prepare();
+
+            sharedVideoPaint = new SharedVideoPaint
+            {
+                gameObject = videoGameObject,
+                videoPlayer = videoPlayer,
+                audioSource = audioSource,
+                renderTexture = renderTexture,
+                references = 1
+            };
+
+            sharedVideoPaints[videoUrl] = sharedVideoPaint;
+            return sharedVideoPaint;
+        }
+
+        private static void ReleaseSharedVideoPaint(string videoUrl)
+        {
+            if (string.IsNullOrEmpty(videoUrl))
                 return;
 
-            RenderTexture newTexture = CreateVideoRenderTexture(width, height, videoPlayer.gameObject.name);
-            videoPlayer.targetTexture = newTexture;
+            SharedVideoPaint sharedVideoPaint;
+            if (!sharedVideoPaints.TryGetValue(videoUrl, out sharedVideoPaint))
+                return;
 
-            ChangedMarker changedMarker = videoPlayer.GetComponent<ChangedMarker>();
-            if (changedMarker != null)
-                changedMarker.SetVideoTexture(newTexture);
+            sharedVideoPaint.references--;
+            if (sharedVideoPaint.references > 0)
+                return;
 
-            Renderer renderer = videoPlayer.GetComponent<Renderer>();
-            if (renderer != null)
-                SetRendererMediaTexture(renderer, newTexture);
-
-            if (oldTexture != null)
+            if (sharedVideoPaint.videoPlayer != null)
             {
-                oldTexture.Release();
-                DestroyImmediate(oldTexture);
-            }
-        }
-
-        private void SetRendererMediaTexture(Renderer renderer, Texture texture)
-        {
-            Material[] materials = renderer.materials;
-            for (var i = 0; i < materials.Count(); i++)
-            {
-                Material material = materials[i];
-                if (material == null)
-                    continue;
-
-                material.mainTexture = texture;
-
-                if (material.HasProperty(mainTexturePropertyID))
-                    material.SetTexture(mainTexturePropertyID, texture);
-
-                if (material.HasProperty(baseMapPropertyID))
-                    material.SetTexture(baseMapPropertyID, texture);
+                sharedVideoPaint.videoPlayer.prepareCompleted -= OnSharedVideoPrepared;
+                sharedVideoPaint.videoPlayer.Stop();
             }
 
-            renderer.materials = materials;
+            if (sharedVideoPaint.gameObject != null)
+                UnityEngine.Object.DestroyImmediate(sharedVideoPaint.gameObject);
+
+            if (sharedVideoPaint.renderTexture != null)
+            {
+                sharedVideoPaint.renderTexture.Release();
+                UnityEngine.Object.DestroyImmediate(sharedVideoPaint.renderTexture);
+            }
+
+            sharedVideoPaints.Remove(videoUrl);
         }
 
-        void OnVideoPrepared(VideoPlayer vp)
+        private static void OnSharedVideoPrepared(VideoPlayer videoPlayer)
         {
-            ResizePreparedVideoRenderTexture(vp);
-            // Play the video when it is prepared
-            vp.Play();
+            videoPlayer.Play();
         }
+
+        public void ClearSharedMediaCaches()
+        {
+            foreach (SharedMediaMaterial sharedMaterial in sharedMediaMaterials.Values.ToList())
+            {
+                if (sharedMaterial.material != null)
+                    UnityEngine.Object.DestroyImmediate(sharedMaterial.material);
+            }
+            sharedMediaMaterials.Clear();
+
+            foreach (SharedProjectedMesh sharedProjectedMesh in sharedProjectedMeshes.Values.ToList())
+            {
+                if (sharedProjectedMesh.mesh != null)
+                    UnityEngine.Object.DestroyImmediate(sharedProjectedMesh.mesh);
+            }
+            sharedProjectedMeshes.Clear();
+
+            foreach (SharedVideoPaint sharedVideoPaint in sharedVideoPaints.Values.ToList())
+            {
+                if (sharedVideoPaint.videoPlayer != null)
+                {
+                    sharedVideoPaint.videoPlayer.prepareCompleted -= OnSharedVideoPrepared;
+                    sharedVideoPaint.videoPlayer.Stop();
+                }
+
+                if (sharedVideoPaint.gameObject != null)
+                    UnityEngine.Object.DestroyImmediate(sharedVideoPaint.gameObject);
+
+                if (sharedVideoPaint.renderTexture != null)
+                {
+                    sharedVideoPaint.renderTexture.Release();
+                    UnityEngine.Object.DestroyImmediate(sharedVideoPaint.renderTexture);
+                }
+            }
+            sharedVideoPaints.Clear();
+        }
+
     }
 }
