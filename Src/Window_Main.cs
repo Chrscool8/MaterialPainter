@@ -25,6 +25,7 @@ namespace MaterialPainter2
         private UI_PushButton button_reload;
 
         UI_Tab settings_tab = null;
+        private bool pipeActivated;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Fugeddabouddit.")]
         private void OnGUI()
@@ -116,6 +117,12 @@ namespace MaterialPainter2
             base.OnEnable();
             Instance = this;
             MP2.MPDebug("On");
+
+            if (MP2.controller != null && GameController.Instance != null)
+            {
+                MP2.controller.ActivatePipe();
+                pipeActivated = true;
+            }
 
             GameObject[] allObjects = FindObjectsOfType<GameObject>();
 
@@ -218,8 +225,16 @@ namespace MaterialPainter2
         protected override void OnDisable()
         {
             base.OnDisable();
-            Instance = null;
+            if (Instance == this)
+                Instance = null;
+
             MP2.MPDebug("Off");
+
+            if (pipeActivated && MP2.controller != null && GameController.Instance != null)
+            {
+                MP2.controller.DeactivatePipe();
+                pipeActivated = false;
+            }
 
             GameObject[] allObjects = FindObjectsOfType<GameObject>();
 
@@ -237,9 +252,12 @@ namespace MaterialPainter2
             }
 
             List<UI_Button> buttons = new List<UI_Button>();
-            buttons.AddRange(buttons_elements);
-            buttons.AddRange(buttons_videos);
-            buttons.AddRange(buttons_images);
+            if (buttons_elements != null)
+                buttons.AddRange(buttons_elements);
+            if (buttons_videos != null)
+                buttons.AddRange(buttons_videos);
+            if (buttons_images != null)
+                buttons.AddRange(buttons_images);
 
             foreach (UI_Button button in buttons)
             {
