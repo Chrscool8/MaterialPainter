@@ -54,13 +54,13 @@ namespace MaterialPainter2
 
     public class MP2 : AbstractMod, IModSettings
     {
-        public const string VERSION_NUMBER = "241203";
+        public const string VERSION_NUMBER = "251004";
 
         public override string getIdentifier() => "MaterialPainter";
 
         public override string getName() => "Material Painter";
 
-        public override string getDescription() => @"The long awaited mod is here! Transform the materials of most objects into water, lava, and glass, make them invisible, or more! Heavily a work in progress. Have fun!";
+        public override string getDescription() => @"The long awaited mod is here! Transform the materials of most objects into water, lava, and glass, make them invisible, or more! Lightly a work in progress. Have fun!";
 
         public override string getVersionNumber() => VERSION_NUMBER;
 
@@ -162,39 +162,73 @@ namespace MaterialPainter2
         }
         public MP2()
         {
-            _local_mods_directory = GameController.modsPath; //NormalizePath(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Parkitect/Mods/");
-            Directory.CreateDirectory(_local_mods_directory + "MaterialPainter2/Custom/");
-            Directory.CreateDirectory(_local_mods_directory + "MaterialPainter2/Custom/Videos/");
-            Directory.CreateDirectory(_local_mods_directory + "MaterialPainter2/Custom/Images/");
-
-            for (int i = 1; i <= 3; i++)
+            try
             {
-                var default_video = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + $"/Res/Videos/video-default-{i}.mp4";
-                var custom_video = _local_mods_directory + $"MaterialPainter2/Custom/Videos/video-{i}.mp4";
+                MPDebug("LAUNCHING MP2", always_show: true);
+                _local_mods_directory = NormalizePath(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Parkitect/Mods/"); // GameController.modsPath; 
 
-                if (!File.Exists(custom_video) && File.Exists(default_video))
+                string[] folders =
+                        {
+            _local_mods_directory + "MaterialPainter2/Custom/",
+            _local_mods_directory + "MaterialPainter2/Custom/Videos/",
+            _local_mods_directory + "MaterialPainter2/Custom/Images/"
+        };
+
+                foreach (var folder in folders)
                 {
-                    File.Copy(default_video, custom_video, false);
+                    try
+                    {
+                        DirectoryInfo dirInfo = Directory.CreateDirectory(folder);
+                        MPDebug($"[FolderSetup] Verified/created: {dirInfo.FullName}", always_show: true);
+                    }
+                    catch (System.Exception ex)
+                    {
+                        MPDebug($"Failed to create folder {folder}: {ex.Message}", always_show: true);
+                    }
                 }
-            }
 
-            if (File.Exists(_local_mods_directory + "/mp_debug"))
+                foreach (var folder in folders)
+                {
+                    if (!Directory.Exists(folder))
+                    {
+                        MPDebug($"Folder {folder} does not exist!", always_show: true);
+                    }
+                }
+
+
+                for (int i = 1; i <= 3; i++)
+                {
+                    var default_video = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + $"/Res/Videos/video-default-{i}.mp4";
+                    var custom_video = _local_mods_directory + $"MaterialPainter2/Custom/Videos/video-{i}.mp4";
+
+                    if (!File.Exists(custom_video) && File.Exists(default_video))
+                    {
+                        File.Copy(default_video, custom_video, false);
+                    }
+                }
+
+                if (File.Exists(_local_mods_directory + "/mp_debug"))
+                {
+                    debug_mode = true;
+                    MPDebug("Found debug flag file.");
+                }
+
+                if (!MOD_ENABLED)
+                {
+                    _harmony = new Harmony(getIdentifier());
+                    _harmony.PatchAll();
+                    MOD_ENABLED = true;
+                    MPDebug(debug_string: "ENABLING MP2", always_show: true);
+                }
+
+                sprites = new Dictionary<string, Sprite>();
+                videos = new Dictionary<string, VideoClip>();
+                cached_videos = new Dictionary<string, VideoPlayer>();
+            }
+            catch (System.Exception ex)
             {
-                debug_mode = true;
-                MPDebug("Found debug flag file.");
+                MPDebug($"Something went terribly wrong at startup: {ex.Message}", always_show: true);
             }
-
-            if (!MOD_ENABLED)
-            {
-                _harmony = new Harmony(getIdentifier());
-                _harmony.PatchAll();
-                MOD_ENABLED = true;
-                MPDebug(debug_string: "ENABLING MP2", always_show: true);
-            }
-
-            sprites = new Dictionary<string, Sprite>();
-            videos = new Dictionary<string, VideoClip>();
-            cached_videos = new Dictionary<string, VideoPlayer>();
         }
 
         public override void onEnabled()
@@ -288,7 +322,7 @@ namespace MaterialPainter2
         {
             if (FileDownloader.Instance != null)
             {
-                string ffmpegDownloadUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n7.0-latest-win64-lgpl-7.0.zip";
+                string ffmpegDownloadUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n7.1-latest-win64-lgpl-7.1.zip";
                 var savePath = _local_mods_directory + $"MaterialPainter2/Tools/file.zip";
 
                 CoroutineManager.Instance.StartCoroutine(FileDownloader.Instance.DownloadFile(ffmpegDownloadUrl, savePath, true, action_on_complete: move_ffmpeg));
@@ -888,7 +922,7 @@ namespace MaterialPainter2
     public class LoadGetFileNamePatch
     {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Sall Good")]
-        private static MethodBase TargetMethod() => AccessTools.Method(typeof(Loader), "loadSavegame", parameters: new Type[] { typeof(string), typeof(GameController.GameMode), typeof(ParkSettings), typeof(bool), typeof(bool), typeof(bool), typeof(OnParkLoadedHandler),typeof(OnParkDeserializedHandler), typeof(SerializationContext.Context) });
+        private static MethodBase TargetMethod() => AccessTools.Method(typeof(Loader), "loadSavegame", parameters: new Type[] { typeof(string), typeof(GameController.GameMode), typeof(ParkSettings), typeof(bool), typeof(bool), typeof(bool), typeof(OnParkLoadedHandler), typeof(OnParkDeserializedHandler), typeof(SerializationContext.Context) });
 
         [HarmonyPrefix]
         public static void Prefix(string filePath, GameMode gameMode, ParkSettings settings, bool rememberFilePath, bool newPark, bool showNewParkUI = true, GameController.OnParkLoadedHandler onParkLoadedHandler = null, GameController.OnParkDeserializedHandler onParkDeserializedHandler = null, SerializationContext.Context context = (SerializationContext.Context)0)
