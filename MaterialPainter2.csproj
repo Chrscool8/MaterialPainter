@@ -15,49 +15,41 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="Description.txt" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Include="Description.txt" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Reference Include="Accessibility">
-      <HintPath>Libs\Accessibility.dll</HintPath>
+      <HintPath>Lib\Accessibility.dll</HintPath>
     </Reference>
     <Reference Include="com.rlabrecque.steamworks.net">
-      <HintPath>Libs\com.rlabrecque.steamworks.net.dll</HintPath>
+      <HintPath>Lib\com.rlabrecque.steamworks.net.dll</HintPath>
     </Reference>
     <Reference Include="DOTween">
-      <HintPath>Libs\DOTween.dll</HintPath>
+      <HintPath>Lib\DOTween.dll</HintPath>
     </Reference>
     <Reference Include="DOTween43">
-      <HintPath>Libs\DOTween43.dll</HintPath>
+      <HintPath>Lib\DOTween43.dll</HintPath>
     </Reference>
     <Reference Include="DOTween46">
-      <HintPath>Libs\DOTween46.dll</HintPath>
+      <HintPath>Lib\DOTween46.dll</HintPath>
     </Reference>
     <Reference Include="DOTween50">
-      <HintPath>Libs\DOTween50.dll</HintPath>
+      <HintPath>Lib\DOTween50.dll</HintPath>
     </Reference>
     <Reference Include="ExCSS.Unity">
       <HintPath>C:\Program Files\Unity 2020.3.37f1\Editor\Data\Managed\ExCSS.Unity.dll</HintPath>
     </Reference>
     <Reference Include="GalaxyCSharp">
-      <HintPath>Libs\GalaxyCSharp.dll</HintPath>
+      <HintPath>Lib\GalaxyCSharp.dll</HintPath>
     </Reference>
     <Reference Include="ICSharpCode.SharpZipLib">
-      <HintPath>Libs\ICSharpCode.SharpZipLib.dll</HintPath>
+      <HintPath>Lib\ICSharpCode.SharpZipLib.dll</HintPath>
     </Reference>
     <Reference Include="Ionic.Zip.Unity">
-      <HintPath>Libs\Ionic.Zip.Unity.dll</HintPath>
+      <HintPath>Lib\Ionic.Zip.Unity.dll</HintPath>
     </Reference>
     <Reference Include="modio.UnityPlugin">
-      <HintPath>Libs\modio.UnityPlugin.dll</HintPath>
+      <HintPath>Lib\modio.UnityPlugin.dll</HintPath>
     </Reference>
     <Reference Include="Mono.Security">
-      <HintPath>Libs\Mono.Security.dll</HintPath>
+      <HintPath>Lib\Mono.Security.dll</HintPath>
     </Reference>
     <Reference Include="mscorlib">
       <HintPath>..\..\..\SteamLibrary\steamapps\common\Parkitect\Parkitect_Data\Managed\mscorlib.dll</HintPath>
@@ -69,16 +61,16 @@
       <HintPath>C:\Program Files\Unity 2020.3.37f1\Editor\Data\Managed\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="Parkitect">
-      <HintPath>Libs\Parkitect.dll</HintPath>
+      <HintPath>Lib\Parkitect.dll</HintPath>
     </Reference>
     <Reference Include="Photon3Unity3D">
-      <HintPath>Libs\Photon3Unity3D.dll</HintPath>
+      <HintPath>Lib\Photon3Unity3D.dll</HintPath>
     </Reference>
     <Reference Include="protobuf-net">
-      <HintPath>Libs\protobuf-net.dll</HintPath>
+      <HintPath>Lib\protobuf-net.dll</HintPath>
     </Reference>
     <Reference Include="System.ComponentModel.Composition">
-      <HintPath>Libs\System.ComponentModel.Composition.dll</HintPath>
+      <HintPath>Lib\System.ComponentModel.Composition.dll</HintPath>
     </Reference>
     <Reference Include="System.ComponentModel.DataAnnotations">
       <HintPath>..\..\..\SteamLibrary\steamapps\common\Parkitect\Parkitect_Data\Managed\System.ComponentModel.DataAnnotations.dll</HintPath>
@@ -87,37 +79,37 @@
       <HintPath>..\..\..\SteamLibrary\steamapps\common\Parkitect\Parkitect_Data\Managed\System.Configuration.dll</HintPath>
     </Reference>
     <Reference Include="System.Configuration.Install">
-      <HintPath>Libs\System.Configuration.Install.dll</HintPath>
+      <HintPath>Lib\System.Configuration.Install.dll</HintPath>
     </Reference>
     <Reference Include="System.Diagnostics.StackTrace">
       <HintPath>..\..\..\SteamLibrary\steamapps\common\Parkitect\Parkitect_Data\Managed\System.Diagnostics.StackTrace.dll</HintPath>
     </Reference>
     <Reference Include="System.EnterpriseServices">
-      <HintPath>Libs\System.EnterpriseServices.dll</HintPath>
+      <HintPath>Lib\System.EnterpriseServices.dll</HintPath>
     </Reference>
     <Reference Include="System.Globalization.Extensions">
       <HintPath>..\..\..\SteamLibrary\steamapps\common\Parkitect\Parkitect_Data\Managed\System.Globalization.Extensions.dll</HintPath>
     </Reference>
     <Reference Include="System.IdentityModel">
-      <HintPath>Libs\System.IdentityModel.dll</HintPath>
+      <HintPath>Lib\System.IdentityModel.dll</HintPath>
     </Reference>
     <Reference Include="System.IdentityModel.Selectors">
-      <HintPath>Libs\System.IdentityModel.Selectors.dll</HintPath>
+      <HintPath>Lib\System.IdentityModel.Selectors.dll</HintPath>
     </Reference>
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.Messaging">
-      <HintPath>Libs\System.Messaging.dll</HintPath>
+      <HintPath>Lib\System.Messaging.dll</HintPath>
     </Reference>
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Runtime.Serialization.Xml" />
     <Reference Include="System.ServiceModel">
-      <HintPath>Libs\System.ServiceModel.dll</HintPath>
+      <HintPath>Lib\System.ServiceModel.dll</HintPath>
     </Reference>
     <Reference Include="System.ServiceModel.Discovery">
-      <HintPath>Libs\System.ServiceModel.Discovery.dll</HintPath>
+      <HintPath>Lib\System.ServiceModel.Discovery.dll</HintPath>
     </Reference>
     <Reference Include="System.ServiceModel.Internals">
-      <HintPath>Libs\System.ServiceModel.Internals.dll</HintPath>
+      <HintPath>Lib\System.ServiceModel.Internals.dll</HintPath>
     </Reference>
     <Reference Include="System.Transactions">
       <HintPath>..\..\..\SteamLibrary\steamapps\common\Parkitect\Parkitect_Data\Managed\System.Transactions.dll</HintPath>
@@ -126,43 +118,43 @@
       <HintPath>..\..\..\SteamLibrary\steamapps\common\Parkitect\Parkitect_Data\Managed\System.Web.dll</HintPath>
     </Reference>
     <Reference Include="System.Web.ApplicationServices">
-      <HintPath>Libs\System.Web.ApplicationServices.dll</HintPath>
+      <HintPath>Lib\System.Web.ApplicationServices.dll</HintPath>
     </Reference>
     <Reference Include="System.Web.Services">
-      <HintPath>Libs\System.Web.Services.dll</HintPath>
+      <HintPath>Lib\System.Web.Services.dll</HintPath>
     </Reference>
     <Reference Include="System.Windows.Forms">
-      <HintPath>Libs\System.Windows.Forms.dll</HintPath>
+      <HintPath>Lib\System.Windows.Forms.dll</HintPath>
     </Reference>
     <Reference Include="System.Xaml">
-      <HintPath>Libs\System.Xaml.dll</HintPath>
+      <HintPath>Lib\System.Xaml.dll</HintPath>
     </Reference>
     <Reference Include="System.Xml.XPath.XDocument">
       <HintPath>..\..\..\SteamLibrary\steamapps\common\Parkitect\Parkitect_Data\Managed\System.Xml.XPath.XDocument.dll</HintPath>
     </Reference>
     <Reference Include="ThirdParty">
-      <HintPath>Libs\ThirdParty.dll</HintPath>
+      <HintPath>Lib\ThirdParty.dll</HintPath>
     </Reference>
     <Reference Include="ThirdParty.DynamicDecals">
-      <HintPath>Libs\ThirdParty.DynamicDecals.dll</HintPath>
+      <HintPath>Lib\ThirdParty.DynamicDecals.dll</HintPath>
     </Reference>
     <Reference Include="ThirdParty.GraphMaker">
-      <HintPath>Libs\ThirdParty.GraphMaker.dll</HintPath>
+      <HintPath>Lib\ThirdParty.GraphMaker.dll</HintPath>
     </Reference>
     <Reference Include="ThirdParty.Lutify">
-      <HintPath>Libs\ThirdParty.Lutify.dll</HintPath>
+      <HintPath>Lib\ThirdParty.Lutify.dll</HintPath>
     </Reference>
     <Reference Include="ThirdParty.ScreenSpaceCloudShadow">
-      <HintPath>Libs\ThirdParty.ScreenSpaceCloudShadow.dll</HintPath>
+      <HintPath>Lib\ThirdParty.ScreenSpaceCloudShadow.dll</HintPath>
     </Reference>
     <Reference Include="ThirdParty.TiltShift">
-      <HintPath>Libs\ThirdParty.TiltShift.dll</HintPath>
+      <HintPath>Lib\ThirdParty.TiltShift.dll</HintPath>
     </Reference>
     <Reference Include="ThirdParty.UnityUiExtensions">
-      <HintPath>Libs\ThirdParty.UnityUiExtensions.dll</HintPath>
+      <HintPath>Lib\ThirdParty.UnityUiExtensions.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Analytics.DataPrivacy">
-      <HintPath>Libs\Unity.Analytics.DataPrivacy.dll</HintPath>
+      <HintPath>Lib\Unity.Analytics.DataPrivacy.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Cecil">
       <HintPath>C:\Program Files\Unity 2020.3.37f1\Editor\Data\Managed\Unity.Cecil.dll</HintPath>
@@ -183,28 +175,28 @@
       <HintPath>C:\Program Files\Unity 2020.3.37f1\Editor\Data\Managed\Unity.CompilationPipeline.Common.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Formats.Fbx.Runtime">
-      <HintPath>Libs\Unity.Formats.Fbx.Runtime.dll</HintPath>
+      <HintPath>Lib\Unity.Formats.Fbx.Runtime.dll</HintPath>
     </Reference>
     <Reference Include="Unity.IL2CPP.BeeSettings">
       <HintPath>C:\Program Files\Unity 2020.3.37f1\Editor\Data\Managed\Unity.IL2CPP.BeeSettings.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Mathematics">
-      <HintPath>Libs\Unity.Mathematics.dll</HintPath>
+      <HintPath>Lib\Unity.Mathematics.dll</HintPath>
     </Reference>
     <Reference Include="Unity.MemoryProfiler">
-      <HintPath>Libs\Unity.MemoryProfiler.dll</HintPath>
+      <HintPath>Lib\Unity.MemoryProfiler.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Postprocessing.Runtime">
-      <HintPath>Libs\Unity.Postprocessing.Runtime.dll</HintPath>
+      <HintPath>Lib\Unity.Postprocessing.Runtime.dll</HintPath>
     </Reference>
     <Reference Include="Unity.SerializationLogic">
       <HintPath>C:\Program Files\Unity 2020.3.37f1\Editor\Data\Managed\Unity.SerializationLogic.dll</HintPath>
     </Reference>
     <Reference Include="Unity.TextMeshPro">
-      <HintPath>Libs\Unity.TextMeshPro.dll</HintPath>
+      <HintPath>Lib\Unity.TextMeshPro.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Timeline">
-      <HintPath>Libs\Unity.Timeline.dll</HintPath>
+      <HintPath>Lib\Unity.Timeline.dll</HintPath>
     </Reference>
     <Reference Include="UnityEditor">
       <HintPath>C:\Program Files\Unity 2020.3.37f1\Editor\Data\Managed\UnityEditor.dll</HintPath>
@@ -273,7 +265,7 @@
       <HintPath>C:\Program Files\Unity 2020.3.37f1\Editor\Data\Managed\UnityEngine\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CrashLog">
-      <HintPath>Libs\UnityEngine.CrashLog.dll</HintPath>
+      <HintPath>Lib\UnityEngine.CrashLog.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CrashReportingModule">
       <HintPath>C:\Program Files\Unity 2020.3.37f1\Editor\Data\Managed\UnityEngine\UnityEngine.CrashReportingModule.dll</HintPath>
@@ -372,7 +364,7 @@
       <HintPath>C:\Program Files\Unity 2020.3.37f1\Editor\Data\Managed\UnityEngine\UnityEngine.TLSModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UI">
-      <HintPath>Libs\UnityEngine.UI.dll</HintPath>
+      <HintPath>Lib\UnityEngine.UI.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UIElementsModule">
       <HintPath>C:\Program Files\Unity 2020.3.37f1\Editor\Data\Managed\UnityEngine\UnityEngine.UIElementsModule.dll</HintPath>
@@ -447,11 +439,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Lib.Harmony" Version="2.3.3" />
+    <PackageReference Include="Lib.Harmony" Version="2.4.2" />
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="mkdir &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)&quot;&#xD;&#xA;&#xD;&#xA;mkdir &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\Res&quot;&#xD;&#xA;mkdir &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\Custom&quot;&#xD;&#xA;mkdir &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\Custom\Videos&quot;&#xD;&#xA;mkdir &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\Custom\Images&quot;&#xD;&#xA;&#xD;&#xA;COPY &quot;$(TargetDir)$(TargetFileName)&quot; &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\$(TargetFileName)&quot; /Y&#xD;&#xA;COPY &quot;$(SolutionDir)steam_workshop-id&quot; &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\steam_workshop-id&quot;&#xD;&#xA;COPY &quot;$(SolutionDir)preview.png&quot; &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\preview.png&quot;&#xD;&#xA;COPY &quot;$(SolutionDir)\Lib\0Harmony.dll&quot; &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\0Harmony.dll&quot;&#xD;&#xA;&#xD;&#xA;xcopy /E /Y &quot;$(ProjectDir)Res&quot; &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\Res&quot;&#xD;&#xA;xcopy /E /Y &quot;$(ProjectDir)Custom&quot; &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\Custom&quot;" />
+    <Exec Command="mkdir &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)&quot;&#xD;&#xA;&#xD;&#xA;mkdir &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\Res&quot;&#xD;&#xA;mkdir &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\Custom&quot;&#xD;&#xA;mkdir &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\Custom\Videos&quot;&#xD;&#xA;mkdir &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\Custom\Images&quot;&#xD;&#xA;&#xD;&#xA;COPY &quot;$(TargetDir)$(TargetFileName)&quot; &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\$(TargetFileName)&quot; /Y&#xD;&#xA;COPY &quot;$(SolutionDir)steam_workshop-id&quot; &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\steam_workshop-id&quot;&#xD;&#xA;COPY &quot;$(SolutionDir)preview.png&quot; &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\preview.png&quot;&#xD;&#xA;COPY &quot;$(TargetDir)0Harmony.dll&quot; &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\0Harmony.dll&quot;&#xD;&#xA;&#xD;&#xA;xcopy /E /Y &quot;$(ProjectDir)Res&quot; &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\Res&quot;&#xD;&#xA;xcopy /E /Y &quot;$(ProjectDir)Custom&quot; &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\Custom&quot;" />
   </Target>
 
 </Project>
