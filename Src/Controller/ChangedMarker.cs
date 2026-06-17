@@ -8,6 +8,7 @@ namespace MaterialPainter2
         private Material[] materials = null;
         private MaterialPropertyBlock material_property_block = null;
         private VideoPlayer video_player = null;
+        private AudioSource audio_source = null;
         private bool _was_enabled = true;
         private int current_brush = -1;
         private string custom_string = "";
@@ -47,5 +48,11 @@ namespace MaterialPainter2
 
         public VideoPlayer GetVideoPlayer()
         { return video_player; }
+
+        public void SetAudioSource(AudioSource audio_source)
+        { this.audio_source = audio_source; }
+
+        public AudioSource GetAudioSource()
+        { return audio_source; }
     }
 }

@@ -17,6 +17,7 @@ namespace MaterialPainter2
 
         private UI_Grid_Buttons grid_elements;
         private UI_Grid_Buttons grid_videos;
+        private UI_Grid_Buttons grid_images;
         private UI_Grid_Buttons grid_settings;
         private UI_Tab_Bar tab_bar_types;
 
@@ -60,6 +61,10 @@ namespace MaterialPainter2
             grid_videos.SetSize(260, 155);
             grid_videos.SetPosition(left_offset + transform.parent.parent.position.x, transform.parent.parent.position.y - (tab_height) * dpi_scale - (top_offset) + 2);
             grid_videos.DrawGrid(dpi_scale);
+
+            grid_images.SetSize(260, 155);
+            grid_images.SetPosition(left_offset + transform.parent.parent.position.x, transform.parent.parent.position.y - (tab_height) * dpi_scale - (top_offset) + 2);
+            grid_images.DrawGrid(dpi_scale);
 
             grid_settings.SetSize(260, 155);
             grid_settings.SetPosition(left_offset + transform.parent.parent.position.x, transform.parent.parent.position.y - (tab_height) * dpi_scale - (top_offset) + 2);
@@ -160,9 +165,23 @@ namespace MaterialPainter2
 
             //
 
-            buttons_images = new List<UI_Button>();
+            buttons_images = new List<UI_Button>
+            {
+                button_none,
+            };
 
-            //
+            foreach (MaterialType mt in MP2.material_brushes_images.Values)
+            {
+                UI_Button butt = new UI_Button(parent: gameObject, button_image_sprite: mt.name, button_image_sprite_highlight: "icon_highlight",
+                    onMouseClick: () =>
+                    {
+                        MP2.selected_brush = mt.id; MP2.selected_brush_custom = mt.id_string; MP2.MPDebug(mt.id + " " + mt.id_string);
+                    }, tooltip_text: mt.id_string);
+                buttons_images.Add(butt);
+            }
+
+            grid_images = new UI_Grid_Buttons();
+            grid_images.AddButtons(buttons_images);
 
             buttons_videos = new List<UI_Button>
             {
@@ -191,6 +210,7 @@ namespace MaterialPainter2
 
             buttons_all = new List<UI_Button>();
             buttons_all.AddRange(buttons_elements);
+            buttons_all.AddRange(buttons_images);
             buttons_all.AddRange(buttons_videos);
 
             foreach (UI_Button button in buttons_all)
@@ -210,7 +230,7 @@ namespace MaterialPainter2
 
             tab_bar_types = new UI_Tab_Bar(gameObject);
             UI_Tab tab0 = tab_bar_types.AddTab(icon_sprite: "icon_elements", object_to_control_: grid_elements, tab_name: "Elements");
-            tab_bar_types.AddTab(icon_sprite: "icon_camera", object_to_control_: grid_settings, tab_name: "Images");
+            tab_bar_types.AddTab(icon_sprite: "icon_camera", object_to_control_: grid_images, tab_name: "Images");
             tab_bar_types.AddTab(icon_sprite: "icon_videocamera", object_to_control_: grid_videos, tab_name: "Videos");
             settings_tab = tab_bar_types.AddTab(icon_sprite: "icon_toolbox", object_to_control_: new List<UI_Item> { grid_settings, checkbox_multiselect, checkbox_targetsupports }, tab_name: "Settings");
 
@@ -274,6 +294,8 @@ namespace MaterialPainter2
             buttons_all = null;
 
             grid_elements = null;
+            grid_videos = null;
+            grid_images = null;
             grid_settings = null;
 
             tab_bar_types = null;

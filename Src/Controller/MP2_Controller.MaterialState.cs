@@ -65,6 +65,12 @@ namespace MaterialPainter2
                 DestroyImmediate(video_player);
             }
 
+            AudioSource audio_source = changed_marker.GetAudioSource();
+            if (audio_source != null)
+            {
+                DestroyImmediate(audio_source);
+            }
+
             DestroyImmediate(changed_marker);
 
             ChunkedMesh chunkedMeshes = game_object.GetComponent<ChunkedMesh>();
