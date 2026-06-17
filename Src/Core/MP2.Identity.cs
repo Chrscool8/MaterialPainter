@@ -26,10 +26,12 @@ namespace MaterialPainter2
         private const string VIDEOS_FOLDER_NAME = "Videos";
         private const string IMAGES_FOLDER_NAME = "Images";
         private const string RES_FOLDER_NAME = "Res";
+        private const string SPRITES_FOLDER_NAME = "Sprites";
         private const string ASSET_BUNDLE_FILE_NAME = "materialpainter.assets";
         private const string DEFAULT_VIDEO_PREFIX = "video-default-";
         private const string CUSTOM_VIDEO_PREFIX = "video-";
         private const string FALLBACK_VIDEO_NAME = "video-0";
+        private const string FALLBACK_IMAGE_FILE_NAME = "tex_question.png";
         private const string CONTROLLER_GAME_OBJECT_NAME = "MP2 GameObject";
 
         public static bool IsCoolDownReady()
@@ -68,6 +70,16 @@ namespace MaterialPainter2
             return GetCustomVideoFilePath(FALLBACK_VIDEO_NAME);
         }
 
+        public static string GetCustomImageFilePath(string imageName)
+        {
+            return CombinePath(GetCustomImageDirectory(), imageName);
+        }
+
+        public static string GetFallbackImagePath()
+        {
+            return GetCustomImageFilePath(FALLBACK_IMAGE_FILE_NAME);
+        }
+
         public static float get_dpi()
         {
             float num = Screen.dpi;
@@ -103,6 +115,11 @@ namespace MaterialPainter2
         private static string GetBundledDefaultVideoPath(int index)
         {
             return CombinePath(GetAssemblyDirectory(), RES_FOLDER_NAME, VIDEOS_FOLDER_NAME, DEFAULT_VIDEO_PREFIX + index + VIDEO_FILE_EXTENSION);
+        }
+
+        private static string GetBundledFallbackImagePath()
+        {
+            return CombinePath(GetAssemblyDirectory(), RES_FOLDER_NAME, SPRITES_FOLDER_NAME, FALLBACK_IMAGE_FILE_NAME);
         }
 
         private static string GetAssetBundlePath()

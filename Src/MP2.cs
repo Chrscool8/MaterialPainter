@@ -57,7 +57,7 @@ namespace MaterialPainter2
 
         //private KeybindManager _keys;
         public static List<MaterialType> material_brushes { get; set; }
-        public static List<MaterialType> material_brushes_images { get; set; } = new List<MaterialType>();
+        public static Dictionary<string, MaterialType> material_brushes_images { get; set; } = new Dictionary<string, MaterialType>();
         public static Dictionary<string, MaterialType> material_brushes_videos { get; set; } = new Dictionary<string, MaterialType>();
 
         public static MP2_Controller controller { get; set; }
@@ -65,6 +65,7 @@ namespace MaterialPainter2
         public ConstructWindowToggle construct_window_toggle { get; set; }
         private static Dictionary<string, Sprite> sprites { get; set; }
         private static Dictionary<string, VideoClip> videos { get; set; }
+        private static Dictionary<string, Texture2D> custom_images { get; set; }
 
         public static int selected_brush { get; set; }
         public static string selected_brush_custom { get; set; }

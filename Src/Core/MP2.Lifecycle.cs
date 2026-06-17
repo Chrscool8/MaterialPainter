@@ -57,6 +57,13 @@ namespace MaterialPainter2
                     }
                 }
 
+                var fallback_image = GetBundledFallbackImagePath();
+                var custom_fallback_image = GetFallbackImagePath();
+                if (!File.Exists(custom_fallback_image) && File.Exists(fallback_image))
+                {
+                    File.Copy(fallback_image, custom_fallback_image, false);
+                }
+
                 if (File.Exists(GetDebugFlagPath()))
                 {
                     debug_mode = true;
@@ -73,6 +80,7 @@ namespace MaterialPainter2
 
                 sprites = new Dictionary<string, Sprite>();
                 videos = new Dictionary<string, VideoClip>();
+                custom_images = new Dictionary<string, Texture2D>();
                 cached_videos = new Dictionary<string, VideoPlayer>();
             }
             catch (System.Exception ex)
@@ -157,6 +165,7 @@ namespace MaterialPainter2
             //EventManager.Instance.OnGameSaved += new EventManager.OnGameSavedHandler(PostSaveHooked);
 
             RefreshBrushesVideos();
+            RefreshBrushesImages();
         }
 
         public override void onDisabled()
@@ -165,7 +174,10 @@ namespace MaterialPainter2
             UnityEngine.Object.DestroyImmediate(go);
             sprites.Clear();
             videos.Clear();
+            custom_images.Clear();
             material_brushes.Clear();
+            material_brushes_images.Clear();
+            material_brushes_videos.Clear();
 
             if (MOD_ENABLED)
             {

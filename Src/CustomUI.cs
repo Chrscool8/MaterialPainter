@@ -294,7 +294,7 @@ namespace MaterialPainter2
 
         public delegate void OnMouseHover();
 
-        private OnMouseHover on_mouse_hover;
+        //private OnMouseHover on_mouse_hover;
 
         public delegate void OnMouseClick();
 
@@ -502,6 +502,8 @@ namespace MaterialPainter2
 
     public class UI_Tab : UI_Item
     {
+        private static readonly HashSet<string> drawDebugLogKeys = new HashSet<string>();
+
         public bool selected = false;
         public List<UI_Item> objects_to_control;
         public Vector2 tab_size = new Vector2(64, 64);
@@ -536,6 +538,8 @@ namespace MaterialPainter2
             if (!visible)
                 return;
 
+            LogDrawDebugOnce("entry");
+
             float yy = position.y;
             if (auto_invert_y)
                 yy = Screen.height - position.y;
@@ -550,21 +554,63 @@ namespace MaterialPainter2
 
             if (selected || Utils.PointInRectangle(Input.mousePosition, select_rect))
             {
-                GUI.DrawTexture(tab_rect, MP2.get_sprite(tab_selected).texture, ScaleMode.ScaleToFit);
+                DrawTexture(tab_rect, tab_selected, "selected-or-hover-background");
             }
             else
             {
-                GUI.DrawTexture(tab_rect, MP2.get_sprite(tab_unselected).texture, ScaleMode.ScaleToFit);
+                DrawTexture(tab_rect, tab_unselected, "unselected-background");
             }
 
             if (sprite != "")
-                GUI.DrawTexture(new Rect(position.x + tab_size.x * .1f, yy + tab_size.y * .1f, tab_size.x * .8f, tab_size.y * .8f), MP2.get_sprite(sprite).texture, ScaleMode.ScaleToFit);
+                DrawTexture(new Rect(position.x + tab_size.x * .1f, yy + tab_size.y * .1f, tab_size.x * .8f, tab_size.y * .8f), sprite, "icon");
+            else
+                LogDrawDebugOnce("empty-icon");
 
             if (MP2.IsCoolDownReady() && Utils.PointInRectangle(Input.mousePosition, select_rect) && Input.GetMouseButtonUp(0))
             {
+                LogDrawDebugOnce("select-click");
                 MP2.ResetCountdown();
                 Select();
             }
+        }
+
+        private void DrawTexture(Rect rect, string spriteName, string drawPart)
+        {
+            if (string.IsNullOrEmpty(spriteName))
+            {
+                LogDrawDebugOnce("empty-sprite-name:" + drawPart);
+                return;
+            }
+
+            Sprite drawSprite = MP2.get_sprite(spriteName);
+            if (drawSprite == null)
+            {
+                LogDrawDebugOnce("null-sprite:" + drawPart + ":" + spriteName);
+                return;
+            }
+
+            if (drawSprite.texture == null)
+            {
+                LogDrawDebugOnce("null-texture:" + drawPart + ":" + spriteName);
+                return;
+            }
+
+            LogDrawDebugOnce("draw:" + drawPart + ":" + spriteName);
+
+            if (drawSprite != null && drawSprite.texture != null)
+                GUI.DrawTexture(rect, drawSprite.texture, ScaleMode.ScaleToFit);
+        }
+
+        private void LogDrawDebugOnce(string stage)
+        {
+            string key = $"{my_tab_name}:{sprite}:{tab_selected}:{tab_unselected}:{stage}";
+            if (!drawDebugLogKeys.Add(key))
+                return;
+
+            int objectCount = objects_to_control == null ? -1 : objects_to_control.Count;
+            MP2.MPDebug(
+                $"[UI_Tab.DrawSprite] stage={stage}, tab='{my_tab_name}', selected={selected}, visible={visible}, icon='{sprite}', selectedBg='{tab_selected}', unselectedBg='{tab_unselected}', objectCount={objectCount}, parentNull={parent == null}, tabBarNull={my_tab_bar == null}",
+                always_show: true);
         }
 
         public void Select()
