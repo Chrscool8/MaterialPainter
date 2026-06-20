@@ -16,6 +16,9 @@ namespace MaterialPainter2
         [HarmonyPrefix]
         private static bool apply(Color[] colors, Renderer renderer, bool forceApplyToAllMaterials, bool applyToParticleSystems = false, int slotIndexOffset = 0)
         {
+            if (renderer == null || colors == null || colors.Length == 0)
+                return true;
+
             ChangedMarker cm = renderer.gameObject.GetComponent<ChangedMarker>();
             if (cm != null)
             {

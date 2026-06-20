@@ -10,7 +10,7 @@ namespace MaterialPainter2
 {
     public partial class MP2
     {
-        public const string VERSION_NUMBER = "260617";
+        public const string VERSION_NUMBER = "260620";
         public const string MOD_IDENTIFIER = "MaterialPainter";
         public const string MOD_DISPLAY_NAME = "Material Painter";
         public const string MOD_FOLDER_NAME = "MaterialPainter2";

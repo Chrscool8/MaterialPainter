@@ -7,7 +7,7 @@ namespace MaterialPainter2
         private static IMouseTool brush_tool = null;
         public static Window_MultiSelector wms = null;
 
-        public MP2_Controller()
+        private void Awake()
         {
             MP2.selected_brush = (int)MaterialBrush.None;
             MP2.selected_brush_custom = "";
