@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace MaterialPainter2
 {
-    public class Window_MultiSelector : MonoBehaviour
+    public class Window_MultiSelector
     {
         Dictionary<UI_PushButton, GameObject> buttons = new Dictionary<UI_PushButton, GameObject>();
         Vector2 click_position = Vector2.zero;

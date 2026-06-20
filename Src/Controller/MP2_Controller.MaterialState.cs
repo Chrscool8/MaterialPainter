@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.Video;
 
 namespace MaterialPainter2
 {
@@ -9,36 +8,28 @@ namespace MaterialPainter2
         {
             //MP2.MPDebug("BACKUP!");
 
-            ChunkedMesh chunked_meshes = game_object.GetComponent<ChunkedMesh>();
-            if (chunked_meshes != null)
-                chunked_meshes.enabled = false;
-
             Renderer renderer = game_object.GetComponent<Renderer>();
-            VideoPlayer video_player = game_object.GetComponent<VideoPlayer>();
 
-            if (renderer != null || video_player != null)
+            if (renderer != null)
             {
                 ChangedMarker changed_marker = game_object.AddComponent<ChangedMarker>();
 
-                if (renderer != null)
+                ChunkedMesh chunked_mesh = game_object.GetComponent<ChunkedMesh>();
+                if (chunked_mesh != null)
                 {
-                    changed_marker.SetMaterials(renderer.materials);
-                    MaterialPropertyBlock old_block = new MaterialPropertyBlock();
-                    renderer.GetPropertyBlock(old_block);
-                    changed_marker.SetMaterialPropertyBlock(old_block);
-                    changed_marker.SetEnabled(renderer.enabled);
-
-                    MeshFilter mesh_filter = game_object.GetComponent<MeshFilter>();
-                    if (mesh_filter != null)
-                        changed_marker.SetSharedMesh(mesh_filter.sharedMesh);
+                    changed_marker.SetChunkedMeshState(chunked_mesh.enabled);
+                    chunked_mesh.enabled = false;
                 }
-                else
-                    MP2.MPDebug("No Renderer For: " + game_object.name);
 
-                if (video_player != null)
-                {
-                    changed_marker.SetVideoPlayer(video_player);
-                }
+                changed_marker.SetMaterials(renderer.materials);
+                MaterialPropertyBlock old_block = new MaterialPropertyBlock();
+                renderer.GetPropertyBlock(old_block);
+                changed_marker.SetMaterialPropertyBlock(old_block);
+                changed_marker.SetEnabled(renderer.enabled);
+
+                MeshFilter mesh_filter = game_object.GetComponent<MeshFilter>();
+                if (mesh_filter != null)
+                    changed_marker.SetSharedMesh(mesh_filter.sharedMesh);
             }
         }
 
@@ -80,31 +71,11 @@ namespace MaterialPainter2
 
             ReleaseSharedVideoPaint(changed_marker.GetSharedVideoKey());
 
-            RenderTexture video_texture = changed_marker.GetVideoTexture();
-            if (video_texture != null)
-            {
-                video_texture.Release();
-                DestroyImmediate(video_texture);
-            }
-
-            VideoPlayer video_player = changed_marker.GetVideoPlayer();
-            if (video_player != null)
-            {
-                //game_object.AddComponent<VideoPlayer>(video_player);
-                DestroyImmediate(video_player);
-            }
-
-            AudioSource audio_source = changed_marker.GetAudioSource();
-            if (audio_source != null)
-            {
-                DestroyImmediate(audio_source);
-            }
+            ChunkedMesh chunkedMeshes = game_object.GetComponent<ChunkedMesh>();
+            if (chunkedMeshes != null && changed_marker.HasChunkedMeshState())
+                chunkedMeshes.enabled = changed_marker.WasChunkedMeshEnabled();
 
             DestroyImmediate(changed_marker);
-
-            ChunkedMesh chunkedMeshes = game_object.GetComponent<ChunkedMesh>();
-            if (chunkedMeshes != null)
-                chunkedMeshes.enabled = true;
         }
     }
 }

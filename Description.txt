@@ -1,52 +1,7 @@
-﻿/*
-
-The long awaited mod is sort-of here! Transform the materials of most objects into water, lava, and glass, or make them invisible. The game wasn't designed for this. Things WILL break (visually). Have fun!
-
-[h1] Description: [/ h1]
-
-Bend the fabric of reality to your will. -When it isn't too janky.
-
-Material Painter adds a custom tool to your arsenal as an additional tab and window. You can choose a material and then click on an object to transform it into your selection.
-
-[h1] Features: [/ h1]
-
-Current Materials:
--Water
-- Lava
-- Glass
-- Invisible
-- ...More Soon?
-
-Current Options:
--Include Descendants: This will also paint objects down the hierarchy. For instance, if you click a path, the benches and lamp posts will be included, or if you click a track piece, its supports will likely be included. This is important because the game doesn't (currently) let you click on ANYthing, so sometimes you have to get to what you want with this. (Tip: To change supports manually, click a track piece with this on, then turn this off and turn the track piece back to normal.)
-- Target Only Supports: This attempts to only paint supports, but sometimes it misses pieces due to there being no real way to distinguish what is a support and what isn't.
-
-[h1] Future Features I'd Like to See:[/h1]
-
-This mod is technically only several days into development. There's a lot more I'd like to add or see added.
-
-- Set materials don't save and load
-- I want to be able to click anything
-- More materials would be cool
-- A better selector or perhaps a list of all objects that you can scroll through and modify
-- A show-invisibles toggle
-- Multiplayer support?
-- Figuring out how to make the bottom bar image longer so it can be with its friends
-
-[h1] Collaboration and Efforts:[/h1]
-
-This mod will be fully open source on my GitHub shortly and I welcome and await all pull-requests or drawn inspiration. I think it's important that we, as a community, own these things and they aren't held by only one person who might yank it away on a whim. In the meantime, I want to thank the community for their long-time support and teamwork. I rewrote this mod from scratch over the last few days and having Transformation Anarchy as an example of how to dive back in and use C# made it a much better on-boarding experience. Plus, I tried to structure this in a similar way to that project for familiarity's sake. I can't thank every individual, but shout-outs to you if you're in the Discord and you're cool.
-
-*/
-
-
-/*
-24/01/02
-
-The long awaited mod is sort-of here! Transform the materials of most objects into water, lava, and glass, or make them invisible. The game wasn't designed for this. Things WILL break (visually). Have fun!
+﻿The long awaited mod is here! Transform the materials of most objects into water, lava, and glass, play videos on them, or make them invisible. The game wasn't designed for this. Things MIGHT break (visually). Have fun!
 
 [h1]Description:[/h1]
-Bend the fabric of reality to your will. -When it isn't too janky.
+Bend the fabric of reality to your will.
 
 Material Painter adds a custom tool to your arsenal as an additional tab and window. You can choose a material and then click on an object to transform it into your selection. At this stage, it's more of a proof-of-concept and the beginning of a framework that can be built upon.
 
@@ -56,13 +11,83 @@ Current Materials:
 - Lava
 - Glass
 - Invisible
+- Custom Images
+- Videos!?
 - ...More Soon?
 
-Current Options:
-- Include Descendants: This will also paint objects down the hierarchy. For instance, if you click a path, the benches and lamp posts will be included, or if you click a track piece, its supports will likely be included. This is important because the game doesn't (currently) let you click on ANYthing, so sometimes you have to get to what you want with this. (Tip: To change supports manually, click a track piece with this on, then turn this off and turn the track piece back to normal.)
-- Target Only Supports: (Experimental) This attempts to only paint supports, but sometimes it misses pieces due to there being no real way to distinguish what is a support and what isn't.
-
 [h1]Updates:[/h1]
+26/06/20
+- Should maybe probably fix the workshop issue people were having (purge files from Docs mods and unsub, reboot, resub to make sure you're fresh)
+- Replaces ffmpeg external dependency with native unity video frame functionality for video thumbnails
+- Should work cross-platform now (I think) mostly due to the above
+- Image paints are added! The camera tab now pulls images from the custom/images folder in the mods directory. UVs have to be customly detected/rewritten/projected on a per model basis. I'm still adding special cases so it won't work or look right on every object.
+- Images and videos now cache for multiple use which means you can put them on way more objects before it gets slow and they'll all sync up (which I think is good?)
+- Added a ton more materials pulled from the base game to the elements folder (grass, dirt, snow, etc) and if you turn on "go wild" in the settings tab, it'll show all sorts of whack ones that are super weird to use lol
+- Giant internal refactor to prepare for the next big version since this one is just a little step toward a few things I want to add in the future (using the new custom data field, hopefully multiplayer)
+
+24/12/03
+- Updated for new Parkitect Update
+
+24/08/07
+- Button adjusted to move aside for new dropper
+- Button moves aside for scenario editing button
+
+24/07/06
+- Glass can now be recolored.
+
+24/06/09
+- NEW! Right click multi-selector that shows objects at all depths below the mouse. Great for those pesky hidden and buried objects!
+
+24/06/08
+- Video Paints!
+- MP now detects mp4 files in '/Mods/MaterialPainter2/Custom/Videos/*.mp4' as well as corresponding thumbnails saved as a png.
+- For example: '/Mods/MaterialPainter2/Custom/Videos/video1.mp4' and '/Mods/MaterialPainter2/Custom/Videos/video1.png'
+- (On Windows systems) MP can now use ffmpeg to automatically create thumbnail pngs of mp4s found in the above folder.
+- When launching a map, if ffmpeg.exe is not in '/Mods/MaterialPainter2/Tools/ffmpeg.exe', a new window will pop up telling you so and ask if you'd like it to download it for you. If you would like it to, it will download a binary from ' https://github.com/BtbN/FFmpeg-Builds ' and place it in that folder. From then on, when loading maps, it will automatically create thumbnails of videos that don't have one, in the background. You may also provide your own.
+- If you choose for it not to download for you, it will create a file at '/Mods/MaterialPainter2/_ignore_ffmpeg' so it knows not to ask again. You may delete this file to allow it to ask you again later.
+- If ffmpeg is not available and you don't provide thumbnails, the video functionality should still work, but thumbnails won't be pretty.
+- UI Scrolling is not yet implemented, so if you have more than 18 videos in the folder, they'll probably spill off the window.
+- Videos are not packed into the save file (yet?), but if a player loads a map without a save file, it will just display a missing video video in its place and retain the knowledge of what the video once was. If the video is then separately distributed and placed in the same relative folder, it will load in.
+- Maybe more that I forgot. This was a long one.
+- Also fixed can't build when game paused.
+
+
+24/05/15
+- Made water paints nicely recolorable via the regular color painter
+- Fixed some stuff, made default water color nicer
+- It makes a little splat sound when you paint things (very important)
+- BREAKING CHANGE! Moved video files from "MaterialPainter2\Custom" to "MaterialPainter2\Custom\Videos"
+
+24/05/14
+- Better reliability with saving and loading bits and pieces of objects (like sub-objects)
+- Automatically finds and converts spells from certain legacy material painting mods to Material Painter paints. (No more hyper-glowing objects in old maps if you don't have that eldritch mod installed!!)
+
+24/04/07
+- I wrote a whole custom ui framework designed like the native Parkitect one.
+- - It includes tabs, buttons, auto-grids, checkboxes, tooltips, and a few other tricks. Might make it even more flexible for other modders soon. It also adjusts to screen dpi and scaling settings automatically.
+- Solved a bunch of placement and drawing problems that people had on varying screen setups.
+
+24/04/01
+- Save packing! Material Paints should save into the main save files, and therefore should be able to be uploaded to the steam workshop and shared. Custom videos and pictures tbd.
+
+24/03/31
+- Drag Select Toggle
+- Target Supports Toggle (Doesn't work on all supports, at least not yet. It's based on how the Parkitect devs categorized the objects and some aren't explicitly labelled as supports.)
+
+24/03/25
+- Now it deals with the documents/parkitect folders whether local or steam workshop, and it should copy in example files on startup. Target files should be C:/Users/UserName/Documents/Parkitect/Mods/MaterialPainter2/Custom/*. (Or the equivalent of other platforms.)
+
+24/03/24
+- Added new VIDEO FILE paints that load any compatible video from one of three slots on your PC (more slots/choosing functionality later)
+- Made paints reload a short time after the savegame is loaded to be more sure that everything is ready to receive
+- Fixed lots of weirdness that could happen while going from one special paint to another
+- Some optimization and refactoring to make everything more flexible
+
+24/03/21
+- Invisible painted objects now appear as ghosts when the Material Painter window is open.
+- Some fixes.
+- Some optimizations (suggested by Tristar*).
+
 24/01/02
 - I hugely updated the object selection code so now you can super precisely click almost anything in the game.
 
@@ -79,17 +104,14 @@ Current Options:
 [h1]Future Features I'd Like to See:[/h1]
 This mod is technically only several days into development. There's a lot more I'd like to add or see added.
 
-- I want to be able to click anything
 - More materials would be cool
-- A better selector or perhaps a list of all objects that you can scroll through and modify
-- A show-invisibles toggle
+- Perhaps a list of all objects that you can scroll through and modify
 - Multiplayer support?
 - Figuring out how to make the bottom bar image longer so it can be with its friends
-- Some sorta safety toggle so you can't turn the whole world into waterworld in one click (unless you want to)
 
 [h1]Collaboration and Efforts:[/h1]
 
-This mod will be fully open source on my GitHub shortly and I welcome and await all pull-requests or drawn inspiration. I think it's important that we, as a community, own these things and they aren't held by only one person who might yank it away on a whim. In the meantime, I want to thank the community for their long-time support and teamwork. I rewrote this mod from scratch over the last few days and having Transform Anarchy as an example of how to dive back in and use C# made it a much better on-boarding experience. Plus, I tried to structure this in a similar way to that project for familiarity's sake. I can't thank every individual, but shout-outs to you if you're in the Discord and you're cool.
+This mod is fully open source on my GitHub ( https://github.com/Chrscool8/MaterialPainter ) and I welcome and await all pull-requests or drawn inspiration. I think it's important that we, as a community, own these things and they aren't held by only one person who might yank it away on a whim. Additionally, I want to thank the community for their long-time support and teamwork. I rewrote this mod from scratch over the last few days (edit: now months) and having Transform Anarchy as an example of how to dive back in and use C# made it a much better on-boarding experience. Plus, I tried to structure this in a similar way to that project for familiarity's sake. I can't thank every individual, but shout-outs to you if you're in the Discord and you're cool.
 
 [h1]You Need Support?[/h1]
 Want to report a problem or make a suggestion? You can reach me via Steam or Discord in either the official Parkitect server or personally @chrisbradel.
@@ -101,4 +123,3 @@ Well, gee, thanks! These projects take a LOT of time and effort, but I don't ask
 
 
 (P.S., Thank you for reading and sorry for the terrible screenshots lol it was a rush job.)
-*/

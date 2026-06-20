@@ -61,10 +61,14 @@ namespace MaterialPainter2
             string selected_brush_custom = MP2.selected_brush_custom;
 
             if (brush_type != -1)
+            {
                 selected_brush = brush_type;
-
-            if (brush_type_custom != "")
                 selected_brush_custom = brush_type_custom;
+            }
+            else if (brush_type_custom != "")
+            {
+                selected_brush_custom = brush_type_custom;
+            }
 
             MP2.MPDebug($"Painting {tf.gameObject.name} with Brush {selected_brush} ({brush_type}), {brush_type_custom}");
 
@@ -76,6 +80,13 @@ namespace MaterialPainter2
                     MP2.MPDebug("Same Brush");
                     return;
                 }
+            }
+
+            Renderer renderer = tf.GetComponent<Renderer>();
+            if (selected_brush != (int)MaterialBrush.None && renderer == null)
+            {
+                MP2.MPDebug("RENDERER NULL??");
+                return;
             }
 
             if (tf.gameObject.GetComponent<ChangedMarker>() != null)
@@ -106,13 +117,6 @@ namespace MaterialPainter2
 
                 // Set Material
 
-                Renderer renderer = tf.GetComponent<Renderer>();
-                if (renderer == null)
-                {
-                    MP2.MPDebug("RENDERER NULL??");
-                    return;
-                }
-
                 switch (selected_brush)
                 {
                     case (int)MaterialBrush.Water:
@@ -123,8 +127,13 @@ namespace MaterialPainter2
                             WaterBody waterBody = new WaterBody();
 
                             Color c = WaterBody.defaultWaterColor;
-                            if (tf.gameObject.GetComponent<CustomColors>() != null)
-                                c = tf.gameObject.GetComponent<CustomColors>().getColors()[0];
+                            CustomColors custom_colors = tf.gameObject.GetComponent<CustomColors>();
+                            if (custom_colors != null)
+                            {
+                                Color[] colors = custom_colors.getColors();
+                                if (colors != null && colors.Length > 0)
+                                    c = colors[0];
+                            }
 
                             waterBody.color = c;
 
@@ -170,8 +179,13 @@ namespace MaterialPainter2
                                 WaterBody waterBody = new WaterBody();
 
                                 Color c = new Color(1, 1, 1, 1);
-                                if (tf.gameObject.GetComponent<CustomColors>() != null)
-                                    c = tf.gameObject.GetComponent<CustomColors>().getColors()[0];
+                                CustomColors custom_colors = tf.gameObject.GetComponent<CustomColors>();
+                                if (custom_colors != null)
+                                {
+                                    Color[] colors = custom_colors.getColors();
+                                    if (colors != null && colors.Length > 0)
+                                        c = colors[0];
+                                }
 
                                 waterBody.color = c;
                                 waterBody.bodyType = WaterBody.BodyType.LAVA;
@@ -211,14 +225,15 @@ namespace MaterialPainter2
 
                     case (int)MaterialBrush.Glass:
                         {
-                            MaterialDecorator materialDecorator = new MaterialDecorator();
-                            Material snag = new Material(ScriptableSingleton<AssetManager>.Instance.seeThroughMaterial);
-
-                            if (snag == null)
+                            Material source_material = ScriptableSingleton<AssetManager>.Instance.seeThroughMaterial;
+                            if (source_material == null)
                             {
                                 MP2.MPDebug("No CustomColorsTransparent in Material list?");
+                                RevertMaterial(tf.gameObject);
                                 return;
                             }
+
+                            Material snag = new Material(source_material);
 
                             Material[] shares = renderer.materials;
 
@@ -236,8 +251,13 @@ namespace MaterialPainter2
                             renderer.materials = shares;
 
                             Color c = new Color(1, 1, 1, 1);
-                            if (tf.gameObject.GetComponent<CustomColors>() != null)
-                                c = tf.gameObject.GetComponent<CustomColors>().getColors()[0];
+                            CustomColors custom_colors = tf.gameObject.GetComponent<CustomColors>();
+                            if (custom_colors != null)
+                            {
+                                Color[] colors = custom_colors.getColors();
+                                if (colors != null && colors.Length > 0)
+                                    c = colors[0];
+                            }
                             c.a = .5f;
 
                             MaterialPropertyBlock materialPropertyBlock = new MaterialPropertyBlock();
@@ -285,14 +305,15 @@ namespace MaterialPainter2
                         {
                             MP2.MPDebug("Invisible");
 
-                            MaterialDecorator materialDecorator = new MaterialDecorator();
-                            Material snag = new Material(ScriptableSingleton<AssetManager>.Instance.multiplayerBuildPreviewGhostMaterial);
-
-                            if (snag == null)
+                            Material source_material = ScriptableSingleton<AssetManager>.Instance.multiplayerBuildPreviewGhostMaterial;
+                            if (source_material == null)
                             {
                                 MP2.MPDebug("No CustomColorsTransparent in Material list?");
+                                RevertMaterial(tf.gameObject);
                                 return;
                             }
+
+                            Material snag = new Material(source_material);
 
                             Material[] shares = renderer.materials;
 
@@ -318,14 +339,15 @@ namespace MaterialPainter2
                             MP2.MPDebug("Invisible Preview");
                             renderer.enabled = true;
 
-                            MaterialDecorator materialDecorator = new MaterialDecorator();
-                            Material snag = new Material(ScriptableSingleton<AssetManager>.Instance.multiplayerBuildPreviewGhostMaterial);
-
-                            if (snag == null)
+                            Material source_material = ScriptableSingleton<AssetManager>.Instance.multiplayerBuildPreviewGhostMaterial;
+                            if (source_material == null)
                             {
                                 MP2.MPDebug("No CustomColorsTransparent in Material list?");
+                                RevertMaterial(tf.gameObject);
                                 return;
                             }
+
+                            Material snag = new Material(source_material);
 
                             Material[] shares = renderer.materials;
 
@@ -358,6 +380,8 @@ namespace MaterialPainter2
                             else
                             {
                                 MP2.MPDebug($"Couldn't load image {selected_brush_custom}.");
+                                RevertMaterial(tf.gameObject);
+                                return;
                             }
                         }
                         break;
@@ -398,6 +422,8 @@ namespace MaterialPainter2
                             else
                             {
                                 MP2.MPDebug($"Couldn't load {video_url}.");
+                                RevertMaterial(tf.gameObject);
+                                return;
                             }
                         }
                         break;

@@ -1,8 +1,6 @@
 using System.Collections.Generic;
 
 using UnityEngine;
-using UnityEngine.Video;
-
 namespace MaterialPainter2
 {
     public class ChangedMarker : MonoBehaviour
@@ -12,11 +10,10 @@ namespace MaterialPainter2
         private Mesh shared_mesh = null;
         private Mesh generated_mesh = null;
         private int generated_mesh_key = 0;
-        private RenderTexture video_texture = null;
-        private VideoPlayer video_player = null;
-        private AudioSource audio_source = null;
         private string shared_video_key = "";
         private List<string> media_material_keys = new List<string>();
+        private bool has_chunked_mesh_state = false;
+        private bool chunked_mesh_was_enabled = false;
         private bool _was_enabled = true;
         private int current_brush = -1;
         private string custom_string = "";
@@ -51,12 +48,6 @@ namespace MaterialPainter2
         public void SetGeneratedMeshKey(int generated_mesh_key)
         { this.generated_mesh_key = generated_mesh_key; }
 
-        public RenderTexture GetVideoTexture()
-        { return video_texture; }
-
-        public void SetVideoTexture(RenderTexture video_texture)
-        { this.video_texture = video_texture; }
-
         public string GetSharedVideoKey()
         { return shared_video_key; }
 
@@ -68,6 +59,18 @@ namespace MaterialPainter2
 
         public void AddMediaMaterialKey(string media_material_key)
         { media_material_keys.Add(media_material_key); }
+
+        public bool HasChunkedMeshState()
+        { return has_chunked_mesh_state; }
+
+        public bool WasChunkedMeshEnabled()
+        { return chunked_mesh_was_enabled; }
+
+        public void SetChunkedMeshState(bool was_enabled)
+        {
+            has_chunked_mesh_state = true;
+            chunked_mesh_was_enabled = was_enabled;
+        }
 
         public bool WasEnabled()
         { return _was_enabled; }
@@ -87,16 +90,5 @@ namespace MaterialPainter2
         public string GetCurrentBrushString()
         { return custom_string; }
 
-        public void SetVideoPlayer(VideoPlayer video_player)
-        { this.video_player = video_player; }
-
-        public VideoPlayer GetVideoPlayer()
-        { return video_player; }
-
-        public void SetAudioSource(AudioSource audio_source)
-        { this.audio_source = audio_source; }
-
-        public AudioSource GetAudioSource()
-        { return audio_source; }
     }
 }

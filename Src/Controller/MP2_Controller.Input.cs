@@ -26,7 +26,9 @@ namespace MaterialPainter2
 
             //MP2.MPDebug("Update");
 
-            bool left_click = ((!MP2._setting_drag_select && Input.GetMouseButtonUp(0) && MP2.IsCoolDownReady()) || (MP2._setting_drag_select && Input.GetMouseButton(0)) && MP2_Controller.wms == null);
+            bool single_left_click = !MP2._setting_drag_select && Input.GetMouseButtonUp(0) && MP2.IsCoolDownReady();
+            bool drag_left_click = MP2._setting_drag_select && Input.GetMouseButton(0);
+            bool left_click = (single_left_click || drag_left_click) && MP2_Controller.wms == null;
             bool right_click = (!MP2._setting_drag_select && Input.GetMouseButtonUp(1));
 
             if (left_click ^ right_click)
@@ -143,7 +145,7 @@ namespace MaterialPainter2
             // Print the values of each field
             foreach (FieldInfo field in fields)
             {
-                object value = field.GetValue(this);
+                object value = field.GetValue(component);
                 Debug.Log($"Variable: {field.Name}, Value: {value}");
             }
 

@@ -115,10 +115,10 @@ namespace MaterialPainter2
 
                 Rect tooltip_rect = new Rect(Input.mousePosition.x + 35, Screen.height - Input.mousePosition.y, (size_.x + 20), size_.y);
 
-                GUI.color = new Color(92, 105, 110, .9f);
+                GUI.color = new Color(92f / 255f, 105f / 255f, 110f / 255f, .9f);
                 GUI.Box(tooltip_rect, GUIContent.none);
 
-                GUI.color = new Color(153, 168, 166);
+                GUI.color = Color.white;
                 GUI.Label(tooltip_rect, tt.tooltip, tooltip_guiStyle);
                 GUI.color = Color.white;
             }
@@ -354,7 +354,11 @@ namespace MaterialPainter2
 
         private UI_Button CreateElementButton(MaterialBrush brush, string iconSprite, string tooltipText, bool wild = false)
         {
-            UI_Button button = new UI_Button(parent: gameObject, button_image_sprite: iconSprite, button_image_sprite_highlight: "icon_highlight", onMouseClick: () => { MP2.selected_brush = (int)brush; }, tooltip_text: tooltipText);
+            UI_Button button = new UI_Button(parent: gameObject, button_image_sprite: iconSprite, button_image_sprite_highlight: "icon_highlight", onMouseClick: () =>
+            {
+                MP2.selected_brush = (int)brush;
+                MP2.selected_brush_custom = "";
+            }, tooltip_text: tooltipText);
             buttons_elements.Add(button);
 
             if (wild)

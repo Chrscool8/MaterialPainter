@@ -122,7 +122,7 @@ namespace MaterialPainter2
                     alignment = TextAnchor.MiddleCenter
                 };
 
-                GUI.color = new Color(153, 168, 166);
+                GUI.color = Color.white;
                 GUI.Label(button_rect, text, tooltip_guiStyle);
                 GUI.color = Color.white;
             }
