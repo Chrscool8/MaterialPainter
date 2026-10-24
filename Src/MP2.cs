@@ -7,6 +7,7 @@ using UnityEngine.Video;
 
 namespace MaterialPainter2
 {
+    /// <summary>Brush ids. Values are written to saves, so never renumber them.</summary>
     public enum MaterialBrush
     {
         None = 0,
@@ -15,7 +16,7 @@ namespace MaterialPainter2
         Glass = 3,
         Invisible = 4,
         Terrain = 5,
-        InvisiblePreview = 6,
+        InvisiblePreview = 6, // legacy: read as Invisible
         Video = 7,
         Image = 8,
         UndergroundTerrain = 9,
@@ -80,7 +81,6 @@ namespace MaterialPainter2
         private Harmony _harmony;
 
         //private KeybindManager _keys;
-        public static List<MaterialType> material_brushes { get; set; }
         public static Dictionary<string, MaterialType> material_brushes_images { get; set; } = new Dictionary<string, MaterialType>();
         public static Dictionary<string, MaterialType> material_brushes_videos { get; set; } = new Dictionary<string, MaterialType>();
 
@@ -94,22 +94,6 @@ namespace MaterialPainter2
 
         public static int selected_brush { get; set; }
         public static string selected_brush_custom { get; set; }
-        public static readonly HashSet<int> material_brush_runtime_blacklist = new HashSet<int>
-        {
-            (int)MaterialBrush.Terrain,
-            (int)MaterialBrush.UndergroundTerrain,
-            (int)MaterialBrush.DataView,
-            (int)MaterialBrush.Selected,
-            (int)MaterialBrush.Deleted,
-            (int)MaterialBrush.SceneGhost,
-            (int)MaterialBrush.DecoGlow,
-            (int)MaterialBrush.CollisionGlow,
-            (int)MaterialBrush.RideLight,
-            (int)MaterialBrush.CoasterStats,
-            (int)MaterialBrush.Waterfall,
-            (int)MaterialBrush.BlackHoleCore,
-            (int)MaterialBrush.BlackHoleDisc,
-        };
 
         private static bool debug_mode = false;
         public static float cooldownDuration = .01f;
@@ -124,10 +108,5 @@ namespace MaterialPainter2
         public static bool _setting_target_supports = false;
         public static bool _setting_go_wild = false;
         public static bool pipe_active = false;
-
-        public static bool IsMaterialBrushVisible(int brush)
-        {
-            return _setting_go_wild || !material_brush_runtime_blacklist.Contains(brush);
-        }
     }
 }

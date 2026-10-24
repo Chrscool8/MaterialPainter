@@ -147,47 +147,10 @@ namespace MaterialPainter2
             controller = go.AddComponent<MP2_Controller>();
             construct_window_toggle = go.AddComponent<ConstructWindowToggle>();
 
-            Sprite questionSprite = get_sprite("tex_question");
-
-            material_brushes = new List<MaterialType>
-            {
-                new MaterialType("None", get_sprite("icon_none"), (int)MaterialBrush.None),
-                new MaterialType("Water", get_sprite("icon_water"), (int)MaterialBrush.Water),
-                new MaterialType("Lava", get_sprite("icon_lava"), (int)MaterialBrush.Lava),
-                new MaterialType("Glass", get_sprite("icon_glass"), (int)MaterialBrush.Glass),
-                new MaterialType("Grass", get_sprite("icon_terrain_grass"), (int)MaterialBrush.TriplanarTerrainGrass),
-                new MaterialType("Dirt", get_sprite("icon_terrain_dirt"), (int)MaterialBrush.TriplanarTerrainDirt),
-                new MaterialType("Stone", get_sprite("icon_terrain_stone"), (int)MaterialBrush.TriplanarTerrainStone),
-                new MaterialType("Snow", get_sprite("icon_terrain_snow"), (int)MaterialBrush.TriplanarTerrainSnow),
-                new MaterialType("Sand", get_sprite("icon_terrain_sand"), (int)MaterialBrush.TriplanarTerrainSand),
-                new MaterialType("Ice", get_sprite("icon_terrain_ice"), (int)MaterialBrush.TriplanarTerrainIce),
-                new MaterialType("Lava Rock", get_sprite("icon_terrain_lavarock"), (int)MaterialBrush.TriplanarTerrainLavarock),
-                new MaterialType("Ash", get_sprite("icon_terrain_ash"), (int)MaterialBrush.TriplanarTerrainAsh),
-                new MaterialType("Cracked Soil", get_sprite("icon_terrain_cracked_soil"), (int)MaterialBrush.TriplanarTerrainCrackedSoil),
-                new MaterialType("Dead Grass", get_sprite("icon_terrain_dead_grass"), (int)MaterialBrush.TriplanarTerrainDeadGrass),
-                new MaterialType("Blueprint", get_sprite("icon_terrain_blueprint"), (int)MaterialBrush.TriplanarTerrainBlueprint),
-                new MaterialType("Terrain", questionSprite, (int)MaterialBrush.Terrain),
-                new MaterialType("Underground", questionSprite, (int)MaterialBrush.UndergroundTerrain),
-                new MaterialType("Data View", questionSprite, (int)MaterialBrush.DataView),
-                new MaterialType("Selected", questionSprite, (int)MaterialBrush.Selected),
-                new MaterialType("Deleted", questionSprite, (int)MaterialBrush.Deleted),
-                new MaterialType("Scene Ghost", questionSprite, (int)MaterialBrush.SceneGhost),
-                new MaterialType("Deco Glow", questionSprite, (int)MaterialBrush.DecoGlow),
-                new MaterialType("Collision Glow", questionSprite, (int)MaterialBrush.CollisionGlow),
-                new MaterialType("Ride Light", questionSprite, (int)MaterialBrush.RideLight),
-                new MaterialType("Coaster Stats", questionSprite, (int)MaterialBrush.CoasterStats),
-                new MaterialType("Waterfall", get_sprite("icon_effect_waterfall"), (int)MaterialBrush.Waterfall),
-                new MaterialType("Black Hole", get_sprite("icon_effect_black_hole_core"), (int)MaterialBrush.BlackHoleCore),
-                new MaterialType("Accretion Disc", get_sprite("icon_effect_black_hole_disc"), (int)MaterialBrush.BlackHoleDisc),
-                new MaterialType("Invisible", get_sprite("icon_invisible"), (int)MaterialBrush.InvisiblePreview),
-                new MaterialType("Video", get_sprite("icon_video1"), (int)MaterialBrush.Video),
-                new MaterialType("Image", get_sprite("icon_video2"), (int)MaterialBrush.Image),
-            };
-
             loadedAB.Unload(false);
             MPDebug("Loaded assetbundle!");
 
-            EventManager.Instance.OnStartPlayingPark += new EventManager.OnStartPlayingParkHandler(PrepReassignMaterialsAfterLoadingSave);
+            EventManager.Instance.OnStartPlayingPark += new EventManager.OnStartPlayingParkHandler(OnStartPlayingPark);
             //EventManager.Instance.OnGameSaved += new EventManager.OnGameSavedHandler(PostSaveHooked);
 
             RefreshBrushesVideos();
@@ -197,15 +160,15 @@ namespace MaterialPainter2
         public override void onDisabled()
         {
             //_keys.UnregisterAll();
-            if (controller != null)
-                controller.ClearSharedMediaCaches();
+            Painter.RestoreAll();
+            BrushRegistry.ReleaseCaches();
+            MediaPaint.ClearCaches();
 
             UnityEngine.Object.DestroyImmediate(go);
             sprites.Clear();
             videos.Clear();
             custom_images.Clear();
             bundled_textures.Clear();
-            material_brushes.Clear();
             material_brushes_images.Clear();
             material_brushes_videos.Clear();
 
@@ -216,7 +179,7 @@ namespace MaterialPainter2
                 MPDebug(debug_string: "DISABLING MP2", always_show: true);
             }
 
-            EventManager.Instance.OnStartPlayingPark -= new EventManager.OnStartPlayingParkHandler(PrepReassignMaterialsAfterLoadingSave);
+            EventManager.Instance.OnStartPlayingPark -= new EventManager.OnStartPlayingParkHandler(OnStartPlayingPark);
             //EventManager.Instance.OnGameSaved -= new EventManager.OnGameSavedHandler(PostSaveHooked);
         }
 
@@ -244,17 +207,18 @@ namespace MaterialPainter2
             MP2.MPDebug($"Post Save! {GameController.filename}");
         }
 
-        public void PrepReassignMaterialsAfterLoadingSave()
+        // Paints restore as each object starts (PaintRestorePatch). This later pass catches renderers that only
+        // exist once the park has finished building, such as supports, and imports paints from older saves.
+        public void OnStartPlayingPark()
         {
-            CoroutineManager.DelayAction(3f, () =>
-            {
-                ReassignMaterialsAfterLoadingSave();
-            });
+            CoroutineManager.DelayAction(3f, ReapplyPaints);
+        }
 
-            CoroutineManager.DelayAction(2.5f, () =>
-            {
-                ConvertLegacySpellsToMP();
-            });
+        public void ReapplyPaints()
+        {
+            PaintStore.RestoreAll();
+            LegacySaveImporter.Import(current_file_path);
+            LegacySaveImporter.ImportSpells();
         }
     }
 }

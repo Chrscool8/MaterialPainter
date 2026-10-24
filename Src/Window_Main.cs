@@ -217,20 +217,7 @@ namespace MaterialPainter2
                 pipeActivated = true;
             }
 
-            GameObject[] allObjects = FindObjectsOfType<GameObject>();
-
-            foreach (GameObject obj in allObjects)
-            {
-                if (obj != null)
-                {
-                    ChangedMarker cm = obj.GetComponent<ChangedMarker>();
-                    if (cm != null)
-                    {
-                        if (cm.GetCurrentBrush() == (int)MaterialBrush.Invisible)
-                            MP2.controller.SetMaterial(obj.transform, (int)MaterialBrush.InvisiblePreview);
-                    }
-                }
-            }
+            Painter.SetInvisiblePreview(true);
 
             //
 
@@ -239,34 +226,14 @@ namespace MaterialPainter2
             buttons_elements = new List<UI_Button>();
             buttons_wild = new List<UI_Button>();
             button_none = CreateElementButton(MaterialBrush.None, "icon_none", "None");
-            CreateElementButton(MaterialBrush.Water, "icon_water", "Water");
-            CreateElementButton(MaterialBrush.Lava, "icon_lava", "Lava");
-            CreateElementButton(MaterialBrush.Glass, "icon_glass", "Glass");
-            CreateElementButton(MaterialBrush.TriplanarTerrainGrass, "icon_terrain_grass", "Grass");
-            CreateElementButton(MaterialBrush.TriplanarTerrainDirt, "icon_terrain_dirt", "Dirt");
-            CreateElementButton(MaterialBrush.TriplanarTerrainStone, "icon_terrain_stone", "Stone");
-            CreateElementButton(MaterialBrush.TriplanarTerrainSnow, "icon_terrain_snow", "Snow");
-            CreateElementButton(MaterialBrush.TriplanarTerrainSand, "icon_terrain_sand", "Sand");
-            CreateElementButton(MaterialBrush.TriplanarTerrainIce, "icon_terrain_ice", "Ice");
-            CreateElementButton(MaterialBrush.TriplanarTerrainLavarock, "icon_terrain_lavarock", "Lava Rock");
-            CreateElementButton(MaterialBrush.TriplanarTerrainAsh, "icon_terrain_ash", "Ash");
-            CreateElementButton(MaterialBrush.TriplanarTerrainCrackedSoil, "icon_terrain_cracked_soil", "Cracked Soil");
-            CreateElementButton(MaterialBrush.TriplanarTerrainDeadGrass, "icon_terrain_dead_grass", "Dead Grass");
-            CreateElementButton(MaterialBrush.TriplanarTerrainBlueprint, "icon_terrain_blueprint", "Blueprint");
-            CreateElementButton(MaterialBrush.Terrain, "tex_question", "Terrain", true);
-            CreateElementButton(MaterialBrush.UndergroundTerrain, "tex_question", "Underground Terrain", true);
-            CreateElementButton(MaterialBrush.DataView, "tex_question", "Data View", true);
-            CreateElementButton(MaterialBrush.Selected, "tex_question", "Selected", true);
-            CreateElementButton(MaterialBrush.Deleted, "tex_question", "Deleted", true);
-            CreateElementButton(MaterialBrush.SceneGhost, "tex_question", "Scene Ghost", true);
-            CreateElementButton(MaterialBrush.DecoGlow, "tex_question", "Deco Glow", true);
-            CreateElementButton(MaterialBrush.CollisionGlow, "tex_question", "Collision Glow", true);
-            CreateElementButton(MaterialBrush.RideLight, "tex_question", "Ride Light", true);
-            CreateElementButton(MaterialBrush.CoasterStats, "tex_question", "Coaster Stats", true);
-            CreateElementButton(MaterialBrush.Waterfall, "icon_effect_waterfall", "Waterfall", true);
-            CreateElementButton(MaterialBrush.BlackHoleCore, "icon_effect_black_hole_core", "Black Hole", true);
-            CreateElementButton(MaterialBrush.BlackHoleDisc, "icon_effect_black_hole_disc", "Accretion Disc", true);
-            CreateElementButton(MaterialBrush.InvisiblePreview, "icon_invisible", "Invisible");
+            foreach (Brush brush in BrushRegistry.All)
+            {
+                // Images and videos have their own tabs.
+                if (brush is ImageBrush || brush is VideoBrush)
+                    continue;
+
+                CreateElementButton(brush.Id, brush.Icon, brush.Name, brush.Wild);
+            }
 
             grid_elements = new UI_Grid_Buttons();
             grid_elements.AddButtons(buttons_elements);
@@ -334,7 +301,7 @@ namespace MaterialPainter2
             checkbox_multiselect = new UI_CheckBox(parent: gameObject, text: "Multi-Select", onMouseClick: () => { MP2._setting_drag_select = !MP2._setting_drag_select; }, check_state: MP2._setting_drag_select, tooltip_text: "Clicking and dragging will continuously paint objects the brush crosses over.");
             checkbox_targetsupports = new UI_CheckBox(parent: gameObject, text: "Target Supports", onMouseClick: () => { MP2._setting_target_supports = !MP2._setting_target_supports; }, check_state: MP2._setting_target_supports, tooltip_text: "Selectively paints support structures. Note, not all supports are currently recognized due to how the game was programmed.");
             checkbox_gowild = new UI_CheckBox(parent: gameObject, text: "Go Wild", onMouseClick: () => { MP2._setting_go_wild = !MP2._setting_go_wild; ApplyWildBrushVisibility(); }, check_state: MP2._setting_go_wild, tooltip_text: "Shows experimental material brushes borrowed from internal game effects.");
-            button_reload = new UI_PushButton(parent: gameObject, text: "Reload From Save", tooltip_text: "If you find that paints aren't being applied when loading a park, try this. Sometimes if a park loads too long, it needs another try.", onMouseClick: () => { MP2.Instance.ReassignMaterialsAfterLoadingSave(); });
+            button_reload = new UI_PushButton(parent: gameObject, text: "Reload From Save", tooltip_text: "Re-applies saved paints, in case some didn't show up after loading a park.", onMouseClick: () => { MP2.Instance.ReapplyPaints(); });
 
             //
 
@@ -378,7 +345,7 @@ namespace MaterialPainter2
                 }
             }
 
-            if (!MP2.IsMaterialBrushVisible(MP2.selected_brush))
+            if (!BrushRegistry.IsVisible((MaterialBrush)MP2.selected_brush))
                 SelectNoneBrush();
         }
 
@@ -407,20 +374,7 @@ namespace MaterialPainter2
                 pipeActivated = false;
             }
 
-            GameObject[] allObjects = FindObjectsOfType<GameObject>();
-
-            foreach (GameObject obj in allObjects)
-            {
-                if (obj != null)
-                {
-                    ChangedMarker cm = obj.GetComponent<ChangedMarker>();
-                    if (cm != null)
-                    {
-                        if (cm.GetCurrentBrush() == (int)MaterialBrush.InvisiblePreview)
-                            MP2.controller.SetMaterial(obj.transform, (int)MaterialBrush.Invisible);
-                    }
-                }
-            }
+            Painter.SetInvisiblePreview(false);
 
             List<UI_Button> buttons = new List<UI_Button>();
             if (buttons_elements != null)
