@@ -634,8 +634,7 @@ namespace MaterialPainter2
 
             int objectCount = objects_to_control == null ? -1 : objects_to_control.Count;
             MP2.MPDebug(
-                $"[UI_Tab.DrawSprite] stage={stage}, tab='{my_tab_name}', selected={selected}, visible={visible}, icon='{sprite}', selectedBg='{tab_selected}', unselectedBg='{tab_unselected}', objectCount={objectCount}, parentNull={parent == null}, tabBarNull={my_tab_bar == null}",
-                always_show: true);
+                $"[UI_Tab.DrawSprite] stage={stage}, tab='{my_tab_name}', selected={selected}, visible={visible}, icon='{sprite}', selectedBg='{tab_selected}', unselectedBg='{tab_unselected}', objectCount={objectCount}, parentNull={parent == null}, tabBarNull={my_tab_bar == null}");
         }
 
         public void Select()
