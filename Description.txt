@@ -41,6 +41,7 @@ Custom Images and Videos:
 - Coaster tunnels and ride platform fences stay paintable after loading or getting rebuilt, and paints stick when painting in underground view.
 - Right click menu now labels everything as Object > Part > Paint. Missing files show (missing), and paints the game swapped out (like after changing a path's style) show (overridden). Paint them again to bring them back.
 - Glass no longer turns back to normal or goes pink after reloading.
+- Images and videos no longer look slightly see-through. They use the same setup as the game's TV screens now.
 - No more sparkles and sounds going off for every painted object when a park loads.
 - If something in the mod breaks, it now logs the error and gets out of the way instead of taking the park down with it. Also plays nicer with other mod loaders.
 - Fixed a bunch of memory leaks and did another big internal cleanup.
