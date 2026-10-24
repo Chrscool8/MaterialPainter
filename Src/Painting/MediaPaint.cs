@@ -80,19 +80,29 @@ namespace MaterialPainter2
             return shader;
         }
 
+        // Built like the game's TV screens: Standard shader with a black base and the media as emission. That looks
+        // unlit like a screen, but unlike Unlit/Texture it writes depth, so the game's depth effects (tilt shift, cloud
+        // shadows) don't treat the object as background and make it look see-through. Falls back to Unlit/Texture.
         private static Material CreateMaterial(Texture texture, Vector2 scale, Vector2 offset)
         {
-            Material material = new Material(GetShader())
-            {
-                name = "MP2Media_" + texture.name,
-                mainTexture = texture,
-                mainTextureScale = scale,
-                mainTextureOffset = offset,
-                enableInstancing = true
-            };
+            Material screen = ScriptableSingleton<AssetManager>.Instance != null ? ScriptableSingleton<AssetManager>.Instance.tvImageMaterial : null;
+            Material material = screen != null ? new Material(screen) : new Material(GetShader());
+            material.name = "MP2Media_" + texture.name;
+            material.mainTexture = texture;
+            material.mainTextureScale = scale;
+            material.mainTextureOffset = offset;
+            material.enableInstancing = true;
 
-            if (material.HasProperty("_Color"))
+            if (screen != null)
+            {
+                material.SetTexture("_EmissionMap", texture);
+                material.SetColor("_EmissionColor", Color.white);
+                material.EnableKeyword("_EMISSION");
+            }
+            else if (material.HasProperty("_Color"))
+            {
                 material.SetColor("_Color", Color.white);
+            }
 
             return material;
         }
