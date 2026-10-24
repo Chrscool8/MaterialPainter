@@ -23,8 +23,22 @@ namespace MaterialPainter2
     /// </summary>
     public static class LegacySaveImporter
     {
-        public static void Import(string savePath)
+        // Legacy paints found for the loaded park that haven't been converted yet.
+        private static Dictionary<string, string> pending;
+
+        /// <summary>True while the loaded park has legacy paints waiting to be converted.</summary>
+        public static bool HasPending => pending != null;
+
+        /// <summary>Forgets the previous park's legacy paints; call when a park starts loading.</summary>
+        public static void Clear()
         {
+            pending = null;
+        }
+
+        /// <summary>Reads the loaded park's legacy paints, if it has any and nothing has been converted yet.</summary>
+        public static void Scan(string savePath)
+        {
+            pending = null;
             if (string.IsNullOrEmpty(savePath) || !File.Exists(savePath))
                 return;
 
@@ -35,9 +49,27 @@ namespace MaterialPainter2
             try
             {
                 Dictionary<string, string> paints = ReadSaveEntry(savePath) ?? ReadSideFile(savePath + ".mat");
-                if (paints == null || paints.Count == 0)
-                    return;
+                if (paints != null && paints.Count > 0)
+                    pending = paints;
+            }
+            catch (Exception ex)
+            {
+                MP2.MPDebug("Reading legacy paints failed: " + ex, always_show: true);
+            }
+        }
 
+        /// <summary>
+        /// Applies the pending legacy paints. If none match (the park may not have finished building), they stay
+        /// pending so the conversion can be retried.
+        /// </summary>
+        public static void Import()
+        {
+            if (pending == null)
+                return;
+
+            try
+            {
+                Dictionary<string, string> paints = new Dictionary<string, string>(pending);
                 int applied = 0;
                 foreach (GameObject gameObject in Utils.GetAllObjectsInScene())
                 {
@@ -51,6 +83,8 @@ namespace MaterialPainter2
                 }
 
                 MP2.MPDebug($"Imported {applied} legacy paints, {paints.Count} unmatched.", always_show: true);
+                if (applied > 0)
+                    pending = null;
             }
             catch (Exception ex)
             {

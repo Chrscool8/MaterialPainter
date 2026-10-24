@@ -70,14 +70,6 @@ namespace MaterialPainter2
                     MPDebug("Found debug flag file.");
                 }
 
-                if (!MOD_ENABLED)
-                {
-                    _harmony = new Harmony(getIdentifier());
-                    _harmony.PatchAll();
-                    MOD_ENABLED = true;
-                    MPDebug(debug_string: "ENABLING MP2", always_show: true);
-                }
-
                 sprites = new Dictionary<string, Sprite>();
                 videos = new Dictionary<string, VideoClip>();
                 custom_images = new Dictionary<string, Texture2D>();
@@ -208,16 +200,25 @@ namespace MaterialPainter2
         }
 
         // Paints restore as each object starts (PaintRestorePatch). This later pass catches renderers that only
-        // exist once the park has finished building, such as supports, and imports paints from older saves.
+        // exist once the park has finished building, such as supports, and converts paints from older saves.
         public void OnStartPlayingPark()
         {
-            CoroutineManager.DelayAction(3f, ReapplyPaints);
+            // The path is only set by loading a save; take it so a later new park doesn't scan this save again.
+            string savePath = current_file_path;
+            current_file_path = "";
+            LegacySaveImporter.Clear();
+
+            CoroutineManager.DelayAction(5f, () =>
+            {
+                PaintStore.RestoreAll();
+                LegacySaveImporter.Scan(savePath);
+                ConvertOldPaints();
+            });
         }
 
-        public void ReapplyPaints()
+        public void ConvertOldPaints()
         {
-            PaintStore.RestoreAll();
-            LegacySaveImporter.Import(current_file_path);
+            LegacySaveImporter.Import();
             LegacySaveImporter.ImportSpells();
         }
     }

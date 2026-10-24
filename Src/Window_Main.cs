@@ -30,7 +30,7 @@ namespace MaterialPainter2
         private UI_CheckBox checkbox_multiselect;
         private UI_CheckBox checkbox_targetsupports;
         private UI_CheckBox checkbox_gowild;
-        private UI_PushButton button_reload;
+        private UI_PushButton button_convert;
         private UI_Button button_none;
 
         UI_Tab settings_tab = null;
@@ -98,11 +98,11 @@ namespace MaterialPainter2
             checkbox_gowild.SetPosition(left_offset + transform.parent.parent.position.x + 16 * dpi_scale, transform.parent.parent.position.y - (tab_height * dpi_scale) - (top_offset) + 2 - (checkbox_size * 3f) - 16 * dpi_scale);
             checkbox_gowild.DrawSprite(dpi_scale);
 
-            button_reload.SetSize(checkbox_size * 8f, checkbox_size);
-            button_reload.SetPosition(left_offset + transform.parent.parent.position.x + 16 * dpi_scale, transform.parent.parent.position.y - (tab_height * dpi_scale) - (top_offset) + 2 - (checkbox_size * 4.5f) - 16 * dpi_scale);
+            button_convert.SetSize(checkbox_size * 8f, checkbox_size);
+            button_convert.SetPosition(left_offset + transform.parent.parent.position.x + 16 * dpi_scale, transform.parent.parent.position.y - (tab_height * dpi_scale) - (top_offset) + 2 - (checkbox_size * 4.5f) - 16 * dpi_scale);
 
-            if (settings_tab != null && settings_tab.selected)
-                button_reload.DrawButton();
+            if (settings_tab != null && settings_tab.selected && LegacySaveImporter.HasPending)
+                button_convert.DrawButton();
 
             if (tt.tooltip != "")
             {
@@ -301,7 +301,7 @@ namespace MaterialPainter2
             checkbox_multiselect = new UI_CheckBox(parent: gameObject, text: "Multi-Select", onMouseClick: () => { MP2._setting_drag_select = !MP2._setting_drag_select; }, check_state: MP2._setting_drag_select, tooltip_text: "Clicking and dragging will continuously paint objects the brush crosses over.");
             checkbox_targetsupports = new UI_CheckBox(parent: gameObject, text: "Target Supports", onMouseClick: () => { MP2._setting_target_supports = !MP2._setting_target_supports; }, check_state: MP2._setting_target_supports, tooltip_text: "Selectively paints support structures. Note, not all supports are currently recognized due to how the game was programmed.");
             checkbox_gowild = new UI_CheckBox(parent: gameObject, text: "Go Wild", onMouseClick: () => { MP2._setting_go_wild = !MP2._setting_go_wild; ApplyWildBrushVisibility(); }, check_state: MP2._setting_go_wild, tooltip_text: "Shows experimental material brushes borrowed from internal game effects.");
-            button_reload = new UI_PushButton(parent: gameObject, text: "Reload From Save", tooltip_text: "Re-applies saved paints, in case some didn't show up after loading a park.", onMouseClick: () => { MP2.Instance.ReapplyPaints(); });
+            button_convert = new UI_PushButton(parent: gameObject, text: "Convert Old Paints", tooltip_text: "This park has paints from an older version of the mod that haven't been converted yet. Try again once the park has finished loading.", onMouseClick: () => { MP2.Instance.ConvertOldPaints(); });
 
             //
 
@@ -409,7 +409,7 @@ namespace MaterialPainter2
             checkbox_multiselect = null;
             checkbox_targetsupports = null;
             checkbox_gowild = null;
-            button_reload = null;
+            button_convert = null;
             button_none = null;
 
             ToolTipper tt = GetComponent<ToolTipper>();

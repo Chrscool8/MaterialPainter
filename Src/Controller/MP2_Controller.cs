@@ -27,7 +27,6 @@ namespace MaterialPainter2
             if (!GameController.Instance.isActiveMouseTool(brush_tool))
             {
                 GameController.Instance.enableMouseTool(brush_tool);
-                MP2.pipe_active = true;
             }
         }
 
@@ -38,7 +37,6 @@ namespace MaterialPainter2
             if (GameController.Instance.isActiveMouseTool(brush_tool))
             {
                 GameController.Instance.removeMouseTool(brush_tool);
-                MP2.pipe_active = false;
             }
         }
 

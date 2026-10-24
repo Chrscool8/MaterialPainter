@@ -85,7 +85,6 @@ namespace MaterialPainter2
         public static Dictionary<string, MaterialType> material_brushes_videos { get; set; } = new Dictionary<string, MaterialType>();
 
         public static MP2_Controller controller { get; set; }
-        public static ToolbarButton window_button { get; set; }
         public ConstructWindowToggle construct_window_toggle { get; set; }
         private static Dictionary<string, Sprite> sprites { get; set; }
         private static Dictionary<string, VideoClip> videos { get; set; }
@@ -107,6 +106,5 @@ namespace MaterialPainter2
         public static bool _setting_drag_select = false;
         public static bool _setting_target_supports = false;
         public static bool _setting_go_wild = false;
-        public static bool pipe_active = false;
     }
 }
