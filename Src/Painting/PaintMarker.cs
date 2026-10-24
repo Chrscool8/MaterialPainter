@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 using UnityEngine;
 
@@ -20,14 +21,17 @@ namespace MaterialPainter2
         private bool originalEnabled;
         private MeshFilter meshFilter;
         private Mesh originalMesh;
-        private ChunkedMesh chunkedMesh;
-        private bool chunkedMeshWasEnabled;
+        private Material[] paintedMaterials;
+        private Mesh paintedMesh;
         private readonly List<Action> releases = new List<Action>();
 
         public static PaintMarker Capture(Renderer renderer)
         {
+            // Added first: while it exists, ChunkedMeshPatch keeps the part out of the game's mesh chunks.
             PaintMarker marker = renderer.gameObject.AddComponent<PaintMarker>();
             marker.target = renderer;
+            RechunkMesh(renderer.gameObject);
+
             marker.originalMaterials = renderer.sharedMaterials;
             marker.originalBlock = new MaterialPropertyBlock();
             renderer.GetPropertyBlock(marker.originalBlock);
@@ -36,14 +40,6 @@ namespace MaterialPainter2
             marker.meshFilter = renderer.GetComponent<MeshFilter>();
             if (marker.meshFilter != null)
                 marker.originalMesh = marker.meshFilter.sharedMesh;
-
-            // Chunked meshes are merged into shared chunks, so the renderer only shows our materials once unchunked.
-            marker.chunkedMesh = renderer.GetComponent<ChunkedMesh>();
-            if (marker.chunkedMesh != null)
-            {
-                marker.chunkedMeshWasEnabled = marker.chunkedMesh.enabled;
-                marker.chunkedMesh.enabled = false;
-            }
 
             All.Add(marker);
             return marker;
@@ -58,6 +54,28 @@ namespace MaterialPainter2
         {
             this.brush = brush;
             this.detail = detail ?? "";
+            paintedMaterials = target != null ? target.sharedMaterials : null;
+            paintedMesh = meshFilter != null ? meshFilter.sharedMesh : null;
+        }
+
+        /// <summary>
+        /// True when the game has since replaced the painted materials with its own (e.g. track pieces get their real
+        /// material after loading), so the paint no longer shows and the saved originals are stale. Not counted while
+        /// the game temporarily swaps materials itself (underground view, selection).
+        /// </summary>
+        public bool IsOverridden
+        {
+            get
+            {
+                if (target == null || paintedMaterials == null)
+                    return false;
+
+                MaterialReplacementManager manager = target.GetComponent<MaterialReplacementManager>();
+                if (manager != null && manager.getActiveReplacementEntry() != null)
+                    return false;
+
+                return !target.sharedMaterials.SequenceEqual(paintedMaterials);
+            }
         }
 
         /// <summary>Registers cleanup for a shared resource; runs on restore or if the object is destroyed while painted.</summary>
@@ -68,21 +86,40 @@ namespace MaterialPainter2
 
         public void Restore()
         {
+            // Only undo what's still ours: if the game has replaced the materials or mesh since, its version is the
+            // real look now and the saved originals may be placeholders or destroyed.
             if (target != null)
             {
-                target.sharedMaterials = originalMaterials;
-                target.SetPropertyBlock(originalBlock);
+                if (!IsOverridden)
+                {
+                    target.sharedMaterials = originalMaterials;
+                    target.SetPropertyBlock(originalBlock);
+                }
                 target.enabled = originalEnabled;
             }
 
-            if (meshFilter != null && originalMesh != null)
+            if (meshFilter != null && originalMesh != null && meshFilter.sharedMesh == paintedMesh)
                 meshFilter.sharedMesh = originalMesh;
 
-            if (chunkedMesh != null)
-                chunkedMesh.enabled = chunkedMeshWasEnabled;
-
             RunReleases();
+            GameObject owner = gameObject;
             DestroyImmediate(this);
+            RechunkMesh(owner);
+        }
+
+        /// <summary>
+        /// Takes the part out of its mesh chunk, or puts it back once the marker is gone, by cycling its ChunkedMesh.
+        /// The chunk may have been added after painting, so it's looked up fresh each time. A chunk the game has
+        /// switched off itself (e.g. during its own material swaps) is left alone.
+        /// </summary>
+        private static void RechunkMesh(GameObject gameObject)
+        {
+            ChunkedMesh chunkedMesh = gameObject.GetComponent<ChunkedMesh>();
+            if (chunkedMesh == null || !chunkedMesh.enabled)
+                return;
+
+            chunkedMesh.enabled = false;
+            chunkedMesh.enabled = true;
         }
 
         private void RunReleases()

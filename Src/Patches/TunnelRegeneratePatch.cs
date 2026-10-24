@@ -20,13 +20,16 @@ namespace MaterialPainter2
             if (__instance.isPreview)
                 return;
 
-            foreach (Transform child in __instance.transform)
+            Safe.Run(nameof(TunnelRegeneratePatch), () =>
             {
-                if (child.CompareTag(TUNNEL_TAG))
-                    MouseCollisions.Instance.addColliders(__instance, child.gameObject);
-            }
+                foreach (Transform child in __instance.transform)
+                {
+                    if (child.CompareTag(TUNNEL_TAG))
+                        MouseCollisions.Instance.addColliders(__instance, child.gameObject);
+                }
 
-            PaintStore.Restore(__instance);
+                PaintStore.Restore(__instance);
+            });
         }
     }
 }

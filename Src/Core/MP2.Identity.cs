@@ -50,8 +50,14 @@ namespace MaterialPainter2
             {
                 UnityEngine.Debug.LogWarning(LOG_PREFIX + debug_string);
 
-                if (_local_mods_directory != "")
-                    File.AppendAllText(GetLogFilePath(), LOG_PREFIX + debug_string + "\n");
+                // Logging must never be the thing that fails (e.g. the log file is locked).
+                try
+                {
+                    if (_local_mods_directory != "")
+                        File.AppendAllText(GetLogFilePath(), LOG_PREFIX + debug_string + "\n");
+                }
+                catch (IOException) { }
+                catch (UnauthorizedAccessException) { }
             }
         }
 

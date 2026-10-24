@@ -16,7 +16,6 @@ namespace MaterialPainter2
         [HarmonyPrefix]
         public static void Prefix(string filePath, GameMode gameMode, ParkSettings settings, bool rememberFilePath, bool newPark, bool showNewParkUI = true, GameController.OnParkLoadedHandler onParkLoadedHandler = null, GameController.OnParkDeserializedHandler onParkDeserializedHandler = null, SerializationContext.Context context = (SerializationContext.Context)0)
         {
-            MP2.MPDebug(filePath);
             MP2.current_file_path = filePath;
         }
     }

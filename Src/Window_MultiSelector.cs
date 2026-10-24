@@ -85,14 +85,18 @@ namespace MaterialPainter2
         private static string GetLabel(GameObject obj)
         {
             SerializedMonoBehaviour owner = obj.GetComponentInParent<SerializedMonoBehaviour>();
-            string label = owner != null ? owner.getName() : TidyName(obj.name);
+            // Some objects (walls, generated parts) have no display name; use their object name instead.
+            string ownerName = owner != null ? owner.getName() : null;
+            string label = !string.IsNullOrEmpty(ownerName) ? ownerName : TidyName((owner != null ? owner.gameObject : obj).name);
 
             if (owner != null && owner.gameObject != obj)
                 label += " › " + TidyName(obj.name, PaintStore.GetPath(owner.transform, obj.transform));
 
             PaintMarker marker = obj.GetComponent<PaintMarker>();
+            // "Overridden": the game swapped its own material back in (e.g. a path style change); the paint is still
+            // saved and comes back on reload or repaint.
             if (marker != null && marker.brush != null)
-                label += " · " + GetPaintLabel(marker);
+                label += " · " + GetPaintLabel(marker) + (marker.IsOverridden ? " (overridden)" : "");
 
             return label;
         }

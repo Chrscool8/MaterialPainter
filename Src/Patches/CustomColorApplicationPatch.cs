@@ -18,7 +18,7 @@ namespace MaterialPainter2
         private static void Postfix(Color[] colors, Renderer renderer)
         {
             if (renderer != null && colors != null && colors.Length > 0)
-                Painter.OnColorsChanged(renderer, colors);
+                Safe.Run(nameof(CustomColorApplicationPatch), () => Painter.OnColorsChanged(renderer, colors));
         }
     }
 }

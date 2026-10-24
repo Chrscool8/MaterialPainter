@@ -35,9 +35,17 @@ namespace MaterialPainter2
                 return false;
             }
 
+            // Leave the part (and its saved paint) alone; it shows again where the brush is available.
+            if (!brush.IsAvailable)
+            {
+                MP2.MPDebug(brush.UnavailableReason);
+                return false;
+            }
+
             detail = detail ?? "";
             PaintMarker marker = renderer.GetComponent<PaintMarker>();
-            if (marker != null && marker.Matches(brush.Id, detail))
+            // Already painted, unless the game has since swapped its own materials back in; then repaint over them.
+            if (marker != null && marker.Matches(brush.Id, detail) && !marker.IsOverridden)
                 return true;
 
             bool applied = false;
@@ -65,6 +73,7 @@ namespace MaterialPainter2
             if (userAction)
                 PlayEffects(renderer.transform.position);
 
+            LogState(renderer, "painted " + brush.Name);
             return true;
         }
 
@@ -75,6 +84,33 @@ namespace MaterialPainter2
                 UnderReplacement(renderer, marker.Restore);
 
             PaintStore.Forget(renderer);
+            LogState(renderer, "cleared");
+        }
+
+        // With the mp_debug flag: what the renderer looks like right after a paint, and again a second later in case
+        // something in the game changes it afterwards.
+        private static void LogState(Renderer renderer, string action)
+        {
+            if (!MP2.DebugEnabled)
+                return;
+
+            MP2.MPDebug($"[PaintState] {action} now: {DescribeState(renderer)}");
+            CoroutineManager.DelayAction(1f, () =>
+            {
+                if (renderer != null)
+                    MP2.MPDebug($"[PaintState] {action} +1s: {DescribeState(renderer)}");
+            });
+        }
+
+        private static string DescribeState(Renderer renderer)
+        {
+            string materials = string.Join(", ", renderer.sharedMaterials.Select(material =>
+                material == null ? "<null/destroyed>" : $"{material.name} [{(material.shader != null ? material.shader.name : "<no shader>")}]"));
+            ChunkedMesh chunkedMesh = renderer.GetComponent<ChunkedMesh>();
+            MaterialReplacementManager manager = renderer.GetComponent<MaterialReplacementManager>();
+            return $"object='{renderer.name}' enabled={renderer.enabled} materials=[{materials}]"
+                + $" chunk={(chunkedMesh == null ? "none" : chunkedMesh.enabled + "/handles " + chunkedMesh.instancedChunkHandles.Count)}"
+                + $" replacement={(manager?.getActiveReplacementEntry()?.replacementTag ?? "none")}";
         }
 
         public static void OnColorsChanged(Renderer renderer, Color[] colors)

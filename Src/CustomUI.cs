@@ -174,6 +174,9 @@ namespace MaterialPainter2
         public bool selected = false;
         public bool auto_invert_y = true;
 
+        /// <summary>Returns why the button's brush can't be used right now (drawn crossed out), or null.</summary>
+        public System.Func<string> unavailable_reason;
+
         public UI_Button(GameObject parent = null,
             float x = 0, float y = 0, float size_x = 32, float size_y = 32,
             string button_image_sprite = "", string button_image_sprite_highlight = "", string button_image_sprite_select = "",
@@ -236,6 +239,10 @@ namespace MaterialPainter2
 
             GUI.DrawTexture(new Rect(position.x, yy, size.x, size.y), MP2.get_sprite(_button_image_sprite, MP2.get_sprite("tex_question")).texture, ScaleMode.ScaleToFit);
 
+            string unavailable = unavailable_reason?.Invoke();
+            if (unavailable != null)
+                DrawCross(new Rect(position.x, yy, size.x, size.y));
+
             if (Utils.PointInRectangle(Input.mousePosition, new Rect(position.x, position.y - size.y, size.x, size.y)))
             {
                 GUI.DrawTexture(new Rect(position.x, yy, size.x, size.y), MP2.get_sprite(_button_image_sprite_highlight).texture, ScaleMode.ScaleToFit);
@@ -246,7 +253,7 @@ namespace MaterialPainter2
                     Select();
                 }
 
-                setToolTip(tooltip_text);
+                setToolTip(unavailable != null ? tooltip_text + " - " + unavailable : tooltip_text);
             }
 
             if (selected)
@@ -281,6 +288,27 @@ namespace MaterialPainter2
         public void SetButtonFamily(List<UI_Button> family)
         {
             button_family = family;
+        }
+
+        private static void DrawCross(Rect rect)
+        {
+            Color previousColor = GUI.color;
+            Matrix4x4 previousMatrix = GUI.matrix;
+
+            float length = rect.width * 0.9f;
+            float thickness = Mathf.Max(2f, rect.width * 0.08f);
+            Rect bar = new Rect(rect.center.x - length / 2f, rect.center.y - thickness / 2f, length, thickness);
+
+            GUI.color = new Color(0.85f, 0.1f, 0.1f, 0.9f);
+            foreach (float angle in new[] { 45f, -45f })
+            {
+                GUI.matrix = previousMatrix;
+                GUIUtility.RotateAroundPivot(angle, rect.center);
+                GUI.DrawTexture(bar, Texture2D.whiteTexture);
+            }
+
+            GUI.matrix = previousMatrix;
+            GUI.color = previousColor;
         }
     }
 

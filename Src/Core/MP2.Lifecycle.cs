@@ -81,100 +81,112 @@ namespace MaterialPainter2
             }
         }
 
+        // Each step runs on its own, so one failure is logged and the rest still happen, instead of leaving the mod
+        // half enabled (or half disabled, which then breaks the next enable).
         public override void onEnabled()
         {
             Instance = this;
 
-            if (!MOD_ENABLED)
+            Safe.Run("patching", () =>
             {
-                _harmony = new Harmony(getIdentifier());
-                _harmony.PatchAll();
-                MOD_ENABLED = true;
-                MPDebug(debug_string: "ENABLING MP2", always_show: true);
-            }
+                if (!MOD_ENABLED)
+                {
+                    _harmony = new Harmony(getIdentifier());
+                    _harmony.PatchAll();
+                    MOD_ENABLED = true;
+                    MPDebug(debug_string: "ENABLING MP2", always_show: true);
+                }
+            });
 
             MPDebug("Modspath: " + GameController.modsPath, always_show: true);
             MPDebug("ModspathRel: " + GameController.modsPathRelative, always_show: true);
 
             RegisterHotkeys();
-            PaintSync.Register();
+            Safe.Run("registering paint sync", PaintSync.Register);
+            Safe.Run("loading asset bundle", LoadAssetBundle);
 
-            _material_painter_directory = ModManager.Instance.getMod(getIdentifier()).path;
-            var loadedAB = AssetBundle.LoadFromFile(GetAssetBundlePath());
-
-            UnityEngine.Object[] objects = loadedAB.LoadAllAssets();
-            for (int i = 0; i < objects.Length; i++)
+            Safe.Run("creating controller", () =>
             {
-                var obj = objects[i];
-                if (obj == null)
-                {
-                    MPDebug($"Tried to load null asset.");
-                }
-                else if (obj.GetType().ToString() == "UnityEngine.Texture2D")
-                {
-                    Texture2D texture = obj as Texture2D;
-                    Sprite sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
-                    sprite.name = obj.name;
-                    //sprite.texture.filterMode = FilterMode.Point;
+                go = new GameObject();
+                go.name = CONTROLLER_GAME_OBJECT_NAME;
+                controller = go.AddComponent<MP2_Controller>();
+                construct_window_toggle = go.AddComponent<ConstructWindowToggle>();
+            });
 
-                    MPDebug($"AB Load: ({sprite.GetType()}) {sprite.name}");
+            Safe.Run("subscribing to park events", () =>
+                EventManager.Instance.OnStartPlayingPark += new EventManager.OnStartPlayingParkHandler(OnStartPlayingPark));
 
-                    sprites.Add(sprite.name, sprite);
-                }
-                else if (obj.GetType().ToString() == "UnityEngine.Video.VideoClip")
-                {
-                    VideoClip clip = obj as VideoClip;
+            Safe.Run("loading videos", RefreshBrushesVideos);
+            Safe.Run("loading images", RefreshBrushesImages);
+        }
 
-                    MPDebug($"AB Load: ({clip.GetType()}) {clip.name}");
-
-                    videos.Add(obj.name, clip);
-                }
-                else
-                {
-                    MPDebug($"Asset Not Loaded. Name: '{obj.name}', Type: {obj.GetType()}");
-                }
+        private void LoadAssetBundle()
+        {
+            _material_painter_directory = ModManager.Instance.getMod(getIdentifier()).path;
+            AssetBundle loadedAB = AssetBundle.LoadFromFile(GetAssetBundlePath());
+            if (loadedAB == null)
+            {
+                MPDebug("Couldn't load asset bundle: " + GetAssetBundlePath(), always_show: true);
+                return;
             }
 
-            go = new GameObject();
-            go.name = CONTROLLER_GAME_OBJECT_NAME;
-            controller = go.AddComponent<MP2_Controller>();
-            construct_window_toggle = go.AddComponent<ConstructWindowToggle>();
+            try
+            {
+                foreach (UnityEngine.Object obj in loadedAB.LoadAllAssets())
+                {
+                    if (obj is Texture2D texture)
+                    {
+                        Sprite sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+                        sprite.name = obj.name;
+                        sprites[sprite.name] = sprite;
+                    }
+                    else if (obj is VideoClip clip)
+                    {
+                        videos[obj.name] = clip;
+                    }
+                    else if (obj != null)
+                    {
+                        MPDebug($"Asset Not Loaded. Name: '{obj.name}', Type: {obj.GetType()}");
+                    }
+                }
+            }
+            finally
+            {
+                loadedAB.Unload(false);
+            }
 
-            loadedAB.Unload(false);
             MPDebug("Loaded assetbundle!");
-
-            EventManager.Instance.OnStartPlayingPark += new EventManager.OnStartPlayingParkHandler(OnStartPlayingPark);
-            //EventManager.Instance.OnGameSaved += new EventManager.OnGameSavedHandler(PostSaveHooked);
-
-            RefreshBrushesVideos();
-            RefreshBrushesImages();
         }
 
         public override void onDisabled()
         {
-            //_keys.UnregisterAll();
-            PaintSync.Unregister();
-            Painter.RestoreAll();
-            BrushRegistry.ReleaseCaches();
-            MediaPaint.ClearCaches();
-
-            UnityEngine.Object.DestroyImmediate(go);
-            sprites.Clear();
-            videos.Clear();
-            custom_images.Clear();
-            bundled_textures.Clear();
-            material_brushes_images.Clear();
-            material_brushes_videos.Clear();
-
-            if (MOD_ENABLED)
+            // Unpatch first so the game stops calling into the mod while it's being torn down.
+            Safe.Run("unpatching", () =>
             {
-                _harmony.UnpatchAll(getIdentifier());
-                MOD_ENABLED = false;
-                MPDebug(debug_string: "DISABLING MP2", always_show: true);
-            }
+                if (MOD_ENABLED)
+                {
+                    _harmony.UnpatchAll(getIdentifier());
+                    MOD_ENABLED = false;
+                    MPDebug(debug_string: "DISABLING MP2", always_show: true);
+                }
+            });
 
-            EventManager.Instance.OnStartPlayingPark -= new EventManager.OnStartPlayingParkHandler(OnStartPlayingPark);
-            //EventManager.Instance.OnGameSaved -= new EventManager.OnGameSavedHandler(PostSaveHooked);
+            Safe.Run("unsubscribing from park events", () =>
+                EventManager.Instance.OnStartPlayingPark -= new EventManager.OnStartPlayingParkHandler(OnStartPlayingPark));
+            Safe.Run("unregistering paint sync", PaintSync.Unregister);
+            Safe.Run("restoring painted objects", Painter.RestoreAll);
+            Safe.Run("releasing brush materials", BrushRegistry.ReleaseCaches);
+            Safe.Run("releasing media", MediaPaint.ClearCaches);
+            Safe.Run("destroying controller", () => UnityEngine.Object.DestroyImmediate(go));
+            Safe.Run("clearing assets", () =>
+            {
+                sprites.Clear();
+                videos.Clear();
+                custom_images.Clear();
+                bundled_textures.Clear();
+                material_brushes_images.Clear();
+                material_brushes_videos.Clear();
+            });
         }
 
         public void RegisterHotkeys()
@@ -210,18 +222,19 @@ namespace MaterialPainter2
             current_file_path = "";
             LegacySaveImporter.Clear();
 
-            CoroutineManager.DelayAction(5f, () =>
+            // Other mods and the game also listen to this event; an error here would stop them from hearing it.
+            Safe.Run("scheduling post-load pass", () => CoroutineManager.DelayAction(5f, () =>
             {
-                PaintStore.RestoreAll();
-                LegacySaveImporter.Scan(savePath);
+                Safe.Run("restoring paints", PaintStore.RestoreAll);
+                Safe.Run("scanning for old paints", () => LegacySaveImporter.Scan(savePath));
                 ConvertOldPaints();
-            });
+            }));
         }
 
         public void ConvertOldPaints()
         {
-            LegacySaveImporter.Import();
-            LegacySaveImporter.ImportSpells();
+            Safe.Run("converting old paints", LegacySaveImporter.Import);
+            Safe.Run("converting old spells", LegacySaveImporter.ImportSpells);
         }
     }
 }

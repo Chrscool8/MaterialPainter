@@ -100,6 +100,7 @@ namespace MaterialPainter2
         private static float lastExecutionTime = -1;
         public static string current_file_path = "";
         public static bool MOD_ENABLED = false;
+        public static bool DebugEnabled => debug_mode;
 
         public static string _local_mods_directory = "";
         public static string _material_painter_directory = "";

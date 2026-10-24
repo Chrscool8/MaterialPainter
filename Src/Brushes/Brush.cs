@@ -21,6 +21,11 @@ namespace MaterialPainter2
             Wild = wild;
         }
 
+        /// <summary>Why the brush can't be used in the current park (e.g. missing DLC), or null if it can.</summary>
+        public virtual string UnavailableReason => null;
+
+        public bool IsAvailable => UnavailableReason == null;
+
         /// <summary>Applies the look to an already backed-up renderer. Returns false if the brush can't apply.</summary>
         public abstract bool Apply(Renderer renderer, string detail, PaintMarker marker);
 
@@ -31,12 +36,10 @@ namespace MaterialPainter2
 
         protected static void SetAllSlots(Renderer renderer, Material material)
         {
+            // Every slot, including empty ones (some generated meshes start without a material).
             Material[] materials = renderer.sharedMaterials;
             for (int i = 0; i < materials.Length; i++)
-            {
-                if (materials[i] != null)
-                    materials[i] = material;
-            }
+                materials[i] = material;
             renderer.sharedMaterials = materials;
         }
 
@@ -120,12 +123,49 @@ namespace MaterialPainter2
         private static readonly int color2ID = Shader.PropertyToID("_Color2");
         private static readonly int shoreColorID = Shader.PropertyToID("_ShoreColor");
 
+        private readonly WaterBody.BodyType bodyType;
         private readonly Color defaultColor;
 
         public WaterBrush(MaterialBrush id, string name, string icon, WaterBody.BodyType bodyType, Color defaultColor)
             : base(id, name, icon, () => BrushMaterials.CloneWaterBody(bodyType))
         {
+            this.bodyType = bodyType;
             this.defaultColor = defaultColor;
+        }
+
+        private static Func<DLC_ID, bool> isDlcAvailable;
+
+        // Lava is DLC content.
+        public override string UnavailableReason
+        {
+            get
+            {
+                WaterBodyType type = BrushMaterials.FindWaterBodyType(bodyType);
+                return type != null && IsDlcAvailable(type.dlc) ? null : Name + " needs its DLC enabled in this park.";
+            }
+        }
+
+        // The game's own (internal) check: installed, and in multiplayer also enabled by the park. Resolved with plain
+        // reflection, since other mod loaders may bring a different Harmony version. If it can't be found, assume yes.
+        private static bool IsDlcAvailable(DLC_ID dlc)
+        {
+            if (isDlcAvailable == null)
+            {
+                isDlcAvailable = _ => true;
+                try
+                {
+                    System.Reflection.MethodInfo method = typeof(GameController).Assembly.GetType("DLC")?.GetMethod("isOwnedAndEnabledInCurrentPark",
+                        System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+                    if (method != null)
+                        isDlcAvailable = (Func<DLC_ID, bool>)Delegate.CreateDelegate(typeof(Func<DLC_ID, bool>), method);
+                }
+                catch (Exception ex)
+                {
+                    Safe.Report("DLC check lookup", ex);
+                }
+            }
+
+            return isDlcAvailable(dlc);
         }
 
         protected override Color DefaultColor => defaultColor;

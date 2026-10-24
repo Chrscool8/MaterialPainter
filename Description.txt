@@ -21,8 +21,11 @@ Current Materials:
 - Paints are now saved with the objects themselves (using the new custom data field), so they stick when you move things, come along in blueprints, and load right away instead of popping in a few seconds later.
 - Old saves convert to the new format automatically the first time you load them. If a slow load misses them, a "Convert Old Paints" button shows up in the settings tab. Heads up: once a park is saved with this version, older versions of the mod won't see its paints.
 - Coaster tunnels can be painted again after loading a park, and paints stick when painting in underground view. Ride platform fences stay paintable after they get rebuilt too.
-- Right click menu now labels everything as Object > Part > Paint, so it's way easier to find that one buried fence. Missing images/videos show their file name with (missing) so you know what to ask for.
+- Right click menu now labels everything as Object > Part > Paint, so it's way easier to find that one buried fence. Missing images/videos show their file name with (missing) so you know what to ask for. If the game swaps a paint out (like changing a path's style) it says (overridden), and painting it again brings it back.
+- Glass (and other see-through paints) no longer turn back to normal or go pink after reloading. The game was quietly redrawing painted decorations and track pieces on top of the paint.
+- Lava needs its DLC, so if it's not enabled in the park (like a multiplayer server without it), the lava button gets a red X instead of secretly painting water.
 - No more sparkles and sounds going off for every painted object when a park loads.
+- If something in the mod does break, it should now log the error and get out of the way instead of taking the park load down with it. Also plays nicer with other mod loaders.
 - Fixed a bunch of memory leaks and did another big internal cleanup, so painting lots of objects should be lighter.
 
 26/06/20

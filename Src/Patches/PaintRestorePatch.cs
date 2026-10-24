@@ -9,7 +9,7 @@ namespace MaterialPainter2
         [HarmonyPostfix]
         private static void Postfix(SerializedMonoBehaviour __instance)
         {
-            PaintStore.Restore(__instance);
+            Safe.Run(nameof(PaintRestorePatch), () => PaintStore.Restore(__instance));
         }
     }
 }

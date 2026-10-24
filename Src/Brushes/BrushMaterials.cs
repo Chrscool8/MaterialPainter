@@ -18,10 +18,17 @@ namespace MaterialPainter2
             return source != null ? new Material(source) : null;
         }
 
+        // Looked up directly: going through WaterBody would silently fall back to water when lava's DLC is off.
         public static Material CloneWaterBody(WaterBody.BodyType bodyType)
         {
-            WaterBody waterBody = new WaterBody { bodyType = bodyType };
-            return Clone(waterBody.getMaterial());
+            WaterBodyType type = FindWaterBodyType(bodyType);
+            return Clone(type != null ? type.material : null);
+        }
+
+        public static WaterBodyType FindWaterBodyType(WaterBody.BodyType bodyType)
+        {
+            WaterBodyType[] types = ScriptableSingleton<AssetManager>.Instance.waterBodyTypes;
+            return types != null ? Array.Find(types, type => type.bodyType == bodyType) : null;
         }
 
         public static Material CreateTerrain(string terrainTypeName, string materialName, Color color, float textureScale)

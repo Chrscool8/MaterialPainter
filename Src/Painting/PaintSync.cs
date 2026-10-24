@@ -50,7 +50,8 @@ namespace MaterialPainter2
         public static void Paint(GameObject target, MaterialBrush id, string detail)
         {
             detail = detail ?? "";
-            if (IsAlreadyPainted(target, id, detail))
+            Brush brush = BrushRegistry.Get(id);
+            if (IsAlreadyPainted(target, id, detail) || (brush != null && !brush.IsAvailable))
                 return;
 
             string paint = PaintStore.Encode(id, detail);
@@ -102,7 +103,7 @@ namespace MaterialPainter2
         private static bool IsAlreadyPainted(GameObject target, MaterialBrush id, string detail)
         {
             PaintMarker marker = target.GetComponent<PaintMarker>();
-            return id == MaterialBrush.None ? marker == null : marker != null && marker.Matches(id, detail);
+            return id == MaterialBrush.None ? marker == null : marker != null && marker.Matches(id, detail) && !marker.IsOverridden;
         }
 
         private static byte[] Write(int token, uint objectID, string path, MaterialBrush id, string detail)

@@ -37,8 +37,11 @@ namespace MaterialPainter2
         private bool pipeActivated;
         private float lastAppliedWindowHeight = -1f;
 
+        // Unity would log errors here anyway; this keeps them to one report instead of one per frame.
         [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Fugeddabouddit.")]
-        private void OnGUI()
+        private void OnGUI() => Safe.Run("window drawing", DrawWindow);
+
+        private void DrawWindow()
         {
             if (OptionsMenu.instance != null)
                 return;
@@ -327,6 +330,10 @@ namespace MaterialPainter2
                 MP2.selected_brush_custom = "";
             }, tooltip_text: tooltipText);
             buttons_elements.Add(button);
+
+            Brush registered = BrushRegistry.Get(brush);
+            if (registered != null)
+                button.unavailable_reason = () => registered.UnavailableReason;
 
             if (wild)
                 buttons_wild.Add(button);

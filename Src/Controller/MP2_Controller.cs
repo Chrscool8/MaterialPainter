@@ -17,7 +17,7 @@ namespace MaterialPainter2
         private void Update()
         {
             if (GameController.Instance != null && GameController.Instance.isActiveMouseTool(brush_tool))
-                brush_tool.tick();
+                Safe.Run("brush tool", brush_tool.tick);
         }
 
         public void ActivatePipe()

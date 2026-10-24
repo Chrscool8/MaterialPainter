@@ -1,6 +1,7 @@
 using HarmonyLib;
 
 using System.Collections.Generic;
+using System.Reflection;
 
 using UnityEngine;
 
@@ -14,24 +15,26 @@ namespace MaterialPainter2
     [HarmonyPatch(typeof(FlatRidePlatform), nameof(FlatRidePlatform.spawnFences))]
     public class PlatformFencePatch
     {
-        private static readonly AccessTools.FieldRef<FlatRidePlatform, List<GameObject>> fences =
-            AccessTools.FieldRefAccess<FlatRidePlatform, List<GameObject>>("fences");
+        private static readonly FieldInfo fencesField = typeof(FlatRidePlatform).GetField("fences", BindingFlags.Instance | BindingFlags.NonPublic);
 
         [HarmonyPostfix]
         private static void Postfix(FlatRidePlatform __instance)
         {
-            // Before the tile starts, its own start-up registers everything (and PaintRestorePatch paints it).
-            List<GameObject> spawned = fences(__instance);
-            if (__instance.isPreview || !__instance.hasBeenInitialized || spawned == null)
-                return;
-
-            foreach (GameObject fence in spawned)
+            Safe.Run(nameof(PlatformFencePatch), () =>
             {
-                if (fence != null)
-                    MouseCollisions.Instance.addColliders(__instance, fence);
-            }
+                // Before the tile starts, its own start-up registers everything (and PaintRestorePatch paints it).
+                List<GameObject> spawned = fencesField?.GetValue(__instance) as List<GameObject>;
+                if (__instance.isPreview || !__instance.hasBeenInitialized || spawned == null)
+                    return;
 
-            PaintStore.Restore(__instance);
+                foreach (GameObject fence in spawned)
+                {
+                    if (fence != null)
+                        MouseCollisions.Instance.addColliders(__instance, fence);
+                }
+
+                PaintStore.Restore(__instance);
+            });
         }
     }
 }
