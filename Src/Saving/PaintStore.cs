@@ -85,7 +85,7 @@ namespace MaterialPainter2
         }
 
         // Path segments are child names; repeated names among siblings get "#n" (n = how many came before).
-        private static string GetPath(Transform owner, Transform target)
+        public static string GetPath(Transform owner, Transform target)
         {
             List<string> segments = new List<string>();
             for (Transform current = target; current != owner && current != null; current = current.parent)
