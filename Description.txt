@@ -16,6 +16,15 @@ Current Materials:
 - ...More Soon?
 
 [h1]Updates:[/h1]
+26/10/24
+- MULTIPLAYER! Paints now sync between everyone in the park who has the mod. Players without it won't see paints but nothing breaks for them.
+- Paints are now saved with the objects themselves (using the new custom data field), so they stick when you move things, come along in blueprints, and load right away instead of popping in a few seconds later.
+- Old saves convert to the new format automatically the first time you load them. If a slow load misses them, a "Convert Old Paints" button shows up in the settings tab. Heads up: once a park is saved with this version, older versions of the mod won't see its paints.
+- Coaster tunnels can be painted again after loading a park, and paints stick when painting in underground view. Ride platform fences stay paintable after they get rebuilt too.
+- Right click menu now labels everything as Object > Part > Paint, so it's way easier to find that one buried fence. Missing images/videos show their file name with (missing) so you know what to ask for.
+- No more sparkles and sounds going off for every painted object when a park loads.
+- Fixed a bunch of memory leaks and did another big internal cleanup, so painting lots of objects should be lighter.
+
 26/06/20
 - Should maybe probably fix the workshop issue people were having (purge files from Docs mods and unsub, reboot, resub to make sure you're fresh)
 - Replaces ffmpeg external dependency with native unity video frame functionality for video thumbnails
