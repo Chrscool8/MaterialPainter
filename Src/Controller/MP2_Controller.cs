@@ -50,7 +50,7 @@ namespace MaterialPainter2
             if (MP2._setting_target_supports && !game_object.name.ToLower().Contains("support"))
                 return;
 
-            Painter.Paint(game_object, (MaterialBrush)MP2.selected_brush, MP2.selected_brush_custom, userAction: true);
+            PaintSync.Paint(game_object, (MaterialBrush)MP2.selected_brush, MP2.selected_brush_custom);
         }
     }
 }

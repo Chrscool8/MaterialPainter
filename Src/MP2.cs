@@ -72,6 +72,7 @@ namespace MaterialPainter2
 
         public override string getVersionNumber() => VERSION_NUMBER;
 
+        // Paints sync through PaintSync; players without the mod just don't see them.
         public override bool isMultiplayerModeCompatible() => true;
 
         public override bool isRequiredByAllPlayersInMultiplayerMode() => false;

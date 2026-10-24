@@ -92,9 +92,24 @@ namespace MaterialPainter2
 
             PaintMarker marker = obj.GetComponent<PaintMarker>();
             if (marker != null && marker.brush != null)
-                label += " · " + (string.IsNullOrEmpty(marker.detail) ? marker.brush.Name : System.IO.Path.GetFileNameWithoutExtension(marker.detail));
+                label += " · " + GetPaintLabel(marker);
 
             return label;
+        }
+
+        // Custom media shows the file it was painted with, even if this player is seeing a fallback for it.
+        private static string GetPaintLabel(PaintMarker marker)
+        {
+            string path;
+            if (marker.brush is ImageBrush)
+                path = MP2.GetCustomImageFilePath(marker.detail);
+            else if (marker.brush is VideoBrush)
+                path = MP2.GetCustomVideoFilePath(marker.detail);
+            else
+                return marker.brush.Name;
+
+            string fileName = System.IO.Path.GetFileName(path);
+            return System.IO.File.Exists(path) ? fileName : fileName + " (missing)";
         }
 
         // "Fence(Clone)" + path ".../Fence(Clone)#3" -> "Fence #3"

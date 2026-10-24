@@ -108,7 +108,7 @@ namespace MaterialPainter2
             return duplicates == 0 ? transform.name : transform.name + DUPLICATE_MARK + duplicates;
         }
 
-        private static Transform Resolve(Transform owner, string path)
+        public static Transform Resolve(Transform owner, string path)
         {
             Transform current = owner;
             if (path.Length == 0)

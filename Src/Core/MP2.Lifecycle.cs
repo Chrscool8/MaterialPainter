@@ -97,6 +97,7 @@ namespace MaterialPainter2
             MPDebug("ModspathRel: " + GameController.modsPathRelative, always_show: true);
 
             RegisterHotkeys();
+            PaintSync.Register();
 
             _material_painter_directory = ModManager.Instance.getMod(getIdentifier()).path;
             var loadedAB = AssetBundle.LoadFromFile(GetAssetBundlePath());
@@ -152,6 +153,7 @@ namespace MaterialPainter2
         public override void onDisabled()
         {
             //_keys.UnregisterAll();
+            PaintSync.Unregister();
             Painter.RestoreAll();
             BrushRegistry.ReleaseCaches();
             MediaPaint.ClearCaches();
