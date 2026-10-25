@@ -101,7 +101,8 @@ namespace MaterialPainter2
             MPDebug("Modspath: " + GameController.modsPath, always_show: true);
             MPDebug("ModspathRel: " + GameController.modsPathRelative, always_show: true);
 
-            RegisterHotkeys();
+            Safe.Run("registering hotkeys", RegisterHotkeys);
+            Safe.Run("loading settings", LoadSettings);
             Safe.Run("registering paint sync", PaintSync.Register);
             Safe.Run("loading asset bundle", LoadAssetBundle);
 
@@ -174,6 +175,7 @@ namespace MaterialPainter2
             Safe.Run("unsubscribing from park events", () =>
                 EventManager.Instance.OnStartPlayingPark -= new EventManager.OnStartPlayingParkHandler(OnStartPlayingPark));
             Safe.Run("unregistering paint sync", PaintSync.Unregister);
+            Safe.Run("unregistering hotkeys", UnregisterHotkeys);
             Safe.Run("restoring painted objects", Painter.RestoreAll);
             Safe.Run("releasing brush materials", BrushRegistry.ReleaseCaches);
             Safe.Run("releasing media", MediaPaint.ClearCaches);
@@ -189,11 +191,23 @@ namespace MaterialPainter2
             });
         }
 
-        public void RegisterHotkeys()
+        // Listed under the mod's name in the game's Controls settings, unbound until the player picks a key. The bottom
+        // menu button listens for it (see ConstructWindowToggle).
+        private void RegisterHotkeys()
         {
-            //_keys = new KeybindManager("MP2_KEYS", "Material Painter");
-            //_keys.AddKeybind("toggleMPWindow", "Toggle MP Window", "Show or Hide the Material Painter Window", KeyCode.Y);
-            //_keys.RegisterAll();
+            toggleWindowKey = new KeyMapping(HOTKEY_TOGGLE_WINDOW, KeyCode.None, KeyCode.None)
+            {
+                keyName = "Open " + MOD_DISPLAY_NAME,
+                keyDescription = "Opens or closes the " + MOD_DISPLAY_NAME + " window.",
+            };
+            ScriptableSingleton<InputManager>.Instance.registerKeyMapping(toggleWindowKey);
+        }
+
+        private void UnregisterHotkeys()
+        {
+            if (toggleWindowKey != null)
+                ScriptableSingleton<InputManager>.Instance.unregisterKeyMapping(toggleWindowKey);
+            toggleWindowKey = null;
         }
 
         public void onDrawSettingsUI()

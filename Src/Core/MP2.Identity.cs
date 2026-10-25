@@ -1,10 +1,6 @@
-using Parkitect.UI;
-
 using System;
 using System.IO;
 using System.Reflection;
-
-using UnityEngine;
 
 namespace MaterialPainter2
 {
@@ -18,6 +14,7 @@ namespace MaterialPainter2
         public const string SAVE_SCHEMA_KEY = "_schema";
         public const int CURRENT_SAVE_SCHEMA_VERSION = 3;
         public const string VIDEO_FILE_EXTENSION = ".mp4";
+        public const string HOTKEY_TOGGLE_WINDOW = MOD_IDENTIFIER + ".ToggleWindow";
 
         private const string LOG_FILE_NAME = "MaterialPainterLog.txt";
         private const string LOG_PREFIX = MOD_DISPLAY_NAME + ": ";
@@ -34,16 +31,6 @@ namespace MaterialPainter2
         private const string FALLBACK_IMAGE_FILE_NAME = "tex_question.png";
         private const string CONTROLLER_GAME_OBJECT_NAME = "MP2 GameObject";
 
-        public static bool IsCoolDownReady()
-        {
-            return (Time.unscaledTime - lastExecutionTime >= cooldownDuration || lastExecutionTime == -1);
-        }
-
-        public static void ResetCountdown()
-        {
-            lastExecutionTime = Time.unscaledTime;
-        }
-
         public static void MPDebug(string debug_string, bool always_show = false)
         {
             if (debug_mode || always_show)
@@ -59,11 +46,6 @@ namespace MaterialPainter2
                 catch (IOException) { }
                 catch (UnauthorizedAccessException) { }
             }
-        }
-
-        public static string GetWindowTitle(string title)
-        {
-            return MOD_DISPLAY_NAME + " - " + title;
         }
 
         public static string GetCustomVideoFilePath(string videoName)
@@ -84,18 +66,6 @@ namespace MaterialPainter2
         public static string GetFallbackImagePath()
         {
             return GetCustomImageFilePath(FALLBACK_IMAGE_FILE_NAME);
-        }
-
-        public static float get_dpi()
-        {
-            float num = Screen.dpi;
-            if (Mathf.Approximately(num, 0f))
-            {
-                num = 72f;
-            }
-            float dpi_scale = DPIHelper.scaleDPI(num / 72f) / 1.3f * Settings.Instance.uiScale;
-
-            return dpi_scale;
         }
 
         private static string GetCustomDirectory()

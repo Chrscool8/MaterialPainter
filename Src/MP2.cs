@@ -86,7 +86,7 @@ namespace MaterialPainter2
         public static MP2 Instance;
         private Harmony _harmony;
 
-        //private KeybindManager _keys;
+        private KeyMapping toggleWindowKey;
         public static Dictionary<string, MaterialType> material_brushes_images { get; set; } = new Dictionary<string, MaterialType>();
         public static Dictionary<string, MaterialType> material_brushes_videos { get; set; } = new Dictionary<string, MaterialType>();
 
@@ -101,8 +101,6 @@ namespace MaterialPainter2
         public static string selected_brush_custom { get; set; }
 
         private static bool debug_mode = false;
-        public static float cooldownDuration = .01f;
-        private static float lastExecutionTime = -1;
         public static string current_file_path = "";
         public static bool MOD_ENABLED = false;
         public static bool DebugEnabled => debug_mode;
@@ -113,5 +111,9 @@ namespace MaterialPainter2
         public static bool _setting_drag_select = false;
         public static bool _setting_target_supports = false;
         public static bool _setting_go_wild = false;
+
+        /// <summary>The brush the window selects when it opens; the last one picked.</summary>
+        public static int last_brush = (int)MaterialBrush.None;
+        public static string last_brush_custom = "";
     }
 }

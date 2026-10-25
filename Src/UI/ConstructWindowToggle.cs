@@ -204,7 +204,7 @@ namespace MaterialPainter2
 
             CaptureOriginalLayout(bottomMenu, contentRect);
 
-            windowTemplate = CreateWindowTemplate();
+            windowTemplate = CreateWindowTemplate(content);
             if (windowTemplate == null)
             {
                 MP2.MPDebug("Material Painter bottom menu insertion skipped: could not create window template.", always_show: true);
@@ -337,34 +337,13 @@ namespace MaterialPainter2
             }
         }
 
-        private Window_Main CreateWindowTemplate()
+        private Window_Main CreateWindowTemplate(Transform content)
         {
-            windowTemplateParent = new GameObject("Material Painter Window Template Parent");
+            windowTemplateParent = new GameObject("Material Painter Window Template Parent", typeof(RectTransform));
             windowTemplateParent.transform.SetParent(transform, false);
             windowTemplateParent.SetActive(false);
 
-            GameObject windowGo = new GameObject(MP2.Instance.getName());
-            windowGo.transform.SetParent(windowTemplateParent.transform, false);
-            windowGo.SetActive(true);
-
-            RectTransform rect = windowGo.AddComponent<RectTransform>();
-            rect.sizeDelta = new Vector2(200f, 150f);
-
-            Window_Main window = windowGo.AddComponent<Window_Main>();
-            UIWindowSettings windowSettings = windowGo.AddComponent<UIWindowSettings>();
-            windowSettings.closable = true;
-            windowSettings.pinnable = true;
-            windowSettings.destroyWhenClosed = true;
-            windowSettings.defaultWindowPosition = new Vector2(0.5f, 0.5f);
-            windowSettings.title = MP2.MOD_DISPLAY_NAME;
-            windowSettings.uniqueTag = MP2.Instance.getName();
-            windowSettings.uniqueTagString = MP2.Instance.getName();
-            windowSettings.resizeability = 0;
-            windowSettings.mask = 0;
-            windowSettings.isBuilderWindow = false;
-            windowSettings.spawnLocation = UIWindowSettings.SpawnLocation.BottomMenu;
-
-            return window;
+            return Window_Main.CreateTemplate(content, windowTemplateParent.transform);
         }
 
         private bool CreateNativeMenuObjects(Transform content, GameObject painterButton, GameObject linebreak)
@@ -403,7 +382,8 @@ namespace MaterialPainter2
             if (windowButton == null)
                 return false;
 
-            windowButton.hotkeyIdentifier = string.Empty;
+            // Read when the button wakes up, which is after this: the clone starts inactive.
+            windowButton.hotkeyIdentifier = MP2.HOTKEY_TOGGLE_WINDOW;
             windowButton.windowContentGO = windowTemplate;
 
             UITooltip tooltip = mp2Button.GetComponent<UITooltip>();

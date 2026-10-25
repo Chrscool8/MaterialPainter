@@ -1,217 +1,397 @@
 ﻿using Parkitect.UI;
 
 using System.Collections.Generic;
+using System.Linq;
 
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace MaterialPainter2
 {
+    /// <summary>
+    /// The Material Painter window: the game's tabbed tool window (see <see cref="NativeUI"/>) with a brush grid on
+    /// the Elements, Images and Videos tabs and the mod's options on the Settings tab.
+    /// </summary>
     public class Window_Main : UIWindow
     {
-        private const float GRID_WIDTH = 260f;
-        private const float MINIMUM_GRID_HEIGHT = 155f;
-        private const float MINIMUM_WINDOW_HEIGHT = 150f;
+        /// <summary>Smallest size of the window's content; the player can make it bigger.</summary>
+        public static readonly Vector2 MINIMUM_SIZE = new Vector2(230f, 220f);
+        private const float MINIMUM_GRID_HEIGHT = 70f;
+
+        public static readonly (string title, string icon)[] TABS =
+        {
+            ("Elements", "icon_elements"),
+            ("Images", "icon_camera"),
+            ("Videos", "icon_videocamera"),
+            ("Settings", "icon_toolbox"),
+        };
 
         public static Window_Main Instance { get; private set; }
 
-        public static List<UI_Button> buttons_elements;
-        public static List<UI_Button> buttons_videos;
-        public static List<UI_Button> buttons_images;
-        public static List<UI_Button> buttons_all;
-        private List<UI_Button> buttons_wild;
-
-        private UI_Grid_Buttons grid_elements;
-        private UI_Grid_Buttons grid_videos;
-        private UI_Grid_Buttons grid_images;
-        private UI_Grid_Buttons grid_settings;
-        private UI_Tab_Bar tab_bar_types;
-        private UI_TuningPanel panel_tuning;
-
-        private UI_CheckBox checkbox_multiselect;
-        private UI_CheckBox checkbox_targetsupports;
-        private UI_CheckBox checkbox_gowild;
-        private UI_PushButton button_convert;
-        private UI_Button button_none;
-
-        UI_Tab settings_tab = null;
+        private readonly List<BrushEntry> entries = new List<BrushEntry>();
+        private readonly List<BrushEntry> wildEntries = new List<BrushEntry>();
+        private readonly List<RectTransform> panels = new List<RectTransform>();
+        private RectTransform tabBar;
+        private RectTransform content;
+        private UITabGroup tabGroup;
+        private readonly List<Button> pipetteButtons = new List<Button>();
+        private TuningPanel tuning;
+        private Toggle goWild;
+        private Button convertButton;
         private bool pipeActivated;
-        private float lastAppliedWindowHeight = -1f;
 
-        // Unity would log errors here anyway; this keeps them to one report instead of one per frame.
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Fugeddabouddit.")]
-        private void OnGUI() => Safe.Run("window drawing", DrawWindow);
+        private const string PIPETTE_TOOLTIP = "Pick up a paint: click this, then a painted part. Its brush and sliders get selected. Also the game's Pipette key.";
+        private static readonly Color pipetteActiveColor = new Color(0.45f, 0.7f, 0.95f, 1f);
+        private Color pipetteColor = Color.white;
 
-        private void DrawWindow()
+        /// <summary>A media tab's grid; rebuilt by its Refresh button.</summary>
+        private class MediaTab
         {
-            if (OptionsMenu.instance != null)
+            public MaterialBrush brush;
+            public RectTransform grid;
+            public System.Func<IEnumerable<MaterialType>> media;
+            public System.Func<MaterialType, string> label;
+            public readonly List<BrushEntry> entries = new List<BrushEntry>();
+        }
+
+        /// <summary>Makes the window that the bottom menu button opens a copy of. Null if the game's UI has changed.</summary>
+        public static Window_Main CreateTemplate(Transform menuContent, Transform parent)
+        {
+            GameObject window = NativeUI.CreateWindowTemplate(menuContent, parent, TABS);
+            if (window == null)
+                return null;
+
+            window.name = MP2.Instance.getName();
+            window.GetComponent<RectTransform>().sizeDelta = MINIMUM_SIZE;
+
+            UIWindowSettings settings = window.GetComponent<UIWindowSettings>();
+            if (settings == null)
+                settings = window.AddComponent<UIWindowSettings>();
+            settings.title = MP2.MOD_DISPLAY_NAME;
+            settings.uniqueTag = MP2.Instance.getName();
+            settings.uniqueTagString = MP2.Instance.getName();
+            settings.closable = true;
+            settings.pinnable = true;
+            settings.destroyWhenClosed = true;
+            settings.mask = 0;
+            settings.isBuilderWindow = false;
+            settings.contentDeterminesWindowSize = false;
+            settings.resizeability = UIWindowSettings.Resizeability.Horizontal | UIWindowSettings.Resizeability.Vertical;
+            settings.spawnLocation = UIWindowSettings.SpawnLocation.BottomMenu;
+
+            return window.AddComponent<Window_Main>();
+        }
+
+        protected override void Awake()
+        {
+            base.Awake();
+            Safe.Run("window setup", Build);
+        }
+
+        private void Build()
+        {
+            tabBar = transform.Find("Tabs") as RectTransform;
+            content = transform.Find("Content") as RectTransform;
+            foreach (var tab in TABS)
+                panels.Add(content.Find(tab.title) as RectTransform);
+
+            BuildElementsTab(panels[0]);
+            BuildMediaTab(panels[1], new MediaTab { brush = MaterialBrush.Image, media = () => MP2.material_brushes_images.Values, label = mt => mt.id_string });
+            BuildMediaTab(panels[2], new MediaTab { brush = MaterialBrush.Video, media = () => MP2.material_brushes_videos.Values, label = mt => mt.name });
+            BuildSettingsTab(panels[3]);
+
+            foreach (BrushEntry entry in wildEntries)
+                entry.gameObject.SetActive(MP2._setting_go_wild);
+
+            // Picks up where the player left off, unless that brush is gone (a deleted image, Go Wild turned off).
+            BrushEntry remembered = entries.Find(entry => entry.gameObject.activeSelf
+                && (int)entry.Brush == MP2.last_brush && (entry.Custom == null || entry.Custom == MP2.last_brush_custom));
+            if (remembered != null)
+                Select(remembered.Brush, remembered.Custom);
+            else
+                Select(MaterialBrush.None, "");
+
+            tabGroup = GetComponent<UITabGroup>();
+            if (tabGroup != null)
+                tabGroup.OnTabChanged += OnTabChanged;
+        }
+
+        // After every Awake, so the tab group is ready: opens the tab the selected brush is on.
+        protected override void Start()
+        {
+            base.Start();
+            Safe.Run("opening brush tab", OpenSelectedTab);
+        }
+
+        private void OpenSelectedTab()
+        {
+            if (tabGroup == null || MP2.selected_brush == (int)MaterialBrush.None)
                 return;
 
-            float num = Screen.dpi;
-            if (Mathf.Approximately(num, 0f))
+            int tab = panels.FindIndex(panel => panel != null && panel.GetComponentsInChildren<BrushEntry>(true)
+                .Any(entry => entry.gameObject.activeSelf && IsSelected(entry)));
+            if (tab >= 0 && tab != tabGroup.getTabIndex())
+                tabGroup.openTab(tab);
+        }
+
+        /// <summary>The row of tool buttons above a brush grid: the eyedropper, then whatever else the tab adds.</summary>
+        private RectTransform CreateToolbar(RectTransform panel)
+        {
+            RectTransform toolbar = NativeUI.CreateRow(panel, NativeUI.PIPETTE_SIZE);
+            Button pipette = NativeUI.CreatePipetteButton(toolbar, PIPETTE_TOOLTIP);
+            if (pipette != null)
             {
-                num = 72f;
+                // The game's gray; only tinted while picking.
+                if (pipette.targetGraphic != null)
+                    pipetteColor = pipette.targetGraphic.color;
+                pipette.onClick.AddListener(() => Safe.Run("eyedropper", TogglePicking));
+                pipetteButtons.Add(pipette);
             }
-            float dpi_scale = DPIHelper.scaleDPI(num / 72f) / 1.3f * Settings.Instance.uiScale;
+            return toolbar;
+        }
 
-            float left_offset = 7f * dpi_scale;
-            float top_offset = 34.0f * dpi_scale;
-
-            float tab_height = 43f;
-
-            ToolTipper tt = GetComponent<ToolTipper>();
-            tt.tooltip = "";
-
-            tab_bar_types.SetWidth(260);
-            tab_bar_types.tab_size = new Vector2(tab_height, tab_height);
-            tab_bar_types.SetPosition(left_offset + transform.parent.parent.position.x, transform.parent.parent.position.y - (top_offset));
-            tab_bar_types.DrawTabs(dpi_scale);
-
-            float elementsGridHeight = GetGridHeight(grid_elements);
-            float videosGridHeight = GetGridHeight(grid_videos);
-            float imagesGridHeight = GetGridHeight(grid_images);
-            float settingsGridHeight = GetGridHeight(grid_settings);
-            ApplyWindowHeight(GetActiveGridHeight(elementsGridHeight, videosGridHeight, imagesGridHeight, settingsGridHeight));
-
-            grid_elements.SetSize(GRID_WIDTH, elementsGridHeight);
-            grid_elements.SetPosition(left_offset + transform.parent.parent.position.x, transform.parent.parent.position.y - (tab_height) * dpi_scale - (top_offset) + 2);
-            grid_elements.DrawGrid(dpi_scale);
-
-            panel_tuning.visible = grid_elements.visible;
-            panel_tuning.SetWidth(GRID_WIDTH);
-            panel_tuning.SetPosition(left_offset + transform.parent.parent.position.x, transform.parent.parent.position.y - (tab_height) * dpi_scale - (top_offset) + 2 - elementsGridHeight * dpi_scale);
-            panel_tuning.Draw(dpi_scale);
-
-            grid_videos.SetSize(GRID_WIDTH, videosGridHeight);
-            grid_videos.SetPosition(left_offset + transform.parent.parent.position.x, transform.parent.parent.position.y - (tab_height) * dpi_scale - (top_offset) + 2);
-            grid_videos.DrawGrid(dpi_scale);
-
-            grid_images.SetSize(GRID_WIDTH, imagesGridHeight);
-            grid_images.SetPosition(left_offset + transform.parent.parent.position.x, transform.parent.parent.position.y - (tab_height) * dpi_scale - (top_offset) + 2);
-            grid_images.DrawGrid(dpi_scale);
-
-            grid_settings.SetSize(GRID_WIDTH, settingsGridHeight);
-            grid_settings.SetPosition(left_offset + transform.parent.parent.position.x, transform.parent.parent.position.y - (tab_height) * dpi_scale - (top_offset) + 2);
-            grid_settings.DrawGrid(dpi_scale);
-
-            float checkbox_size = 24f * dpi_scale;
-            checkbox_multiselect.SetTileSize(checkbox_size, checkbox_size);
-            checkbox_multiselect.SetPosition(left_offset + transform.parent.parent.position.x + 16 * dpi_scale, transform.parent.parent.position.y - (tab_height * dpi_scale) - (top_offset) + 2 - 16 * dpi_scale);
-            checkbox_multiselect.DrawSprite(dpi_scale);
-
-            checkbox_targetsupports.SetTileSize(checkbox_size, checkbox_size);
-            checkbox_targetsupports.SetPosition(left_offset + transform.parent.parent.position.x + 16 * dpi_scale, transform.parent.parent.position.y - (tab_height * dpi_scale) - (top_offset) + 2 - (checkbox_size * 1.5f) - 16 * dpi_scale);
-            checkbox_targetsupports.DrawSprite(dpi_scale);
-
-            checkbox_gowild.SetTileSize(checkbox_size, checkbox_size);
-            checkbox_gowild.SetPosition(left_offset + transform.parent.parent.position.x + 16 * dpi_scale, transform.parent.parent.position.y - (tab_height * dpi_scale) - (top_offset) + 2 - (checkbox_size * 3f) - 16 * dpi_scale);
-            checkbox_gowild.DrawSprite(dpi_scale);
-
-            button_convert.SetSize(checkbox_size * 8f, checkbox_size);
-            button_convert.SetPosition(left_offset + transform.parent.parent.position.x + 16 * dpi_scale, transform.parent.parent.position.y - (tab_height * dpi_scale) - (top_offset) + 2 - (checkbox_size * 4.5f) - 16 * dpi_scale);
-
-            if (settings_tab != null && settings_tab.selected && LegacySaveImporter.HasPending)
-                button_convert.DrawButton();
-
-            if (tt.tooltip != "")
+        private void BuildElementsTab(RectTransform panel)
+        {
+            CreateToolbar(panel);
+            RectTransform grid = NativeUI.CreateScrollGrid(panel, MINIMUM_GRID_HEIGHT);
+            AddNoneEntry(grid);
+            foreach (Brush brush in BrushRegistry.All)
             {
-                GUIStyle tooltip_guiStyle = new GUIStyle(GUI.skin.label)
-                {
-                    fontSize = 14,
-                    alignment = TextAnchor.MiddleCenter
-                };
-                Vector2 size_ = tooltip_guiStyle.CalcSize(new GUIContent(tt.tooltip));
+                // Images and videos have their own tabs.
+                if (brush is ImageBrush || brush is VideoBrush)
+                    continue;
 
-                Rect tooltip_rect = new Rect(Input.mousePosition.x + 35, Screen.height - Input.mousePosition.y, (size_.x + 20), size_.y);
-
-                GUI.color = new Color(92f / 255f, 105f / 255f, 110f / 255f, .9f);
-                GUI.Box(tooltip_rect, GUIContent.none);
-
-                GUI.color = Color.white;
-                GUI.Label(tooltip_rect, tt.tooltip, tooltip_guiStyle);
-                GUI.color = Color.white;
+                Brush registered = brush;
+                Sprite icon = MP2.get_sprite(brush.Icon, MP2.get_sprite("tex_question"));
+                BrushEntry entry = AddEntry(grid, brush.Id, null, brush.Name, () => icon, () => registered.UnavailableReason);
+                if (brush.Wild)
+                    wildEntries.Add(entry);
             }
 
-            MP2_Controller.wms?.OnGui();
+            tuning = new TuningPanel(panel);
         }
 
-        private float GetGridHeight(UI_Grid_Buttons grid)
+        private void BuildMediaTab(RectTransform panel, MediaTab tab)
         {
-            if (grid == null)
-                return MINIMUM_GRID_HEIGHT;
+            bool videos = tab.brush == MaterialBrush.Video;
+            string folder = "Custom/" + (videos ? "Videos" : "Images");
 
-            return Mathf.Max(MINIMUM_GRID_HEIGHT, grid.GetContentHeight(GRID_WIDTH));
+            RectTransform toolbar = CreateToolbar(panel);
+            Button refresh = NativeUI.CreateButton(toolbar, "Refresh", "Shows files added to or removed from " + folder + ".");
+            refresh.onClick.AddListener(() => Safe.Run("refreshing media", () => RefreshMediaTab(tab)));
+            Button openFolder = NativeUI.CreateButton(toolbar, "Open Folder", "Opens " + folder + ". Drop " + (videos ? ".mp4 files" : "images") + " in, then press Refresh.");
+            openFolder.onClick.AddListener(() => Safe.Run("opening media folder", () => MP2.OpenCustomFolder(videos)));
+
+            tab.grid = NativeUI.CreateScrollGrid(panel, MINIMUM_GRID_HEIGHT);
+            AddNoneEntry(tab.grid);
+            AddMediaEntries(tab);
         }
 
-        private float GetActiveGridHeight(float elementsGridHeight, float videosGridHeight, float imagesGridHeight, float settingsGridHeight)
+        private void AddMediaEntries(MediaTab tab)
         {
-            if (grid_elements != null && grid_elements.visible)
-                return elementsGridHeight + (panel_tuning != null ? UI_TuningPanel.GetHeight() : 0f);
-            if (grid_videos != null && grid_videos.visible)
-                return videosGridHeight;
-            if (grid_images != null && grid_images.visible)
-                return imagesGridHeight;
-            if (grid_settings != null && grid_settings.visible)
-                return settingsGridHeight;
-
-            return MINIMUM_GRID_HEIGHT;
+            foreach (MaterialType mt in tab.media())
+            {
+                MaterialType type = mt;
+                // Looked up each time: video thumbnails replace their placeholder once they're made.
+                tab.entries.Add(AddEntry(tab.grid, tab.brush, type.id_string, tab.label(type), () => MP2.get_sprite(type.name, MP2.get_sprite("tex_question"))));
+            }
         }
 
-        private void ApplyWindowHeight(float gridHeight)
+        private void RefreshMediaTab(MediaTab tab)
         {
-            float targetHeight = MINIMUM_WINDOW_HEIGHT + Mathf.Max(0f, gridHeight - MINIMUM_GRID_HEIGHT);
-            if (Mathf.Approximately(lastAppliedWindowHeight, targetHeight))
+            if (tab.brush == MaterialBrush.Video)
+                MP2.RefreshBrushesVideos();
+            else
+                MP2.RefreshBrushesImages();
+
+            foreach (BrushEntry entry in tab.entries)
+            {
+                entries.Remove(entry);
+                Destroy(entry.gameObject);
+            }
+            tab.entries.Clear();
+            AddMediaEntries(tab);
+
+            // A selected file that's gone falls back to None.
+            bool selectedGone = MP2.selected_brush == (int)tab.brush && !tab.entries.Any(IsSelected);
+            Select(selectedGone ? MaterialBrush.None : (MaterialBrush)MP2.selected_brush, selectedGone ? "" : MP2.selected_brush_custom);
+        }
+
+        private void TogglePicking()
+        {
+            if (MaterialBrushTool.Picking)
+                MaterialBrushTool.StopPicking();
+            else
+                MaterialBrushTool.StartPicking(part => Safe.Run("eyedropper pick", () => PickFrom(part)));
+        }
+
+        /// <summary>Selects the paint on a part, with the sliders it was painted with. An unpainted part picks None.</summary>
+        private void PickFrom(GameObject part)
+        {
+            PaintMarker marker = part != null ? part.GetComponent<PaintMarker>() : null;
+            Brush brush = marker != null ? marker.brush : null;
+            if (brush == null)
+            {
+                Select(MaterialBrush.None, "");
+                return;
+            }
+
+            string custom = null;
+            if (brush is ImageBrush || brush is VideoBrush)
+                custom = marker.detail;
+            else if (brush is SharedMaterialBrush shared && shared.IsTunable && shared.Preset != null)
+                shared.Current = BrushSettings.Decode(marker.detail, shared.Params, shared.Preset);
+
+            // Shows the Go Wild brushes, so the picked one is visible in the grid.
+            if (brush.Wild && !MP2._setting_go_wild && goWild != null)
+                goWild.isOn = true;
+
+            // A missing image or video still gets selected: painting with it keeps the file name, which shows for
+            // anyone who has the file.
+            Select(brush.Id, custom);
+            OpenSelectedTab();
+        }
+
+        private void BuildSettingsTab(RectTransform panel)
+        {
+            RectTransform box = NativeUI.CreateBox(panel, spacing: 4f);
+
+            Toggle multiSelect = NativeUI.CreateCheckbox(box, "Multi-Select", "Clicking and dragging will continuously paint objects the brush crosses over.");
+            multiSelect.SetIsOnWithoutNotify(MP2._setting_drag_select);
+            multiSelect.onValueChanged.AddListener(on =>
+            {
+                MP2._setting_drag_select = on;
+                MP2.SaveSettings();
+            });
+
+            Toggle targetSupports = NativeUI.CreateCheckbox(box, "Target Supports", "Selectively paints support structures. Note, not all supports are currently recognized due to how the game was programmed.");
+            targetSupports.SetIsOnWithoutNotify(MP2._setting_target_supports);
+            targetSupports.onValueChanged.AddListener(on =>
+            {
+                MP2._setting_target_supports = on;
+                MP2.SaveSettings();
+            });
+
+            goWild = NativeUI.CreateCheckbox(box, "Go Wild", "Shows experimental material brushes borrowed from internal game effects.");
+            goWild.SetIsOnWithoutNotify(MP2._setting_go_wild);
+            goWild.onValueChanged.AddListener(on => Safe.Run("go wild", () =>
+            {
+                MP2._setting_go_wild = on;
+                MP2.SaveSettings();
+                ApplyWildBrushVisibility();
+            }));
+
+            convertButton = NativeUI.CreateButton(panel, "Convert Old Paints", "This park has paints from an older version of the mod that haven't been converted yet. Try again once the park has finished loading.");
+            convertButton.onClick.AddListener(() => Safe.Run("convert old paints", MP2.Instance.ConvertOldPaints));
+            convertButton.gameObject.SetActive(LegacySaveImporter.HasPending);
+        }
+
+        private void AddNoneEntry(RectTransform grid)
+        {
+            Sprite icon = MP2.get_sprite("icon_none", MP2.get_sprite("tex_question"));
+            AddEntry(grid, MaterialBrush.None, null, "None", () => icon);
+        }
+
+        private BrushEntry AddEntry(RectTransform grid, MaterialBrush brush, string custom, string label, System.Func<Sprite> sprite, System.Func<string> unavailableReason = null)
+        {
+            BrushEntry entry = NativeUI.CreateEntry(grid);
+            entry.Set(brush, custom, label, sprite, unavailableReason);
+            entry.Toggle.onValueChanged.AddListener(on => Safe.Run("brush selection", () => OnEntryToggled(entry, on)));
+            entries.Add(entry);
+            return entry;
+        }
+
+        private void OnEntryToggled(BrushEntry entry, bool on)
+        {
+            // Entries act as one group across all tabs; clicking the selected one keeps it selected.
+            if (!on)
+            {
+                if (IsSelected(entry))
+                    entry.Toggle.SetIsOnWithoutNotify(true);
+                return;
+            }
+
+            Select(entry.Brush, entry.Custom);
+        }
+
+        private void Select(MaterialBrush brush, string custom)
+        {
+            MP2.selected_brush = (int)brush;
+            // Tunable brushes paint with their sliders' settings.
+            MP2.selected_brush_custom = custom ?? (BrushRegistry.Get(brush) is SharedMaterialBrush shared ? shared.CurrentDetail : "");
+            MP2.MPDebug("Selected brush " + brush + " " + MP2.selected_brush_custom);
+
+            MP2.last_brush = (int)brush;
+            MP2.last_brush_custom = custom ?? "";
+            MP2.SaveSettings();
+
+            foreach (BrushEntry entry in entries)
+                entry.Toggle.SetIsOnWithoutNotify(IsSelected(entry));
+
+            if (tuning != null && tuning.Refresh())
+                FitWindowToContent();
+        }
+
+        private static bool IsSelected(BrushEntry entry)
+        {
+            if ((int)entry.Brush != MP2.selected_brush)
+                return false;
+
+            return entry.Custom == null || entry.Custom == MP2.selected_brush_custom;
+        }
+
+        private void ApplyWildBrushVisibility()
+        {
+            foreach (BrushEntry entry in wildEntries)
+                entry.gameObject.SetActive(MP2._setting_go_wild);
+
+            if (!BrushRegistry.IsVisible((MaterialBrush)MP2.selected_brush))
+                Select(MaterialBrush.None, "");
+        }
+
+        private void Update()
+        {
+            if (convertButton != null && convertButton.gameObject.activeSelf != LegacySaveImporter.HasPending)
+                convertButton.gameObject.SetActive(LegacySaveImporter.HasPending);
+
+            // The game's Pipette key works here like in its own windows: while this window is in front.
+            if (pipetteButtons.Count > 0 && windowFrame != null && InputManager.getKeyDown("PipetteTool")
+                && !UIUtility.isInputFieldFocused() && UIWindowsController.Instance.isForemost(windowFrame))
+                Safe.Run("eyedropper", TogglePicking);
+
+            Color shown = MaterialBrushTool.Picking ? pipetteActiveColor : pipetteColor;
+            foreach (Button pipette in pipetteButtons)
+            {
+                if (pipette.targetGraphic != null && pipette.targetGraphic.color != shown)
+                    pipette.targetGraphic.color = shown;
+            }
+        }
+
+        private void OnTabChanged() => Safe.Run("tab change", FitWindowToContent);
+
+        public override void onAttachedToWindowFrame(UIWindowFrame windowFrame)
+        {
+            base.onAttachedToWindowFrame(windowFrame);
+            Safe.Run("window sizing", FitWindowToContent);
+        }
+
+        /// <summary>Grows the window when the open tab needs more room than it has (e.g. a brush with many sliders).</summary>
+        private void FitWindowToContent()
+        {
+            LayoutElement layout = GetComponent<LayoutElement>();
+            if (windowFrame == null || layout == null || tabBar == null || content == null)
                 return;
 
-            lastAppliedWindowHeight = targetHeight;
-
-            SetRectTransformHeight(rectTransform, targetHeight);
-            ApplyContentLayoutHeight(targetHeight);
-
-            if (windowFrame == null)
+            LayoutRebuilder.ForceRebuildLayoutImmediate(rectTransform);
+            float needed = Mathf.Ceil(LayoutUtility.GetMinHeight(tabBar) + LayoutUtility.GetMinHeight(content));
+            layout.minHeight = Mathf.Max(MINIMUM_SIZE.y, needed);
+            if (layout.preferredHeight >= layout.minHeight)
                 return;
 
-            if (windowFrame.contentHolderTransform != null)
-                LayoutRebuilder.ForceRebuildLayoutImmediate(windowFrame.contentHolderTransform);
-
+            layout.preferredHeight = layout.minHeight;
             if (windowFrame.rectTransform != null)
-            {
                 LayoutRebuilder.ForceRebuildLayoutImmediate(windowFrame.rectTransform);
-                windowFrame.rectTransform.ForceUpdateRectTransforms();
-            }
-
             windowFrame.limitToScreenBounds();
-        }
-
-        private void ApplyContentLayoutHeight(float height)
-        {
-            LayoutElement layoutElement = GetComponent<LayoutElement>();
-            if (layoutElement == null)
-                return;
-
-            layoutElement.minHeight = MINIMUM_WINDOW_HEIGHT;
-            layoutElement.preferredHeight = height;
-        }
-
-        private void SetRectTransformHeight(RectTransform targetRectTransform, float height)
-        {
-            if (targetRectTransform == null)
-                return;
-
-            targetRectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height);
-
-            Vector2 sizeDelta = targetRectTransform.sizeDelta;
-            sizeDelta.y = height;
-            targetRectTransform.sizeDelta = sizeDelta;
-        }
-
-        public void SetWindowTitle(string title)
-        {
-            UIWindowSettings ws = GetComponent<UIWindowSettings>();
-            if (ws != null)
-            {
-                ws.title = MP2.GetWindowTitle(title);
-            }
         }
 
         protected override void OnEnable()
@@ -227,152 +407,6 @@ namespace MaterialPainter2
             }
 
             Painter.SetInvisiblePreview(true);
-
-            //
-
-            ToolTipper tt = gameObject.AddComponent<ToolTipper>();
-
-            buttons_elements = new List<UI_Button>();
-            buttons_wild = new List<UI_Button>();
-            button_none = CreateElementButton(MaterialBrush.None, "icon_none", "None");
-            foreach (Brush brush in BrushRegistry.All)
-            {
-                // Images and videos have their own tabs.
-                if (brush is ImageBrush || brush is VideoBrush)
-                    continue;
-
-                CreateElementButton(brush.Id, brush.Icon, brush.Name, brush.Wild);
-            }
-
-            grid_elements = new UI_Grid_Buttons();
-            grid_elements.AddButtons(buttons_elements);
-            panel_tuning = new UI_TuningPanel(gameObject);
-
-            //
-
-            buttons_images = new List<UI_Button>
-            {
-                button_none,
-            };
-
-            foreach (MaterialType mt in MP2.material_brushes_images.Values)
-            {
-                UI_Button butt = new UI_Button(parent: gameObject, button_image_sprite: mt.name, button_image_sprite_highlight: "icon_highlight",
-                    onMouseClick: () =>
-                    {
-                        MP2.selected_brush = mt.id; MP2.selected_brush_custom = mt.id_string; MP2.MPDebug(mt.id + " " + mt.id_string);
-                    }, tooltip_text: mt.id_string);
-                buttons_images.Add(butt);
-            }
-
-            grid_images = new UI_Grid_Buttons();
-            grid_images.AddButtons(buttons_images);
-
-            buttons_videos = new List<UI_Button>
-            {
-                button_none,
-            };
-
-            foreach (MaterialType mt in MP2.material_brushes_videos.Values)
-            {
-                UI_Button butt = new UI_Button(parent: gameObject, button_image_sprite: mt.name, button_image_sprite_highlight: "icon_highlight",
-                    onMouseClick: () =>
-                    {
-                        MP2.selected_brush = mt.id; MP2.selected_brush_custom = mt.id_string; MP2.MPDebug(mt.id + " " + mt.id_string);
-                    }, tooltip_text: mt.name);
-                buttons_videos.Add(butt);
-            }
-
-
-            grid_videos = new UI_Grid_Buttons();
-            grid_videos.AddButtons(buttons_videos);
-
-            //
-
-            grid_settings = new UI_Grid_Buttons();
-
-            //
-
-            buttons_all = new List<UI_Button>();
-            buttons_all.AddRange(buttons_elements);
-            buttons_all.AddRange(buttons_images);
-            buttons_all.AddRange(buttons_videos);
-
-            foreach (UI_Button button in buttons_all)
-            {
-                button.SetButtonFamily(buttons_all);
-            }
-
-            ApplyWildBrushVisibility();
-            SelectNoneBrush();
-
-            //
-
-            checkbox_multiselect = new UI_CheckBox(parent: gameObject, text: "Multi-Select", onMouseClick: () => { MP2._setting_drag_select = !MP2._setting_drag_select; }, check_state: MP2._setting_drag_select, tooltip_text: "Clicking and dragging will continuously paint objects the brush crosses over.");
-            checkbox_targetsupports = new UI_CheckBox(parent: gameObject, text: "Target Supports", onMouseClick: () => { MP2._setting_target_supports = !MP2._setting_target_supports; }, check_state: MP2._setting_target_supports, tooltip_text: "Selectively paints support structures. Note, not all supports are currently recognized due to how the game was programmed.");
-            checkbox_gowild = new UI_CheckBox(parent: gameObject, text: "Go Wild", onMouseClick: () => { MP2._setting_go_wild = !MP2._setting_go_wild; ApplyWildBrushVisibility(); }, check_state: MP2._setting_go_wild, tooltip_text: "Shows experimental material brushes borrowed from internal game effects.");
-            button_convert = new UI_PushButton(parent: gameObject, text: "Convert Old Paints", tooltip_text: "This park has paints from an older version of the mod that haven't been converted yet. Try again once the park has finished loading.", onMouseClick: () => { MP2.Instance.ConvertOldPaints(); });
-
-            //
-
-            tab_bar_types = new UI_Tab_Bar(gameObject);
-            UI_Tab tab0 = tab_bar_types.AddTab(icon_sprite: "icon_elements", object_to_control_: grid_elements, tab_name: "Elements");
-            tab_bar_types.AddTab(icon_sprite: "icon_camera", object_to_control_: grid_images, tab_name: "Images");
-            tab_bar_types.AddTab(icon_sprite: "icon_videocamera", object_to_control_: grid_videos, tab_name: "Videos");
-            settings_tab = tab_bar_types.AddTab(icon_sprite: "icon_toolbox", object_to_control_: new List<UI_Item> { grid_settings, checkbox_multiselect, checkbox_targetsupports, checkbox_gowild }, tab_name: "Settings");
-
-            foreach (UI_Tab ui_tab in tab_bar_types.tabs)
-            {
-                ui_tab.mp2window = this;
-            }
-
-            tab0.Select();
-        }
-
-        private UI_Button CreateElementButton(MaterialBrush brush, string iconSprite, string tooltipText, bool wild = false)
-        {
-            Brush registered = BrushRegistry.Get(brush);
-            UI_Button button = new UI_Button(parent: gameObject, button_image_sprite: iconSprite, button_image_sprite_highlight: "icon_highlight", onMouseClick: () =>
-            {
-                MP2.selected_brush = (int)brush;
-                // Tunable brushes paint with their sliders' settings.
-                MP2.selected_brush_custom = registered is SharedMaterialBrush shared ? shared.CurrentDetail : "";
-            }, tooltip_text: tooltipText);
-            buttons_elements.Add(button);
-
-            if (registered != null)
-                button.unavailable_reason = () => registered.UnavailableReason;
-
-            if (wild)
-                buttons_wild.Add(button);
-
-            return button;
-        }
-
-        private void ApplyWildBrushVisibility()
-        {
-            if (buttons_wild != null)
-            {
-                foreach (UI_Button button in buttons_wild)
-                {
-                    if (button != null)
-                        button.visible = MP2._setting_go_wild;
-                }
-            }
-
-            if (!BrushRegistry.IsVisible((MaterialBrush)MP2.selected_brush))
-                SelectNoneBrush();
-        }
-
-        private void SelectNoneBrush()
-        {
-            if (button_none == null)
-                return;
-
-            if (button_none.selected && MP2.selected_brush == (int)MaterialBrush.None)
-                return;
-
-            button_none.Select();
         }
 
         protected override void OnDisable()
@@ -390,49 +424,15 @@ namespace MaterialPainter2
             }
 
             Painter.SetInvisiblePreview(false);
-
-            List<UI_Button> buttons = new List<UI_Button>();
-            if (buttons_elements != null)
-                buttons.AddRange(buttons_elements);
-            if (buttons_videos != null)
-                buttons.AddRange(buttons_videos);
-            if (buttons_images != null)
-                buttons.AddRange(buttons_images);
-
-            foreach (UI_Button button in buttons)
-            {
-                if (button != null)
-                {
-                    //destroy nicely
-                }
-            }
-
-            buttons = null;
-            buttons_elements = null;
-            buttons_videos = null;
-            buttons_images = null;
-            buttons_all = null;
-            buttons_wild = null;
-
-            grid_elements = null;
-            grid_videos = null;
-            grid_images = null;
-            grid_settings = null;
-
-            tab_bar_types = null;
-            panel_tuning = null;
-
-            checkbox_multiselect = null;
-            checkbox_targetsupports = null;
-            checkbox_gowild = null;
-            button_convert = null;
-            button_none = null;
-
-            ToolTipper tt = GetComponent<ToolTipper>();
-            if (tt != null)
-                Destroy(tt);
-
             MP2_Controller.wms?.close();
+            MaterialBrushTool.StopPicking();
+        }
+
+        protected override void OnDestroy()
+        {
+            base.OnDestroy();
+            if (tabGroup != null)
+                tabGroup.OnTabChanged -= OnTabChanged;
         }
     }
 }

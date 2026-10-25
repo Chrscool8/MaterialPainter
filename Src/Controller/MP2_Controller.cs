@@ -42,8 +42,6 @@ namespace MaterialPainter2
 
         public void OnObjectClicked(GameObject game_object)
         {
-            MP2.ResetCountdown();
-
             if (game_object == null)
                 return;
 

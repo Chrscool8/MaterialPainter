@@ -134,70 +134,84 @@ namespace MaterialPainter2
             }
         }
 
+        // Both refreshes can run again while playing (the window's Refresh button): files already listed are kept as they
+        // are, new ones are loaded and removed ones dropped from the list. Textures stay loaded, since painted parts may
+        // still use them.
         public static void RefreshBrushesImages()
         {
-            material_brushes_images.Clear();
-
             if (custom_images == null)
                 custom_images = new System.Collections.Generic.Dictionary<string, Texture2D>();
-            else
-                custom_images.Clear();
 
             string image_directory = GetCustomImageDirectory();
             if (!Directory.Exists(image_directory))
             {
                 MPDebug($"Image directory not found: {image_directory}", always_show: true);
+                material_brushes_images = new System.Collections.Generic.Dictionary<string, MaterialType>();
                 return;
             }
 
+            var found = new System.Collections.Generic.Dictionary<string, MaterialType>();
             string[] files = Directory.GetFiles(image_directory, "*.*", SearchOption.AllDirectories);
             foreach (string file in files.Where(IsSupportedImageFile).OrderBy(path => path, StringComparer.OrdinalIgnoreCase))
             {
-                MPDebug($"Processing: {file}");
-
                 string image_name = GetRelativeCustomFilePath(image_directory, file);
+                if (found.ContainsKey(image_name))
+                    continue;
+
+                if (material_brushes_images.TryGetValue(image_name, out MaterialType listed))
+                {
+                    found.Add(image_name, listed);
+                    continue;
+                }
+
+                MPDebug($"Processing: {file}");
                 string sprite_name = GetCustomImageSpriteName(image_name);
-                Texture2D texture = LoadTextureFromImageFile(file);
+                Texture2D texture = custom_images.TryGetValue(image_name, out Texture2D loaded) ? loaded : LoadTextureFromImageFile(file);
                 if (texture == null)
                     continue;
 
                 texture.name = sprite_name;
                 custom_images[image_name] = texture;
-                Sprite sprite = RegisterImageSprite(sprite_name, texture);
+                Sprite sprite = sprites.TryGetValue(sprite_name, out Sprite existing) && existing.texture == texture
+                    ? existing
+                    : RegisterImageSprite(sprite_name, texture);
 
-                MaterialType new_type = new MaterialType(name: sprite_name, preview: sprite, id: (int)MaterialBrush.Image, id_string: image_name);
-                if (!material_brushes_images.ContainsKey(image_name))
-                {
-                    MPDebug($"Adding image brush: {image_name}");
-                    material_brushes_images.Add(image_name, new_type);
-                }
-                else
-                {
-                    MPDebug($"{image_name} already in image brushes");
-                }
+                MPDebug($"Adding image brush: {image_name}");
+                found.Add(image_name, new MaterialType(name: sprite_name, preview: sprite, id: (int)MaterialBrush.Image, id_string: image_name));
             }
+
+            material_brushes_images = found;
         }
 
         public static void RefreshBrushesVideos()
         {
-            material_brushes_videos.Clear();
-
-            //material_brushes_videos["None"] = (new MaterialType("icon_none", get_sprite("icon_none"), (int)MaterialBrush.None));
-
             string video_directory = GetCustomVideoDirectory();
             if (!Directory.Exists(video_directory))
             {
                 MPDebug($"Video directory not found: {video_directory}", always_show: true);
+                material_brushes_videos = new System.Collections.Generic.Dictionary<string, MaterialType>();
                 return;
             }
 
-            string[] files = Directory.GetFiles(video_directory, "*.mp4", SearchOption.AllDirectories);
-            foreach (string file in files)
+            var found = new System.Collections.Generic.Dictionary<string, MaterialType>();
+            string[] files = Directory.GetFiles(video_directory, "*" + VIDEO_FILE_EXTENSION, SearchOption.AllDirectories);
+            foreach (string file in files.OrderBy(path => path, StringComparer.OrdinalIgnoreCase))
             {
-                MPDebug($"Processing: {file}");
-
                 string outputFilePath = System.IO.Path.ChangeExtension(file, ".png");
                 string image_name = System.IO.Path.GetFileNameWithoutExtension(outputFilePath);
+                if (found.ContainsKey(image_name))
+                {
+                    MPDebug($"{image_name} already in mat brushes");
+                    continue;
+                }
+
+                if (material_brushes_videos.TryGetValue(image_name, out MaterialType listed))
+                {
+                    found.Add(image_name, listed);
+                    continue;
+                }
+
+                MPDebug($"Processing: {file}");
                 bool needsThumbnailGeneration = false;
 
                 if (File.Exists(outputFilePath))
@@ -222,17 +236,19 @@ namespace MaterialPainter2
                     }));
                 }
 
-                MaterialType new_type = new MaterialType(name: image_name, preview: sprites.GetValueOrDefault(image_name, null), id: (int)MaterialBrush.Video, id_string: image_name);
-                if (!material_brushes_videos.ContainsKey(image_name))
-                {
-                    MPDebug($"Adding video brush: {image_name}");
-                    material_brushes_videos.Add(image_name, new_type);
-                }
-                else
-                {
-                    MPDebug($"{image_name} already in mat brushes");
-                }
+                MPDebug($"Adding video brush: {image_name}");
+                found.Add(image_name, new MaterialType(name: image_name, preview: sprites.GetValueOrDefault(image_name, null), id: (int)MaterialBrush.Video, id_string: image_name));
             }
+
+            material_brushes_videos = found;
+        }
+
+        /// <summary>Opens a Custom folder (creating it if needed) in the system's file browser.</summary>
+        public static void OpenCustomFolder(bool videos)
+        {
+            string directory = videos ? GetCustomVideoDirectory() : GetCustomImageDirectory();
+            Directory.CreateDirectory(directory);
+            Application.OpenURL(new Uri(directory).AbsoluteUri);
         }
 
         private static void EnsureVideoFallbackSprite(string name)
