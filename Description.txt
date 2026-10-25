@@ -1,4 +1,4 @@
-﻿Transform the materials of almost anything into water, lava, glass, terrain, and more, slap your own images and videos on things, or make them disappear entirely. The game wasn't designed for this, but it's a lot sturdier than it used to be. Have fun!
+﻿Transform the materials of almost anything into water, lava, glass, terrain, shiny metal, and more, slap your own images and videos on things, or make them disappear entirely. The game wasn't designed for this, but it's a lot sturdier than it used to be. Have fun!
 
 [h1]Description:[/h1]
 Bend the fabric of reality to your will.
@@ -6,15 +6,19 @@ Bend the fabric of reality to your will.
 Material Painter adds its own button to the bottom menu. Pick a material, click an object, and it transforms. Your paints save with the park, travel in blueprints, and sync in multiplayer.
 
 [h1]How to Use:[/h1]
-- Open Material Painter from its button in the bottom menu and pick a material from the tabs.
+- Open Material Painter from its button in the bottom menu and pick a material from the tabs. You can also bind a hotkey for it under Material Painter in the game's Controls settings.
 - Left click an object to paint it. Pick "None" and click to unpaint.
-- Right click to get a list of everything under your mouse, at every depth. Great for those pesky hidden and buried parts like fences, tunnels, and supports. Each entry shows the object, the part, and its current paint.
+- Lots of materials have sliders under the grid (shininess, waves, texture size, glow, and so on).
+- Use the MP eyedropper and click a painted part to grab its paint, including sliders.
+- Right click to get a list of everything under your mouse, at every depth. Great for those pesky hidden and buried parts like fences, tunnels, and supports. Each entry shows the object, the part, and its current paint. Click anywhere else or hit Escape to close it.
 - Turn on Multi-Select in the settings tab to paint by clicking and dragging.
 - Invisible objects show up as ghosts while the window is open so you can find them again.
 
 [h1]Features:[/h1]
 Materials:
-- Water, Lava, and Glass (all recolorable with the game's color tool)
+- Water, Lava, and Glass
+- Metals: Chrome, Polished Metal, Glossy, Metal Roof, and Hangar Metal
+- Water, Lava, Glass, and the metals are all recolorable with the game's own Painter tool
 - Terrain: Grass, Dirt, Stone, Snow, Sand, Ice, Lava Rock, Ash, Cracked Soil, Dead Grass, and Blueprint
 - Invisible
 - Custom Images
@@ -24,16 +28,27 @@ Materials:
 Custom Images and Videos:
 - Drop .png/.jpg files into [b]Documents/Parkitect/Mods/MaterialPainter2/Custom/Images[/b]
 - Drop .mp4 files into [b]Documents/Parkitect/Mods/MaterialPainter2/Custom/Videos[/b]
-- They show up in the camera and video tabs. Video thumbnails are made automatically.
+- They show up in the Images and Videos tabs. Video thumbnails are made automatically.
+- Use the Open Folder button to jump straight to the folder, and Refresh to pick up new files without restarting.
 - If someone shares a park or blueprint using a file you don't have, you'll see a placeholder, and the right click menu tells you the file name so you know what to ask for.
 
 [h1]Compatibility:[/h1]
 - Multiplayer: paints sync between everyone who has the mod. Players without it just won't see paints, nothing breaks.
 - Blueprints and shared parks keep their paints for anyone with the mod.
 - Lava needs its DLC. If it's not enabled in the park, the lava button gets a red X.
-- Parks saved with the 26/10/24 version can't show their paints in older versions of the mod. Older parks convert automatically the first time you load them.
+- Parks saved with the 26/10/24 version or newer can't show their paints in older versions of the mod. Older parks convert automatically the first time you load them.
 
 [h1]Updates:[/h1]
+26/10/25
+- Metal! Chrome, Polished Metal, Glossy, Metal Roof, and Hangar Metal, all recolorable with the game's Painter tool.
+- Sliders! Most materials now have settings under the grid, like shininess, reflections, waves, ripples, texture size, and glow. Every paint keeps its own settings, and there's a reset per slider plus one for everything.
+- The whole window is rebuilt out of the game's own UI: proper tabs, icon grids, sliders, checkboxes, and tooltips. It's resizable now and it scrolls and stuff!
+- The right click menu is a native popup, too. Click anywhere else or hit Escape to close it.
+- Eyedropper: click the pipette (or press the game's Pipette key), then click a painted part to grab its paint, including sliders.
+- Refresh and Open Folder buttons on the Images and Videos tabs, so you can drop in new files and use them without restarting.
+- Optional hotkey to open the window, under Material Painter in the game's Controls settings.
+- Your settings and last used brush are remembered between games.
+
 26/10/24
 - MULTIPLAYER! Paints now sync between everyone in the park who has the mod.
 - Paints are now saved with the objects themselves, so they stick when you move things, come along in blueprints, and load right away instead of popping in a few seconds later.
@@ -45,12 +60,6 @@ Custom Images and Videos:
 - No more sparkles and sounds going off for every painted object when a park loads.
 - If something in the mod breaks, it now logs the error and gets out of the way instead of taking the park down with it. Also plays nicer with other mod loaders.
 - Fixed a bunch of memory leaks and did another big internal cleanup.
-- The window is now built from the game's own UI: native tabs, icon grids, sliders, checkboxes and tooltips. It can be resized, and clicks on it no longer fall through to the park.
-- The right click menu is a native popup too. Click anywhere else or press Escape to close it.
-- Settings and your last brush are remembered between games.
-- Eyedropper: click the pipette (or press the game's Pipette key), then a painted part to pick up its paint, sliders and all.
-- Refresh and Open Folder buttons on the Images and Videos tabs: drop in new files and use them without restarting.
-- Optional hotkey to open the window: set it under Material Painter in the game's Controls settings.
 
 26/06/20
 - Image paints! Videos and images now cache and sync up across objects.
