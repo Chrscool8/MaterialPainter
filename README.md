@@ -1,6 +1,6 @@
 # Material Painter 2
 
-![Material Painter](preview.png)
+<img src="preview.png" alt="Material Painter" width="400">
 
 Transform the materials of almost anything into water, lava, glass, terrain, shiny metal, and more, slap your own images and videos on things, or make them disappear entirely. The game wasn't designed for this, but it's a lot sturdier than it used to be. Have fun!
 
