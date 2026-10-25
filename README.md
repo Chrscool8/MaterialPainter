@@ -1,5 +1,104 @@
-# MaterialPainter
+# Material Painter 2
 
-Not yet cleaned up how I'd normally release, but might as well drop what there is so far.
+![Material Painter](preview.png)
 
-https://steamcommunity.com/sharedfiles/filedetails/?id=3121497646
+Transform the materials of almost anything into water, lava, glass, terrain, shiny metal, and more, slap your own images and videos on things, or make them disappear entirely. The game wasn't designed for this, but it's a lot sturdier than it used to be. Have fun!
+
+**[Get it on the Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3121497646)**
+
+## Description
+
+Bend the fabric of reality to your will.
+
+Material Painter adds its own button to the bottom menu. Pick a material, click an object, and it transforms. Your paints save with the park, travel in blueprints, and sync in multiplayer.
+
+## How to Use
+
+- Open Material Painter from its button in the bottom menu and pick a material from the tabs. You can also bind a hotkey for it under Material Painter in the game's Controls settings.
+- Left click an object to paint it. Pick "None" and click to unpaint.
+- Lots of materials have sliders under the grid (shininess, waves, texture size, glow, and so on).
+- Use the MP eyedropper and click a painted part to grab its paint, including sliders.
+- Right click to get a list of everything under your mouse, at every depth. Great for those pesky hidden and buried parts like fences, tunnels, and supports. Each entry shows the object, the part, and its current paint. Click anywhere else or hit Escape to close it.
+- Turn on Multi-Select in the settings tab to paint by clicking and dragging.
+- Invisible objects show up as ghosts while the window is open so you can find them again.
+
+## Features
+
+### Materials
+
+- Water, Lava, and Glass
+- Metals: Chrome, Polished Metal, Glossy, Metal Roof, and Hangar Metal
+- Water, Lava, Glass, and the metals are all recolorable with the game's own Painter tool
+- Terrain: Grass, Dirt, Stone, Snow, Sand, Ice, Lava Rock, Ash, Cracked Soil, Dead Grass, and Blueprint
+- Invisible
+- Custom Images
+- Videos!?
+- Turn on "Go Wild" in the settings tab for a pile of whack materials pulled from the game's internals (waterfall, black hole, accretion disc, and more). Super weird to use lol
+
+### Custom Images and Videos
+
+- Drop .png/.jpg files into `Documents/Parkitect/Mods/MaterialPainter2/Custom/Images`
+- Drop .mp4 files into `Documents/Parkitect/Mods/MaterialPainter2/Custom/Videos`
+- They show up in the Images and Videos tabs. Video thumbnails are made automatically.
+- Use the Open Folder button to jump straight to the folder, and Refresh to pick up new files without restarting.
+- If someone shares a park or blueprint using a file you don't have, you'll see a placeholder, and the right click menu tells you the file name so you know what to ask for.
+
+## Compatibility
+
+- Multiplayer: paints sync between everyone who has the mod. Players without it just won't see paints, nothing breaks.
+- Blueprints and shared parks keep their paints for anyone with the mod.
+- Lava needs its DLC. If it's not enabled in the park, the lava button gets a red X.
+- Parks saved with the 26/10/24 version or newer can't show their paints in older versions of the mod. Older parks convert automatically the first time you load them.
+
+## Updates
+
+### 26/10/25
+
+- Metal! Chrome, Polished Metal, Glossy, Metal Roof, and Hangar Metal, all recolorable with the game's Painter tool.
+- Sliders! Most materials now have settings under the grid, like shininess, reflections, waves, ripples, texture size, and glow. Every paint keeps its own settings, and there's a reset per slider plus one for everything.
+- The whole window is rebuilt out of the game's own UI: proper tabs, icon grids, sliders, checkboxes, and tooltips. It's resizable now and it scrolls and stuff!
+- The right click menu is a native popup, too. Click anywhere else or hit Escape to close it.
+- Eyedropper: click the pipette (or press the game's Pipette key), then click a painted part to grab its paint, including sliders.
+- Refresh and Open Folder buttons on the Images and Videos tabs, so you can drop in new files and use them without restarting.
+- Optional hotkey to open the window, under Material Painter in the game's Controls settings.
+- Your settings and last used brush are remembered between games.
+
+### 26/10/24
+
+- MULTIPLAYER! Paints now sync between everyone in the park who has the mod.
+- Paints are now saved with the objects themselves, so they stick when you move things, come along in blueprints, and load right away instead of popping in a few seconds later.
+- Old saves convert to the new format automatically. If a slow load misses them, a "Convert Old Paints" button shows up in the settings tab.
+- Coaster tunnels and ride platform fences stay paintable after loading or getting rebuilt, and paints stick when painting in underground view.
+- Right click menu now labels everything as Object > Part > Paint. Missing files show (missing), and paints the game swapped out (like after changing a path's style) show (overridden). Paint them again to bring them back.
+- Glass no longer turns back to normal or goes pink after reloading.
+- Images and videos no longer look slightly see-through. They use the same setup as the game's TV screens now.
+- No more sparkles and sounds going off for every painted object when a park loads.
+- If something in the mod breaks, it now logs the error and gets out of the way instead of taking the park down with it. Also plays nicer with other mod loaders.
+- Fixed a bunch of memory leaks and did another big internal cleanup.
+
+### 26/06/20
+
+- Image paints! Videos and images now cache and sync up across objects.
+- Native video thumbnails (no more ffmpeg), should work cross-platform now.
+- Added terrain materials and the "Go Wild" setting.
+- Fix for the workshop issue (purge files from Docs mods and unsub, reboot, resub to make sure you're fresh).
+
+### 24/06/09 to 24/12/03
+
+- Right click multi-selector, recolorable glass, button placement fixes, updates for new Parkitect versions.
+
+### 23/12/24 onward
+
+- Collapsed updates because this text is too long for workshop
+
+## Collaboration and Efforts
+
+This mod is fully open source here on GitHub, and I welcome and await all pull-requests or drawn inspiration. I think it's important that we, as a community, own these things and they aren't held by only one person who might yank it away on a whim. Additionally, I want to thank the community for their long-time support and teamwork. Having [Transform Anarchy](https://github.com/MrUnit64/TransformAnarchy) as an example of how to dive back in and use C# made the original rewrite a much better on-boarding experience, and I structured this in a similar way to that project for familiarity's sake. I can't thank every individual, but shout-outs to you if you're in the Discord and you're cool.
+
+## You Need Support?
+
+Want to report a problem or make a suggestion? You can reach me via Steam or Discord in either the official Parkitect server or personally @chrisbradel.
+
+## You Want to Support Me?
+
+Well, gee, thanks! These projects take a LOT of time and effort, but I don't ask for any monetary compensation for any of my work, and I never plan to. That said, if you're feeling generous, and you wanna toss me whatever you feel is reasonable, you can visit my [Ko-fi page](https://ko-fi.com/chrisbradel) so that I can afford to spend more time on fun projects like these.
