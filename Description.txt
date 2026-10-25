@@ -45,6 +45,12 @@ Custom Images and Videos:
 - No more sparkles and sounds going off for every painted object when a park loads.
 - If something in the mod breaks, it now logs the error and gets out of the way instead of taking the park down with it. Also plays nicer with other mod loaders.
 - Fixed a bunch of memory leaks and did another big internal cleanup.
+- The window is now built from the game's own UI: native tabs, icon grids, sliders, checkboxes and tooltips. It can be resized, and clicks on it no longer fall through to the park.
+- The right click menu is a native popup too. Click anywhere else or press Escape to close it.
+- Settings and your last brush are remembered between games.
+- Eyedropper: click the pipette (or press the game's Pipette key), then a painted part to pick up its paint, sliders and all.
+- Refresh and Open Folder buttons on the Images and Videos tabs: drop in new files and use them without restarting.
+- Optional hotkey to open the window: set it under Material Painter in the game's Controls settings.
 
 26/06/20
 - Image paints! Videos and images now cache and sync up across objects.
