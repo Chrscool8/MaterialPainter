@@ -74,7 +74,7 @@ Custom Images and Videos:
 - Collapsed updates because this text is too long for workshop
 
 [h1]Collaboration and Efforts:[/h1]
-This mod is fully open source on my GitHub ( https://github.com/Chrscool8/MaterialPainter ) and I welcome and await all pull-requests or drawn inspiration. I think it's important that we, as a community, own these things and they aren't held by only one person who might yank it away on a whim. Additionally, I want to thank the community for their long-time support and teamwork. Having Transform Anarchy as an example of how to dive back in and use C# made the original rewrite a much better on-boarding experience, and I structured this in a similar way to that project for familiarity's sake. I can't thank every individual, but shout-outs to you if you're in the Discord and you're cool.
+This mod is fully open source on my GitHub ( https://github.com/Chrscool8/ParkitectMod-MaterialPainter ) and I welcome and await all pull-requests or drawn inspiration. I think it's important that we, as a community, own these things and they aren't held by only one person who might yank it away on a whim. Additionally, I want to thank the community for their long-time support and teamwork. Having Transform Anarchy as an example of how to dive back in and use C# made the original rewrite a much better on-boarding experience, and I structured this in a similar way to that project for familiarity's sake. I can't thank every individual, but shout-outs to you if you're in the Discord and you're cool.
 
 [h1]You Need Support?[/h1]
 Want to report a problem or make a suggestion? You can reach me via Steam or Discord in either the official Parkitect server or personally @chrisbradel.
