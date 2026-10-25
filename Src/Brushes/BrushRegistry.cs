@@ -37,12 +37,13 @@ namespace MaterialPainter2
                 () => BrushMaterials.CreateTerrain("", "TriplanarTerrainBlueprint", new Color(0.35f, 0.65f, 1f, 1f), 2f),
                 false, TerrainParams()));
 
-            // Presets start from the game's own reflective materials' values.
-            Register(new MetalBrush(MaterialBrush.MetalChrome, "Chrome", "icon_metal_chrome", "CustomColorsSpecular", 1f, 0.72f, 1f, 2f));
-            Register(new MetalBrush(MaterialBrush.MetalPolished, "Polished Metal", "icon_metal_polished", "CustomColorsSpecular", 0.6f, 0.55f, 0.6f, 2f));
-            Register(new MetalBrush(MaterialBrush.MetalGlossy, "Glossy", "icon_metal_glossy", "CustomColorsGlossy", 0f, 0.87f, 0.3f, 1.3f));
-            Register(new MetalBrush(MaterialBrush.MetalRoof, "Metal Roof", "icon_metal_roof", "metalroof_mat", 0.52f, 0.41f, 0.6f, 3f));
-            Register(new MetalBrush(MaterialBrush.MetalHangar, "Hangar Metal", "icon_metal_hangar", "Hangar_Metal_Mat", 0.15f, 0.79f, 0.5f, 1.5f));
+            // Presets start from the game's own reflective materials' values. The plain ones (Chrome, Polished, Glossy) keep
+            // the values of the game materials they're named after, but are built on the masked shader, which takes colors.
+            Register(new MetalBrush(MaterialBrush.MetalChrome, "Chrome", "icon_metal_chrome", BrushMaterials.PLAIN_METAL_SOURCES, true, 1f, 0.72f, 1f, 2f));
+            Register(new MetalBrush(MaterialBrush.MetalPolished, "Polished Metal", "icon_metal_polished", BrushMaterials.PLAIN_METAL_SOURCES, true, 0.6f, 0.55f, 0.6f, 2f));
+            Register(new MetalBrush(MaterialBrush.MetalGlossy, "Glossy", "icon_metal_glossy", BrushMaterials.PLAIN_METAL_SOURCES, true, 0f, 0.87f, 0.3f, 1.3f));
+            Register(new MetalBrush(MaterialBrush.MetalRoof, "Metal Roof", "icon_metal_roof", new[] { "metalroof_mat" }, false, 0.52f, 0.41f, 0.6f, 3f));
+            Register(new MetalBrush(MaterialBrush.MetalHangar, "Hangar Metal", "icon_metal_hangar", new[] { "Hangar_Metal_Mat" }, false, 0.15f, 0.79f, 0.5f, 1.5f));
 
             RegisterWild(MaterialBrush.Terrain, "Terrain", fromAssets(a => a.terrainMaterial));
             RegisterWild(MaterialBrush.UndergroundTerrain, "Underground Terrain", fromAssets(a => a.undergroundViewTerrainMaterial));

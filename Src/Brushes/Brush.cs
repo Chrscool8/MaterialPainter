@@ -121,7 +121,7 @@ namespace MaterialPainter2
                 material = createMaterial();
                 if (material != null)
                 {
-                    material.enableInstancing = true;
+                    material.enableInstancing = UseInstancing;
                     // Explicit starting values; the rest are read from the material as it comes.
                     for (int i = 0; i < parameters.Length; i++)
                     {
@@ -181,6 +181,9 @@ namespace MaterialPainter2
         }
 
         protected virtual Color DefaultColor => Color.white;
+
+        /// <summary>Whether the brush's material draws with GPU instancing (tuned copies follow it).</summary>
+        protected virtual bool UseInstancing => true;
 
         protected virtual void ApplyColors(Renderer renderer, Color color) { }
 

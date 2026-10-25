@@ -110,7 +110,34 @@ namespace MaterialPainter2
             MaterialReplacementManager manager = renderer.GetComponent<MaterialReplacementManager>();
             return $"object='{renderer.name}' enabled={renderer.enabled} materials=[{materials}]"
                 + $" chunk={(chunkedMesh == null ? "none" : chunkedMesh.enabled + "/handles " + chunkedMesh.instancedChunkHandles.Count)}"
-                + $" replacement={(manager?.getActiveReplacementEntry()?.replacementTag ?? "none")}";
+                + $" replacement={(manager?.getActiveReplacementEntry()?.replacementTag ?? "none")}"
+                + " " + DescribeColors(renderer);
+        }
+
+        // Where the part's first custom color is coming from: the object, the renderer's block, any per-slot blocks
+        // (which override the renderer's block), and the material's own default.
+        private static string DescribeColors(Renderer renderer)
+        {
+            int colorID = Shader.PropertyToID("_CustomColor1");
+            CustomColors customColors = renderer.GetComponentInParent<CustomColors>();
+            Color[] objectColors = customColors != null ? customColors.getColors() : null;
+
+            MaterialPropertyBlock block = new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(block);
+            string rendererBlock = block.isEmpty ? "empty" : block.GetVector(colorID).ToString("F2");
+
+            Material[] materials = renderer.sharedMaterials;
+            string slotBlocks = string.Join(",", Enumerable.Range(0, materials.Length).Select(i =>
+            {
+                renderer.GetPropertyBlock(block, i);
+                return block.isEmpty ? "-" : block.GetVector(colorID).ToString("F2");
+            }));
+
+            Material first = materials.Length > 0 ? materials[0] : null;
+            string materialDefault = first != null && first.HasProperty(colorID) ? first.GetVector(colorID).ToString("F2") : "n/a";
+            return $"colors: object={(objectColors != null && objectColors.Length > 0 ? ((Vector4)objectColors[0]).ToString("F2") : "none")}"
+                + $" block={rendererBlock} slotBlocks=[{slotBlocks}] materialDefault={materialDefault}"
+                + $" instancing={(first != null && first.enableInstancing)}";
         }
 
         public static void OnColorsChanged(Renderer renderer, Color[] colors)

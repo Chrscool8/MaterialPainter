@@ -16,9 +16,16 @@ namespace MaterialPainter2
         private const string REFLECTION_SOURCE_MATERIAL_NAME = "CustomColorsSpecular";
         private const float MISSING_MATERIAL_RECHECK_SECONDS = 5f;
 
+        /// <summary>
+        /// Game materials the plain metals (Chrome, Polished, Glossy) are built from, first one loaded wins. They use the
+        /// game's masked custom-color shader, which takes per-part colors; the plain custom-color one doesn't.
+        /// </summary>
+        public static readonly string[] PLAIN_METAL_SOURCES = { "Hangar_Metal_Mat", "metalroof_mat" };
+
         private static readonly Dictionary<string, Material> gameMaterials = new Dictionary<string, Material>();
         private static readonly Dictionary<string, float> missingMaterialCheckedAt = new Dictionary<string, float>();
         private static Texture2D colorMaskTexture;
+        private static Texture2D flatNormalTexture;
 
         public static Material Clone(Material source)
         {
@@ -127,9 +134,10 @@ namespace MaterialPainter2
 
         /// <summary>
         /// A colorable metal from one of the game's custom-color materials, with the object's texture swapped for a
-        /// solid color mask so the whole part takes the custom color. Null if the game material isn't loaded.
+        /// solid color mask so the whole part takes the custom color. <paramref name="plain"/> also flattens the source's
+        /// surface bumps. Null if the game material isn't loaded.
         /// </summary>
-        public static Material CreateMetal(string sourceMaterialName, string materialName)
+        public static Material CreateMetal(string sourceMaterialName, string materialName, bool plain)
         {
             Material source = FindGameMaterial(sourceMaterialName);
             if (source == null)
@@ -147,6 +155,12 @@ namespace MaterialPainter2
             else
             {
                 SetMainTexture(material, GetColorMaskTexture());
+            }
+
+            if (plain && material.HasProperty("_NormalMap"))
+            {
+                SetTexture(material, "_NormalMap", GetFlatNormalTexture());
+                material.DisableKeyword("_NORMALMAP");
             }
 
             // Wear effects would cover the shine.
@@ -170,6 +184,9 @@ namespace MaterialPainter2
         }
 
         public static bool HasGameMaterial(string name) => FindGameMaterial(name) != null;
+
+        /// <summary>The first of <paramref name="names"/> that's loaded, or null.</summary>
+        public static string FirstGameMaterial(string[] names) => Array.Find(names, HasGameMaterial);
 
         private static Material FindGameMaterial(string name)
         {
@@ -211,6 +228,18 @@ namespace MaterialPainter2
                 colorMaskTexture.Apply();
             }
             return colorMaskTexture;
+        }
+
+        // A normal pointing straight out, in the layout the game's shaders unpack (x from red times alpha, y from green).
+        private static Texture2D GetFlatNormalTexture()
+        {
+            if (flatNormalTexture == null)
+            {
+                flatNormalTexture = new Texture2D(1, 1, TextureFormat.RGBA32, false, linear: true) { name = "MP2_FlatNormal" };
+                flatNormalTexture.SetPixel(0, 0, new Color(1f, 0.5f, 1f, 0.5f));
+                flatNormalTexture.Apply();
+            }
+            return flatNormalTexture;
         }
 
         private static Material Create(string shaderName, string materialName)
