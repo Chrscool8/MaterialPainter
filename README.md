@@ -1,4 +1,4 @@
-# Material Painter 2
+# Material Painter 2 - Parkitect Mod
 
 <img src="preview.png" alt="Material Painter" width="400">
 
