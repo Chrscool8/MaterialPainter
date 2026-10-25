@@ -442,8 +442,42 @@
     <PackageReference Include="Lib.Harmony" Version="2.4.2" />
   </ItemGroup>
 
+  <!--
+    Deploys to the game's local mods folder. Everything there is cleared first, Custom included, so test images and
+    videos (and the thumbnails the mod makes for them) never end up in a Workshop upload. Custom is then refilled
+    from the project's own Custom folder.
+  -->
+  <PropertyGroup>
+    <ModsDir>$(USERPROFILE)\Documents\Parkitect\Mods</ModsDir>
+    <DeployDir>$(ModsDir)\$(MSBuildProjectName)</DeployDir>
+  </PropertyGroup>
+
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="mkdir &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)&quot;&#xD;&#xA;&#xD;&#xA;mkdir &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\Res&quot;&#xD;&#xA;mkdir &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\Custom&quot;&#xD;&#xA;mkdir &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\Custom\Videos&quot;&#xD;&#xA;mkdir &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\Custom\Images&quot;&#xD;&#xA;&#xD;&#xA;COPY &quot;$(TargetDir)$(TargetFileName)&quot; &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\$(TargetFileName)&quot; /Y&#xD;&#xA;COPY &quot;$(SolutionDir)steam_workshop-id&quot; &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\steam_workshop-id&quot;&#xD;&#xA;COPY &quot;$(SolutionDir)preview.png&quot; &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\preview.png&quot;&#xD;&#xA;COPY &quot;$(TargetDir)0Harmony.dll&quot; &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\0Harmony.dll&quot;&#xD;&#xA;&#xD;&#xA;xcopy /E /Y &quot;$(ProjectDir)Res&quot; &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\Res&quot;&#xD;&#xA;xcopy /E /Y &quot;$(ProjectDir)Custom&quot; &quot;$(USERPROFILE)\Documents\Parkitect\Mods\$(ProjectName)\Custom&quot;" />
+    <!-- Never clean anything but this mod's own folder inside the mods folder. -->
+    <Error Condition="'$(USERPROFILE)' == '' Or '$(MSBuildProjectName)' != 'MaterialPainter2' Or !Exists('$(ModsDir)')"
+           Text="Not deploying: mods folder '$(ModsDir)' not found or unexpected project name '$(MSBuildProjectName)'." />
+
+    <!-- A running game locks the DLL; stop before deleting anything rather than leave a half-deployed mod. -->
+    <Exec Command="tasklist /NH /FI &quot;IMAGENAME eq Parkitect.exe&quot;" ConsoleToMSBuild="true" StandardOutputImportance="low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_ParkitectProcesses" />
+    </Exec>
+    <Error Condition="$(_ParkitectProcesses.Contains('Parkitect.exe'))" Text="Not deploying: Parkitect is running. Close the game and build again." />
+
+    <ItemGroup>
+      <_StaleDeployFiles Include="$(DeployDir)\**\*" />
+      <_StaleDeployDirs Include="$([System.IO.Directory]::GetDirectories('$(DeployDir)'))" Condition="Exists('$(DeployDir)')" />
+
+      <_DeployRes Include="$(MSBuildProjectDirectory)\Res\**\*" Exclude="$(MSBuildProjectDirectory)\Res\Backup\**;$(MSBuildProjectDirectory)\Res\Screenshots\**" />
+      <_DeployCustom Include="$(MSBuildProjectDirectory)\Custom\**\*" />
+    </ItemGroup>
+
+    <Delete Files="@(_StaleDeployFiles)" />
+    <RemoveDir Directories="@(_StaleDeployDirs)" />
+
+    <MakeDir Directories="$(DeployDir);$(DeployDir)\Custom\Videos;$(DeployDir)\Custom\Images" />
+    <Copy SourceFiles="$(TargetPath);$(TargetDir)0Harmony.dll;$(MSBuildProjectDirectory)\steam_workshop-id;$(MSBuildProjectDirectory)\preview.png" DestinationFolder="$(DeployDir)" />
+    <Copy SourceFiles="@(_DeployRes)" DestinationFolder="$(DeployDir)\Res\%(RecursiveDir)" />
+    <Copy SourceFiles="@(_DeployCustom)" DestinationFolder="$(DeployDir)\Custom\%(RecursiveDir)" />
   </Target>
 
 </Project>
