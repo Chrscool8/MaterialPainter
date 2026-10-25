@@ -11,12 +11,12 @@ using UnityEngine.UI;
 
 namespace MaterialPainter2
 {
-    /// <summary>Right-click list of every part under the mouse, labelled "Owner › Part · Paint".</summary>
+    /// <summary>Right-click list of every part under the mouse, labelled "Owner > Part · Paint".</summary>
     public class Window_MultiSelector
     {
         private const float MIN_BUTTON_WIDTH = 220f;
         private const float BUTTON_HEIGHT = NativeUI.ROW_HEIGHT + 4f;
-        private const float LABEL_PADDING = 16f;
+        private const float LABEL_PADDING = 24f;
 
         private readonly GameObject root;
         private readonly EscapeHierarchy.OnEscapeHandler escape_handler;
@@ -58,6 +58,8 @@ namespace MaterialPainter2
                     text.text = GetLabel(obj, text.font);
                     text.alignment = TextAlignmentOptions.MidlineLeft;
                     text.margin = new Vector4(6f, 0f, 6f, 0f);
+                    // The button is sized to fit the whole label, so it never needs cutting off.
+                    text.overflowMode = TextOverflowModes.Overflow;
                     width = Mathf.Max(width, text.GetPreferredValues(text.text).x + LABEL_PADDING);
                 }
                 buttons.Add(button);
@@ -101,9 +103,9 @@ namespace MaterialPainter2
 
         private static string GetLabel(GameObject obj, TMP_FontAsset font)
         {
-            // The game's font may not have the fancy separators.
-            string partSeparator = font == null || font.HasCharacter('›', true) ? " › " : " > ";
-            string paintSeparator = font == null || font.HasCharacter('·', true) ? " · " : " - ";
+            // Only characters the game's own font has: one that comes from a fallback font cuts the label off there.
+            const string partSeparator = " > ";
+            string paintSeparator = font == null || font.HasCharacter('·') ? " · " : " - ";
 
             SerializedMonoBehaviour owner = obj.GetComponentInParent<SerializedMonoBehaviour>();
             // Some objects (walls, generated parts) have no display name; use their object name instead.
