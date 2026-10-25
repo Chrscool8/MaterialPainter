@@ -26,6 +26,7 @@ namespace MaterialPainter2
         private UI_Grid_Buttons grid_images;
         private UI_Grid_Buttons grid_settings;
         private UI_Tab_Bar tab_bar_types;
+        private UI_TuningPanel panel_tuning;
 
         private UI_CheckBox checkbox_multiselect;
         private UI_CheckBox checkbox_targetsupports;
@@ -75,6 +76,11 @@ namespace MaterialPainter2
             grid_elements.SetSize(GRID_WIDTH, elementsGridHeight);
             grid_elements.SetPosition(left_offset + transform.parent.parent.position.x, transform.parent.parent.position.y - (tab_height) * dpi_scale - (top_offset) + 2);
             grid_elements.DrawGrid(dpi_scale);
+
+            panel_tuning.visible = grid_elements.visible;
+            panel_tuning.SetWidth(GRID_WIDTH);
+            panel_tuning.SetPosition(left_offset + transform.parent.parent.position.x, transform.parent.parent.position.y - (tab_height) * dpi_scale - (top_offset) + 2 - elementsGridHeight * dpi_scale);
+            panel_tuning.Draw(dpi_scale);
 
             grid_videos.SetSize(GRID_WIDTH, videosGridHeight);
             grid_videos.SetPosition(left_offset + transform.parent.parent.position.x, transform.parent.parent.position.y - (tab_height) * dpi_scale - (top_offset) + 2);
@@ -140,7 +146,7 @@ namespace MaterialPainter2
         private float GetActiveGridHeight(float elementsGridHeight, float videosGridHeight, float imagesGridHeight, float settingsGridHeight)
         {
             if (grid_elements != null && grid_elements.visible)
-                return elementsGridHeight;
+                return elementsGridHeight + (panel_tuning != null ? UI_TuningPanel.GetHeight() : 0f);
             if (grid_videos != null && grid_videos.visible)
                 return videosGridHeight;
             if (grid_images != null && grid_images.visible)
@@ -240,6 +246,7 @@ namespace MaterialPainter2
 
             grid_elements = new UI_Grid_Buttons();
             grid_elements.AddButtons(buttons_elements);
+            panel_tuning = new UI_TuningPanel(gameObject);
 
             //
 
@@ -324,14 +331,15 @@ namespace MaterialPainter2
 
         private UI_Button CreateElementButton(MaterialBrush brush, string iconSprite, string tooltipText, bool wild = false)
         {
+            Brush registered = BrushRegistry.Get(brush);
             UI_Button button = new UI_Button(parent: gameObject, button_image_sprite: iconSprite, button_image_sprite_highlight: "icon_highlight", onMouseClick: () =>
             {
                 MP2.selected_brush = (int)brush;
-                MP2.selected_brush_custom = "";
+                // Tunable brushes paint with their sliders' settings.
+                MP2.selected_brush_custom = registered is SharedMaterialBrush shared ? shared.CurrentDetail : "";
             }, tooltip_text: tooltipText);
             buttons_elements.Add(button);
 
-            Brush registered = BrushRegistry.Get(brush);
             if (registered != null)
                 button.unavailable_reason = () => registered.UnavailableReason;
 
@@ -412,6 +420,7 @@ namespace MaterialPainter2
             grid_settings = null;
 
             tab_bar_types = null;
+            panel_tuning = null;
 
             checkbox_multiselect = null;
             checkbox_targetsupports = null;

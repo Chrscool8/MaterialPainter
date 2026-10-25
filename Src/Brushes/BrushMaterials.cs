@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 using UnityEngine;
 
@@ -12,6 +13,12 @@ namespace MaterialPainter2
         private const string BLACK_HOLE_CORE_SHADER_NAME = "Rollercoaster/BlackHoleCore";
         private const string BLACK_HOLE_DISC_SHADER_NAME = "Rollercoaster/BlackHoleAccretionDisc";
         private const string FALLBACK_SHADER_NAME = "Standard";
+        private const string REFLECTION_SOURCE_MATERIAL_NAME = "CustomColorsSpecular";
+        private const float MISSING_MATERIAL_RECHECK_SECONDS = 5f;
+
+        private static readonly Dictionary<string, Material> gameMaterials = new Dictionary<string, Material>();
+        private static readonly Dictionary<string, float> missingMaterialCheckedAt = new Dictionary<string, float>();
+        private static Texture2D colorMaskTexture;
 
         public static Material Clone(Material source)
         {
@@ -116,6 +123,94 @@ namespace MaterialPainter2
             SetFloat(material, "_Range", 0.9f);
             SetFloat(material, "_ShineIntensity", 16f);
             return material;
+        }
+
+        /// <summary>
+        /// A colorable metal from one of the game's custom-color materials, with the object's texture swapped for a
+        /// solid color mask so the whole part takes the custom color. Null if the game material isn't loaded.
+        /// </summary>
+        public static Material CreateMetal(string sourceMaterialName, string materialName)
+        {
+            Material source = FindGameMaterial(sourceMaterialName);
+            if (source == null)
+                return null;
+
+            Material reflective = FindGameMaterial(REFLECTION_SOURCE_MATERIAL_NAME);
+            Material material = new Material(source) { name = "MP2_" + materialName };
+
+            // The custom-color shaders tint where their mask is pure red (color 1), green, blue or magenta.
+            if (material.HasProperty("_MaskTex"))
+            {
+                SetTexture(material, "_MaskTex", GetColorMaskTexture());
+                SetMainTexture(material, Texture2D.whiteTexture);
+            }
+            else
+            {
+                SetMainTexture(material, GetColorMaskTexture());
+            }
+
+            // Wear effects would cover the shine.
+            material.DisableKeyword("PARKITECT_GRIME");
+            material.DisableKeyword("PARKITECT_SMUDGES");
+            SetFloat(material, "_Grime", 0f);
+            SetFloat(material, "_Smudges", 0f);
+            SetFloat(material, "_Illum", 0f);
+
+            if (material.HasProperty("_ReflectionCubemap") && material.GetTexture("_ReflectionCubemap") == null && reflective != null
+                && reflective.HasProperty("_ReflectionCubemap"))
+                material.SetTexture("_ReflectionCubemap", reflective.GetTexture("_ReflectionCubemap"));
+
+            bool reflects = material.HasProperty("_ReflectionCubemap") && material.GetTexture("_ReflectionCubemap") != null;
+            if (reflects)
+                material.EnableKeyword("PARKITECT_REFLECTIONS");
+            else
+                material.DisableKeyword("PARKITECT_REFLECTIONS");
+            SetFloat(material, "_Reflection", reflects ? 1f : 0f);
+            return material;
+        }
+
+        public static bool HasGameMaterial(string name) => FindGameMaterial(name) != null;
+
+        private static Material FindGameMaterial(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return null;
+
+            if (gameMaterials.TryGetValue(name, out Material cached) && cached != null)
+                return cached;
+
+            // Brush buttons ask every frame; a missing material is only searched for again after a while.
+            if (missingMaterialCheckedAt.TryGetValue(name, out float checkedAt) && Time.unscaledTime - checkedAt < MISSING_MATERIAL_RECHECK_SECONDS)
+                return null;
+
+            Material[] objectMaterials = ScriptableSingleton<AssetManager>.Instance?.objectMaterials;
+            Material found = objectMaterials != null ? Array.Find(objectMaterials, m => m != null && m.name == name) : null;
+            // Materials only used by specific objects aren't in the asset manager's list, but are loaded with them.
+            if (found == null)
+                found = Array.Find(Resources.FindObjectsOfTypeAll<Material>(), m => m != null && m.name == name);
+
+            if (found == null)
+            {
+                MP2.MPDebug($"Game material '{name}' not found.");
+                missingMaterialCheckedAt[name] = Time.unscaledTime;
+            }
+            else
+            {
+                gameMaterials[name] = found;
+                missingMaterialCheckedAt.Remove(name);
+            }
+            return found;
+        }
+
+        private static Texture2D GetColorMaskTexture()
+        {
+            if (colorMaskTexture == null)
+            {
+                colorMaskTexture = new Texture2D(1, 1, TextureFormat.RGBA32, false) { name = "MP2_ColorMask" };
+                colorMaskTexture.SetPixel(0, 0, Color.red);
+                colorMaskTexture.Apply();
+            }
+            return colorMaskTexture;
         }
 
         private static Material Create(string shaderName, string materialName)

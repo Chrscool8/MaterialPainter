@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 using UnityEngine;
 
@@ -59,16 +61,57 @@ namespace MaterialPainter2
         }
     }
 
-    /// <summary>Paints every material slot with one material, created on first use and shared by all painted objects.</summary>
+    /// <summary>
+    /// Paints every material slot with one material, created on first use and shared by all painted objects. Brushes
+    /// with <see cref="Params"/> can be tuned: a paint's detail holds its slider values, and each distinct set of values
+    /// gets its own copy of the material. An empty detail is the untuned look.
+    /// </summary>
     public class SharedMaterialBrush : Brush
     {
         private readonly Func<Material> createMaterial;
+        private readonly BrushParam[] parameters;
+        private readonly Dictionary<string, Material> tunedMaterials = new Dictionary<string, Material>();
         private Material material;
+        private BrushSettings preset;
+        private BrushSettings current;
 
-        public SharedMaterialBrush(MaterialBrush id, string name, string icon, Func<Material> createMaterial, bool wild = false)
+        public SharedMaterialBrush(MaterialBrush id, string name, string icon, Func<Material> createMaterial, bool wild = false, params BrushParam[] parameters)
             : base(id, name, icon, wild)
         {
             this.createMaterial = createMaterial;
+            this.parameters = parameters ?? new BrushParam[0];
+        }
+
+        public IReadOnlyList<BrushParam> Params => parameters;
+
+        public bool IsTunable => parameters.Length > 0;
+
+        /// <summary>The untuned look's values. Null until the material can be made (e.g. a missing game material).</summary>
+        public BrushSettings Preset
+        {
+            get
+            {
+                if (preset == null && GetMaterial() != null)
+                    preset = new BrushSettings(parameters, parameters.Select(p => float.IsNaN(p.Default) ? ReadFloat(material, p) : p.Default));
+                return preset;
+            }
+        }
+
+        /// <summary>What the tuning sliders are set to: the settings the next paint with this brush gets.</summary>
+        public BrushSettings Current
+        {
+            get => current ?? Preset;
+            set => current = value;
+        }
+
+        /// <summary>The detail to paint with: empty while the sliders are untouched, so the paint keeps the default look.</summary>
+        public string CurrentDetail
+        {
+            get
+            {
+                BrushSettings settings = Current;
+                return !IsTunable || settings == null || settings.Equals(Preset) ? "" : settings.Encode(parameters);
+            }
         }
 
         protected Material GetMaterial()
@@ -77,14 +120,47 @@ namespace MaterialPainter2
             {
                 material = createMaterial();
                 if (material != null)
+                {
                     material.enableInstancing = true;
+                    // Explicit starting values; the rest are read from the material as it comes.
+                    for (int i = 0; i < parameters.Length; i++)
+                    {
+                        if (!float.IsNaN(parameters[i].Default) && material.HasProperty(parameters[i].PropertyId))
+                            material.SetFloat(parameters[i].PropertyId, parameters[i].Default);
+                    }
+                }
             }
             return material;
         }
 
+        protected Material GetMaterial(string detail)
+        {
+            Material untuned = GetMaterial();
+            if (untuned == null || !IsTunable)
+                return untuned;
+
+            BrushSettings settings = BrushSettings.Decode(detail, parameters, Preset);
+            if (settings.Equals(Preset))
+                return untuned;
+
+            string key = settings.Encode(parameters);
+            if (tunedMaterials.TryGetValue(key, out Material tuned) && tuned != null)
+                return tuned;
+
+            tuned = new Material(untuned) { name = untuned.name + " [" + key + "]" };
+            settings.ApplyTo(tuned, parameters);
+            tunedMaterials[key] = tuned;
+            return tuned;
+        }
+
+        private static float ReadFloat(Material material, BrushParam param)
+        {
+            return material.HasProperty(param.PropertyId) ? material.GetFloat(param.PropertyId) : param.Min;
+        }
+
         public override bool Apply(Renderer renderer, string detail, PaintMarker marker)
         {
-            Material shared = GetMaterial();
+            Material shared = GetMaterial(detail);
             if (shared == null)
             {
                 MP2.MPDebug($"No material available for brush {Name}.");
@@ -110,10 +186,18 @@ namespace MaterialPainter2
 
         public override void ReleaseCache()
         {
+            foreach (Material tuned in tunedMaterials.Values)
+            {
+                if (tuned != null)
+                    UnityEngine.Object.Destroy(tuned);
+            }
+            tunedMaterials.Clear();
+
             if (material != null)
                 UnityEngine.Object.Destroy(material);
 
             material = null;
+            preset = null;
         }
     }
 
@@ -126,8 +210,8 @@ namespace MaterialPainter2
         private readonly WaterBody.BodyType bodyType;
         private readonly Color defaultColor;
 
-        public WaterBrush(MaterialBrush id, string name, string icon, WaterBody.BodyType bodyType, Color defaultColor)
-            : base(id, name, icon, () => BrushMaterials.CloneWaterBody(bodyType))
+        public WaterBrush(MaterialBrush id, string name, string icon, WaterBody.BodyType bodyType, Color defaultColor, params BrushParam[] parameters)
+            : base(id, name, icon, () => BrushMaterials.CloneWaterBody(bodyType), false, parameters)
         {
             this.bodyType = bodyType;
             this.defaultColor = defaultColor;

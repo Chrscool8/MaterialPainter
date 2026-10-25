@@ -110,7 +110,7 @@ namespace MaterialPainter2
             else if (marker.brush is VideoBrush)
                 path = MP2.GetCustomVideoFilePath(marker.detail);
             else
-                return marker.brush.Name;
+                return marker.brush.Name + (marker.brush is SharedMaterialBrush && marker.detail != "" ? " (tuned)" : "");
 
             string fileName = System.IO.Path.GetFileName(path);
             return System.IO.File.Exists(path) ? fileName : fileName + " (missing)";

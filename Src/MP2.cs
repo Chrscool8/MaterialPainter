@@ -43,6 +43,11 @@ namespace MaterialPainter2
         TriplanarTerrainCrackedSoil = 30,
         TriplanarTerrainDeadGrass = 31,
         TriplanarTerrainBlueprint = 32,
+        MetalChrome = 33,
+        MetalPolished = 34,
+        MetalGlossy = 35,
+        MetalRoof = 36,
+        MetalHangar = 37,
         //Texture = ?,
     }
 
