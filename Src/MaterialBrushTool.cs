@@ -64,7 +64,8 @@ namespace MaterialPainter2
 
         public override GameController.GameFeature getDisallowedFeatures()
         {
-            return GameController.GameFeature.Picking;
+            // Right click is the part list here, not the game's demolish.
+            return GameController.GameFeature.Picking | GameController.GameFeature.Delete | GameController.GameFeature.DragDelete;
         }
 
         public void tick()
