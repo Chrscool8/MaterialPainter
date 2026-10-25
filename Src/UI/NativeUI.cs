@@ -148,7 +148,7 @@ namespace MaterialPainter2
                 Image icon = button.transform.Find("Image")?.GetComponent<Image>();
                 if (icon != null)
                 {
-                    icon.sprite = MP2.get_sprite(tabs[i].icon, MP2.get_sprite("tex_question"));
+                    icon.sprite = MP2.get_sprite(tabs[i].icon, MP2.get_sprite("icon_question"));
                     icon.preserveAspect = true;
                     icon.rectTransform.sizeDelta = new Vector2(26f, 26f);
                 }
@@ -443,7 +443,7 @@ namespace MaterialPainter2
         {
             RectTransform rect = CreateLayoutObject(sprite, parent);
             Image image = rect.gameObject.AddComponent<Image>();
-            image.sprite = MP2.get_sprite(sprite, MP2.get_sprite("tex_question"));
+            image.sprite = MP2.get_sprite(sprite, MP2.get_sprite("icon_question"));
             image.preserveAspect = true;
             SetSize(rect, width: size, height: size);
 

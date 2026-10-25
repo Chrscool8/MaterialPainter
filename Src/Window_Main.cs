@@ -162,7 +162,7 @@ namespace MaterialPainter2
                     continue;
 
                 Brush registered = brush;
-                Sprite icon = MP2.get_sprite(brush.Icon, MP2.get_sprite("tex_question"));
+                Sprite icon = MP2.get_sprite(brush.Icon, MP2.get_sprite("icon_question"));
                 BrushEntry entry = AddEntry(grid, brush.Id, null, brush.Name, () => icon, () => registered.UnavailableReason);
                 if (brush.Wild)
                     wildEntries.Add(entry);
@@ -193,7 +193,7 @@ namespace MaterialPainter2
             {
                 MaterialType type = mt;
                 // Looked up each time: video thumbnails replace their placeholder once they're made.
-                tab.entries.Add(AddEntry(tab.grid, tab.brush, type.id_string, tab.label(type), () => MP2.get_sprite(type.name, MP2.get_sprite("tex_question"))));
+                tab.entries.Add(AddEntry(tab.grid, tab.brush, type.id_string, tab.label(type), () => MP2.get_sprite(type.name, MP2.get_sprite("icon_question"))));
             }
         }
 
@@ -288,7 +288,7 @@ namespace MaterialPainter2
 
         private void AddNoneEntry(RectTransform grid)
         {
-            Sprite icon = MP2.get_sprite("icon_none", MP2.get_sprite("tex_question"));
+            Sprite icon = MP2.get_sprite("icon_none", MP2.get_sprite("icon_question"));
             AddEntry(grid, MaterialBrush.None, null, "None", () => icon);
         }
 

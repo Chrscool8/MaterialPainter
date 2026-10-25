@@ -256,7 +256,7 @@ namespace MaterialPainter2
             if (sprites.ContainsKey(name))
                 return;
 
-            Sprite fallback = get_sprite("icon_video1", get_sprite("tex_question"));
+            Sprite fallback = get_sprite("icon_video1", get_sprite("icon_question"));
             if (fallback != null)
                 sprites.Add(name, fallback);
         }

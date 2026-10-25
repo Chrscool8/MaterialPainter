@@ -52,7 +52,7 @@ namespace MaterialPainter2
             RegisterWild(MaterialBrush.SceneGhost, "Scene Ghost", fromAssets(a => a.sceneViewGhostMaterial));
             RegisterWild(MaterialBrush.DecoGlow, "Deco Glow", fromAssets(a => a.decoVisibilityHighlightOverlayMaterial));
             RegisterWild(MaterialBrush.CollisionGlow, "Collision Glow", fromAssets(a => a.collidingObjectsHighlightOverlayMaterial));
-            RegisterWild(MaterialBrush.RideLight, "Ride Light", fromAssets(a => a.rideLightMaterial), "tex_question",
+            RegisterWild(MaterialBrush.RideLight, "Ride Light", fromAssets(a => a.rideLightMaterial), "icon_question",
                 new BrushParam("lo", "Glow (Min)", "_IllumMin", 0f, 50f, 0.5f, "Glow at its dimmest."),
                 new BrushParam("hi", "Glow (Max)", "_IllumMax", 0f, 50f, 0.5f, "Glow at its brightest."));
             RegisterWild(MaterialBrush.CoasterStats, "Coaster Stats", fromAssets(a => a.trackedRideStatVisualizerMaterial));
@@ -111,7 +111,7 @@ namespace MaterialPainter2
             return new[] { BrushParams.Metallic(), BrushParams.Smoothness(), BrushParams.TextureScale() };
         }
 
-        private static void RegisterWild(MaterialBrush id, string name, Func<Material> createMaterial, string icon = "tex_question", params BrushParam[] parameters)
+        private static void RegisterWild(MaterialBrush id, string name, Func<Material> createMaterial, string icon = "icon_question", params BrushParam[] parameters)
         {
             Register(new SharedMaterialBrush(id, name, icon, createMaterial, true, parameters));
         }

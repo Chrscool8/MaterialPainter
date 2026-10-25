@@ -137,6 +137,11 @@ namespace MaterialPainter2
                 {
                     if (obj is Texture2D texture)
                     {
+                        // A file of the same name in Res/Sprites wins (get_sprite loads it on first use), so icons
+                        // can be updated without rebuilding the bundle.
+                        if (File.Exists(ResolveBundledSpriteFilePath(obj.name)))
+                            continue;
+
                         Sprite sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
                         sprite.name = obj.name;
                         sprites[sprite.name] = sprite;
