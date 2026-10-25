@@ -20,6 +20,19 @@ namespace MaterialPainter2
         private const string LinebreakName = "linebreak";
         private const string ClockbarBackgroundName = "Clockbar_BG";
 
+        // Menu buttons whose tint the button copies, first found wins: the side bar's blue, else the build tools' white.
+        // The Painter it's cloned from has the red of the tool group.
+        private static readonly string[] TintSourceButtonNames =
+        {
+            "Finances",
+            "ParkInfo",
+            "Research",
+            "GuestsOverview",
+            "Blueprints",
+            "Terraformer",
+            "DecoBuilder"
+        };
+
         private static readonly string[] DirectRightButtonNames =
         {
             "ScenarioEditor",
@@ -392,7 +405,12 @@ namespace MaterialPainter2
 
             Toggle toggle = mp2Button.GetComponent<Toggle>();
             if (toggle != null)
+            {
                 toggle.isOn = false;
+                Toggle tintSource = FindTintSource();
+                if (tintSource != null)
+                    toggle.colors = tintSource.colors;
+            }
 
             Transform iconTransform = mp2Button.transform.Find("Image");
             Image icon = iconTransform != null ? iconTransform.GetComponent<Image>() : null;
@@ -400,6 +418,22 @@ namespace MaterialPainter2
                 icon.sprite = MP2.get_sprite("icon_magic_brush");
 
             return true;
+        }
+
+        private static Toggle FindTintSource()
+        {
+            // The side bar isn't under the bottom menu, so look through every menu button.
+            UIMenuButton[] buttons = FindObjectsOfType<UIMenuButton>();
+            foreach (string buttonName in TintSourceButtonNames)
+            {
+                foreach (UIMenuButton button in buttons)
+                {
+                    Toggle toggle = button.name == buttonName ? button.GetComponent<Toggle>() : null;
+                    if (toggle != null)
+                        return toggle;
+                }
+            }
+            return null;
         }
 
         private void ApplyLayout()
